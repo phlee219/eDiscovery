@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Canonical filename: universal_load_file_preflight.html · v1.6.6 plain-delimiter quote ambiguity + exact BOM-byte hash hardening. Read-only full-file QC with fail-closed parsing, hash coverage reconciliation, operator-confirmed identity QC, and audit-safe rendering. -->
+<!-- Canonical filename: universal_load_file_preflight.html · v1.6.7 complete plain-record size enforcement. Read-only full-file QC with fail-closed parsing, hash coverage reconciliation, operator-confirmed identity QC, and audit-safe rendering. -->
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -27,7 +27,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 </style>
 </head>
 <body>
-<div class="topbar"><div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div><div class="brand"><div class="logo">🩺</div><div><h1>Universal Load File Preflight / Health Check</h1><p>Full-file, read-only eDiscovery load-file QC · v1.6.6</p></div></div><div class="privacy">🔒 Local browser only · network blocked by CSP · source file never modified</div></div>
+<div class="topbar"><div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div><div class="brand"><div class="logo">🩺</div><div><h1>Universal Load File Preflight / Health Check</h1><p>Full-file, read-only eDiscovery load-file QC · v1.6.7</p></div></div><div class="privacy">🔒 Local browser only · network blocked by CSP · source file never modified</div></div>
 <main>
   <section class="card">
     <div class="card-head"><h2>1. Select load file</h2><span class="small">.dat · .txt · .load · .csv · .opt supported</span></div>
@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const APP_VERSION='1.6.6';
+const APP_VERSION='1.6.7';
 const FE='\u00FE', DC4='\u0014', FE_DELIM=DC4;
 const MAX_COLUMNS = 50000; // fail closed before pathological delimiter explosions can exhaust browser memory
 function tooManyColumnsError(){ return new Error(`Blocked pathological schema: more than ${MAX_COLUMNS.toLocaleString()} columns in one record.`); }
@@ -281,6 +281,9 @@ function recordTooLargeError(kind, recNum){
   return new Error((kind === 'quoted' ? 'A single quoted record' : 'A single data line') +
     ` (record #${recNum}) exceeds the safety limit of ${(MAX_RECORD_UNITS/1024/1024).toFixed(0)}M UTF-16 code units per logical record. This usually indicates inline extracted text, a missing EOL, or an unclosed qualifier. Split extracted text to external files or repair the load file; do not raise this limit without memory testing.`);
 }
+function assertRecordWithinLimit(rec, kind, recNum, limit=MAX_RECORD_UNITS){
+  if(String(rec).length > limit) throw recordTooLargeError(kind, recNum);
+}
 
 const FORMATS = {
   fe: {
@@ -320,12 +323,13 @@ const FORMATS = {
    but pushed decoded text chunk by chunk.  Only ONE unterminated
    record is ever held (this.pending). */
 class RecordStreamer {
-  constructor(fmtKey, onRecord){
+  constructor(fmtKey, onRecord, recordLimit=MAX_RECORD_UNITS){
     this.fmtKey = fmtKey;
     const d = FORMATS[fmtKey];
     this.q = d.quote;
     this.skip = d.skipDoubled;
     this.onRecord = onRecord;
+    this.recordLimit = recordLimit;
     // CSV is the only quoted dialect that permits fully unquoted records;
     // FE/Concordance always wrap every field. Requiring the qualifier there
     // is harmless, but for CSV it silently drops any line with no quotes.
@@ -340,6 +344,10 @@ class RecordStreamer {
     this.csvState = 'START';
   }
   async _emit(rec){
+    // Enforce the ceiling before parsing/splitting or retaining any completed
+    // record. This also covers a giant plain record whose terminating EOL is
+    // encountered only after the record has already exceeded the limit.
+    assertRecordWithinLimit(rec, this.q === null ? 'plain' : 'quoted', this.recIdx + 1, this.recordLimit);
     await this.onRecord(rec, this.recIdx++);
   }
   async push(text){
@@ -375,10 +383,13 @@ class RecordStreamer {
         }
         i++;
         start = i;
-        if(b.length - start > MAX_RECORD_UNITS){
+        if(b.length - start > this.recordLimit){
           throw recordTooLargeError('plain', this.recIdx + 1);
         }
       } else i++;
+    }
+    if(b.length - start > this.recordLimit){
+      throw recordTooLargeError('plain', this.recIdx + 1);
     }
     // P4: when no boundary was found in this chunk (start === 0) the whole
     // pending+text is one unterminated record — keep the rope reference instead
@@ -809,7 +820,8 @@ function detectFormat(text){
   if(looksLikeLegacyNoDc4FeRecord(head)) return 'legacy-fe';
   const headTrim = head.trim();
   if(headTrim.startsWith('^')){
-    try{const f=ccSplit(headTrim);if(f.length>=1)return 'cc';}catch(e){}
+    try{const f=ccSplit(headTrim);if(f.length>=1)return 'cc';}
+    catch(e){return 'ambiguous';} // malformed qualifier-like input must not fall through to a plausible wrong parser
   }
   // Fail closed on competing supported OR common custom delimiter signals.
   // A consistent wrong parser can otherwise preserve row width while shifting every field.
@@ -1119,8 +1131,7 @@ function scanRiskyInvisibleUnicode(v){
   return{count,codePoints:[...new Set(cps)]};
 }
 function identityAuditCanonical(v){
-  let s=String(v==null?'':v);
-  try{s=s.normalize('NFC');}catch(e){}
+  const s=String(v==null?'':v).normalize('NFC'); // normalization failure must fail the analysis, never weaken collision QC
   let out='';for(const ch of s){const cp=ch.codePointAt(0);if(riskyInvisibleCodePoint(cp)){if(cp===0x00A0)out+=' ';continue;}out+=ch;}
   return out.trim();
 }
@@ -1440,6 +1451,7 @@ const SELF_TEST_READY=(async function(){const fail=[];try{
   let threw=false;try{feSplit(FE+'A'+FE+FE+'B'+FE);}catch(e){threw=true;}if(!threw)fail.push('legacy FE rejection');
   const c=csvSplit('"a","b,b"');if(c.length!==2||c[1]!=='b,b')fail.push('CSV parser');
   const cc=ccSplit('^A^|^B^^C^');if(cc.length!==2||cc[1]!=='B^C')fail.push('Concordance strict parser');
+  if(detectFormat('^A^junk|^B^\r\n^1^|^2^')!=='ambiguous')fail.push('malformed Concordance format fail-closed');
   if(detectFormat('DOCID\r\nA')!=='unknown')fail.push('format fail-closed single-column');
   if(detectFormat('DOCID|CUSTODIAN\r\nA|B')!=='pipe')fail.push('pipe format detection');
   if(detectFormat('DOCID,CUST|PATH\r\nA,B|C')!=='ambiguous')fail.push('ambiguous delimiter detection');
@@ -1455,6 +1467,9 @@ const SELF_TEST_READY=(async function(){const fail=[];try{
   threw=false;try{ccSplit('junk^A^|^B^');}catch(e){threw=true;}if(!threw)fail.push('Concordance garbage rejection');
   if(classifyDateShape('2026-02-30 12:00').plausible!==false||classifyDateShape('31-FEB-2026').plausible!==false||classifyDateShape('2026-02-28 77:00').plausible!==false||classifyDateShape('03/04/2026').ambiguousNumeric!==true)fail.push('date/time validator');
   const emitted=[];const rs=new RecordStreamer('csv',async r=>emitted.push(r));await rs.push('A,B\r\n1,"x');await rs.push('\ny"\r');await rs.push('\n2,z\r\n');const br=await rs.flush();if(br||emitted.length!==3||emitted[1]!=='1,"x\ny"')fail.push('CSV streaming/chunk boundary');
+  let plainLimitBlocked=false,plainLimitEmitted=0;try{const lr=new RecordStreamer('pipe',async()=>plainLimitEmitted++,4);await lr.push('abc');await lr.push('de');}catch(e){plainLimitBlocked=/safety limit/.test(String(e&&e.message||e));}if(!plainLimitBlocked||plainLimitEmitted)fail.push('plain unterminated record size limit');
+  plainLimitBlocked=false;plainLimitEmitted=0;try{const lr=new RecordStreamer('pipe',async()=>plainLimitEmitted++,4);await lr.push('abcde\n');}catch(e){plainLimitBlocked=/safety limit/.test(String(e&&e.message||e));}if(!plainLimitBlocked||plainLimitEmitted)fail.push('plain completed record size limit');
+  const plainAtLimit=[];const lrOk=new RecordStreamer('pipe',async r=>plainAtLimit.push(r),4);await lrOk.push('abcd');await lrOk.flush();if(plainAtLimit.length!==1||plainAtLimit[0]!=='abcd')fail.push('plain record size boundary');
   let bomBlocked=false;try{await scanFile(new Blob([new Uint8Array([0x58,0x59,0x5A,0x41,0x7C,0x42])]),{kind:'utf-8',label:'UTF-8',hasBOM:true,bomBytes:3},'pipe',async()=>{});}catch(e){bomBlocked=/BOM/.test(String(e&&e.message||e));}if(!bomBlocked)fail.push('exact source BOM verification');
   if(!decoderSupported('utf-8'))fail.push('UTF-8 decoder unavailable');
   const ambBlob=new Blob([new Uint8Array([0x41,0x2C,0x42,0x0D,0x0A,0xC3,0xA9,0x2C,0x78])]);const ambMeta=await sniffMeta(ambBlob,'auto');if(!ambMeta.ambiguousLegacy||ambMeta.kind!=='utf-8')fail.push('encoding provenance ambiguity');
