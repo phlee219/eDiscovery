@@ -1,6 +1,6 @@
 # 데이터 무결성 검토 — 2026-09-06
 
-대상: `field_mapper.html`, 내부 버전 `2.18.4`, build `2026-09-06-h6` (Release Candidate).
+대상: `field_mapper.html`, 내부 버전 `2.18.5`, build `2026-09-06-h7` (Release Candidate).
 운영 파일명은 고정한다. 원본 DAT 데이터는 변경하지 않았다.
 
 ## 결론
@@ -117,3 +117,7 @@ DOM 테스트의 File System Access와 DOM은 **모의 구현**이다. OS 파일
 - 중복/모호 source name: unresolved
 
 최종 자동 검증(Node v24.19.0): **core 20 + strict fixture 4 + DOM/save/Validator 39 = 총 63그룹, 실패 0**. 현재 알려진 silent data corruption/false PASS 결함은 테스트 및 코드 검토 범위에서 발견되지 않았다. 이후 비치명적 예외·UX는 실제 사용 피드백으로 처리하고 이 버전을 RC로 동결한다.
+
+## v2.18.5/h7 메타데이터 정합성
+
+상단 bilingual owner watermark 변경을 정식 내부 버전으로 반영했다. 실행 코드·문서·테스트 fixture를 2.18.5/h7로 통일했으며 DAT 변환 계약 변경은 없다. 상단 HTML 주석과 `TOOL_VERSION` 불일치가 재발하면 bootstrap 테스트가 실패한다.

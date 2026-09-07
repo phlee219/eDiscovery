@@ -1,7 +1,7 @@
 # DAT Field Reorder — strict FE/DC4
 
 Current file: `field_mapper.html`  (the shipped filename is FIXED — versioning is internal only)  
-Internal version: `2.18.4` — Build: `2026-09-06-h6` — **Release Candidate**
+Internal version: `2.18.5` — Build: `2026-09-06-h7` — **Release Candidate**
 
 Local browser tool for reordering/removing DAT columns, mapping client headers, and comparing saved output with the original. File contents stay in the browser. Chrome/Edge with File System Access supports streaming saves; other save paths accumulate a Blob in memory.
 
@@ -21,6 +21,7 @@ Local browser tool for reordering/removing DAT columns, mapping client headers, 
 - v2.18.2 additions: pasted client headers are preserved VERBATIM (no implicit trim; T1 Exact is whitespace/case exact, folding is confined to T2); the row-width histogram detail is bounded while matching/mismatching totals stay exact; save cleanup failures are reported; a local-only CSP is embedded.
 - v2.18.3 additions: real cooperative Validator cancellation; operation locks always recover after cancellation/supersession; source/output concurrent load busy ownership; explicit operator approval for the selected identity and all T2 normalized-name mappings; 1-Click saved validation seeds mapping but never auto-starts; blank pasted rows/columns and extra empty Excel columns are blocked rather than discarded; Validator vertical-map whitespace is preserved.
 - v2.18.4 RC: pasted Validator maps record `manual-exact` versus normalized `T2` provenance truthfully. Normalized mappings require T2 approval, and output columns omitted from a pasted map remain unresolved rather than being silently auto-filled.
+- v2.18.5 RC: bilingual owner watermark update; HTML/internal/documentation version metadata synchronized. No DAT transformation contract change.
 - One record is limited to 64Mi UTF-16 code units and 2,000 columns, including output after field reuse. The 2,000-column limit is checked before `split()` allocation and avoids creating unsafe 10,000-row DOM workspaces. Blob output is limited to 512MiB; streaming disk save is required above that. Practical memory limits can be lower.
 
 ## Delivery workflow
@@ -43,7 +44,7 @@ node tests/run_core_tests.mjs
 node tests/run_dom_flow.mjs
 ```
 
-Verified on Node v24.19.0 for the current v2.18.4/h6 RC: the core suite passes **20 hardened groups** (including 5,000 randomized Unicode round-trips) plus **4 strict-profile fixture groups**; the DOM/save/validator integration harness passes **39 groups**. Zero failures.
+Verified on Node v24.19.0 for the current v2.18.5/h7 RC: the core suite passes **20 hardened groups** (including 5,000 randomized Unicode round-trips) plus **4 strict-profile fixture groups**; the DOM/save/validator integration harness passes **39 groups**. Zero failures.
 
 - `tests/run_core_tests.mjs` runs `tests/hardened_tests.mjs` (streaming/encoding/hash/sink/validator-pair core groups, including 5,000 randomized Unicode round-trips) plus `tests/strict_fixture_tests.mjs` (strict-policy fixtures) and the current hardening regressions.
 - `tests/run_dom_flow.mjs` evaluates the complete inline script with mocked DOM/File System Access: both save paths, re-read validation, stale-state invalidation, cancellation/approval/load-race handling, and local-only guards.

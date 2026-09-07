@@ -1,5 +1,5 @@
 // Synthetic load-file fixtures aligned with the STRICT FE/DC4 production profile
-// (field_mapper.html v2.18.4). They feed tests/strict_fixture_tests.mjs.
+// (field_mapper.html v2.18.5). They feed tests/strict_fixture_tests.mjs.
 //
 // The strict profile blocks: ambiguous legacy no-DC4 FE rows, a literal U+00FE
 // (þ) inside a value, raw U+0014 (DC4) inside a value, raw CR/LF inside a value,

@@ -840,8 +840,8 @@ CUSTODIAN	Custodian
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const TOOL_VERSION = '2.18.4';
-const TOOL_BUILD = '2026-09-06-h6';
+const TOOL_VERSION = '2.18.5';
+const TOOL_BUILD = '2026-09-06-h7';
 // R1: set by the startup pure-core self-test. When false, saving & validation
 // are disabled (fail-closed) so a regression in the core splitters/parsers can
 // never cause a silent bad delivery.
@@ -5827,6 +5827,9 @@ function runSelfTest(interactive){
 
 console.info('DAT Field Reorder v' + TOOL_VERSION + ' — STRICT FE/DC4 production profile. Legacy no-DC4 FE, literal þ/raw CR-LF in fields, mixed EOL, leading blank lines, CP1252 and destructive overwrite are blocked. All local.');
 
+/* v2.18.5 (build 2026-09-06-h7) RELEASE CANDIDATE: shipping filename remains
+   field_mapper.html. Cosmetic topbar owner watermark update; version metadata,
+   documentation and tests synchronized. No DAT transformation contract change. */
 /* v2.18.4 (build 2026-09-06-h6) RELEASE CANDIDATE: shipping filename remains
    field_mapper.html. Pasted Validator mappings now record manual-exact versus
    normalized T2 provenance truthfully; T2 requires operator approval; output
@@ -5922,6 +5925,6 @@ console.info('DAT Field Reorder v' + TOOL_VERSION + ' — STRICT FE/DC4 producti
    chain, identity row linkage, encoding/BOM/EOL style-and-count equality,
    stale-context invalidation, timestamped report downloads. */
 </script>
-<!-- v2.18.4 RC (field_mapper.html fixed name): truthful pasted-map provenance; omitted output columns stay unresolved. -->
+<!-- v2.18.5 RC (field_mapper.html fixed name): bilingual owner watermark; version metadata synchronized. -->
 </body>
 </html>

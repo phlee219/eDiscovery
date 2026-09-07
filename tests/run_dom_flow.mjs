@@ -18,6 +18,9 @@ const context=vm.createContext({console:{...console,error:err=>errors.push(Strin
 vm.runInContext(source,context);
 const run=s=>vm.runInContext(s,context);
 assert.equal(run('coreSelfTestOk'),true);assert.equal(run('SHA256_SELF_TEST_OK'),true);
+const declaredVersion=/Field Mapper v([0-9.]+)/.exec(html)?.[1];
+assert.equal(declaredVersion,run('TOOL_VERSION'),'HTML release comment and runtime TOOL_VERSION must match');
+assert.equal(run('TOOL_BUILD'),'2026-09-06-h7','runtime build metadata must match the release build');
 run('toast=msg=>__messages.push(msg); showSaveWarnings=toast;');
 context.__messages=messages;
 const inputRows=[['DOCID','NAME','TEXT'],['D1','Alice','한국어 😀'],['D2','Bob',''],['D3','Carol','  ®  ']];

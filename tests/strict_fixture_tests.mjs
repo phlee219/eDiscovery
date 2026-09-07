@@ -1,4 +1,4 @@
-// Strict-profile fixture driver (field_mapper.html v2.18.4, 100% local).
+// Strict-profile fixture driver (field_mapper.html v2.18.5, 100% local).
 // Node >= 20, no dependencies. Every "blocked" fixture must fail closed and
 // every "good" fixture must round-trip losslessly at the CORE level.
 import {readFileSync} from 'node:fs';
