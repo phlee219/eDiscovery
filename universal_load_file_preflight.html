@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Canonical filename: universal_load_file_preflight.html · v1.6.5 centered owner watermark and stale-result/source-consistency hardening. Read-only full-file QC with fail-closed parsing, hash coverage reconciliation, operator-confirmed identity QC, and audit-safe rendering. -->
+<!-- Canonical filename: universal_load_file_preflight.html · v1.6.6 plain-delimiter quote ambiguity + exact BOM-byte hash hardening. Read-only full-file QC with fail-closed parsing, hash coverage reconciliation, operator-confirmed identity QC, and audit-safe rendering. -->
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -27,7 +27,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 </style>
 </head>
 <body>
-<div class="topbar"><div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div><div class="brand"><div class="logo">🩺</div><div><h1>Universal Load File Preflight / Health Check</h1><p>Full-file, read-only eDiscovery load-file QC · v1.6.5</p></div></div><div class="privacy">🔒 Local browser only · network blocked by CSP · source file never modified</div></div>
+<div class="topbar"><div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div><div class="brand"><div class="logo">🩺</div><div><h1>Universal Load File Preflight / Health Check</h1><p>Full-file, read-only eDiscovery load-file QC · v1.6.6</p></div></div><div class="privacy">🔒 Local browser only · network blocked by CSP · source file never modified</div></div>
 <main>
   <section class="card">
     <div class="card-head"><h2>1. Select load file</h2><span class="small">.dat · .txt · .load · .csv · .opt supported</span></div>
@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const APP_VERSION='1.6.5';
+const APP_VERSION='1.6.6';
 const FE='\u00FE', DC4='\u0014', FE_DELIM=DC4;
 const MAX_COLUMNS = 50000; // fail closed before pathological delimiter explosions can exhaust browser memory
 function tooManyColumnsError(){ return new Error(`Blocked pathological schema: more than ${MAX_COLUMNS.toLocaleString()} columns in one record.`); }
@@ -246,6 +246,20 @@ function optSplit(rec){
   return out;
 }
 function boundedSimpleSplit(rec, delim){ const s=String(rec); if(countChar(s,delim)+1>MAX_COLUMNS) throw tooManyColumnsError(); return s.split(delim); }
+/* Pipe/TSV are intentionally literal-delimiter dialects in this tool. If a row
+   is also valid under conventional double-quoted field semantics and that
+   interpretation would change either field count or field values, the dialect
+   is ambiguous. Treating the quotes as literal can otherwise preserve a stable
+   row width while silently shifting fields or turning quoted blanks into data. */
+function plainDelimitedQuoteAmbiguity(rec, delim){
+  const s=String(rec==null?'':rec);
+  if(!s.includes('"'))return false;
+  let quoted;try{quoted=delimitedSplit(s,delim);}catch(e){return false;}
+  const literal=boundedSimpleSplit(s,delim);
+  if(quoted.length!==literal.length)return true;
+  for(let i=0;i<quoted.length;i++)if(quoted[i]!==literal[i])return true;
+  return false;
+}
 function tabSplit(rec){ return boundedSimpleSplit(rec,'\t'); }
 function pipeSplit(rec){ return boundedSimpleSplit(rec,'|'); }
 
@@ -834,11 +848,19 @@ async function scanFile(file, meta, fmtKey, onRecord, onProgress, onRawChunk){
   const streamer = new RecordStreamer(fmtKey, onRecord);
   const total = file.size;
   const utf16 = meta.kind === 'utf-16le' || meta.kind === 'utf-16be';
-  // Audit hashing must start at byte 0. The scanner starts reading after any
-  // BOM (the TextDecoder would otherwise never see those bytes), so explicitly
-  // feed the BOM bytes first so the source hash covers the full original file
-  // (BOM inclusive). metaBomBytes() returns an empty array when no BOM exists.
-  if(onRawChunk && meta.hasBOM && meta.bomBytes > 0) onRawChunk(metaBomBytes(meta));
+  // Audit hashing must start at byte 0. The scanner decodes after any BOM, so
+  // re-read the ACTUAL BOM bytes from the source, verify they still match the
+  // encoding evidence established by sniffMeta(), and hash those exact bytes.
+  // Never synthesize BOM bytes into the digest: a source changed between sniff
+  // and scan must fail closed instead of producing a hash for bytes not read.
+  if(meta.hasBOM && meta.bomBytes > 0){
+    const actualBom = new Uint8Array(await file.slice(0, meta.bomBytes).arrayBuffer());
+    const expectedBom = metaBomBytes(meta);
+    let mismatch = actualBom.length !== meta.bomBytes || expectedBom.length !== meta.bomBytes;
+    if(!mismatch)for(let i=0;i<meta.bomBytes;i++)if(actualBom[i]!==expectedBom[i]){mismatch=true;break;}
+    if(mismatch)throw new Error('Source BOM changed or no longer matches the detected encoding. Re-select the source file and run the preflight again.');
+    if(onRawChunk)onRawChunk(actualBom);
+  }
   let offset = meta.bomBytes;
   let lastProgressPct = -1;
   // R2: record-separator EOL accounting. Only EOLs that terminate a logical
@@ -1220,6 +1242,7 @@ async function analyzeFileCore(file,opts={}){
 
     const hasher=createSha256(), rowWidths=new Map();let hashedBytes=0;let utf8NonAsciiSeen=!!meta.ambiguousLegacy;let headerSeen=false,headerCount=0,fieldStats=[],identityTracker=null,dateTrackers=[],pathTrackers=[];let dataRow=0,parseErrors=0,mismatch=0,leading=0,blankRows=0,maxRecord=0;
     const parseSamples=[],delimiterProof=createDelimiterProofTracker(fmtKey);let optTracker=fmtKey==='opt'?createOptTracker():null;
+    let plainQuotedAmbiguityRows=0;const plainQuotedAmbiguitySamples=[];
     const leadingMeta={empty:0,whitespace:0,totalLength:0,maxLength:0,nul:0,ctrl:0,c1:0,repl:0,feff:0,samples:[]};
     const noteLeadingBlank=rec=>{const raw=String(rec==null?'':rec),a=scanScalar(raw);leading++;if(raw==='')leadingMeta.empty++;else leadingMeta.whitespace++;leadingMeta.totalLength+=raw.length;leadingMeta.maxLength=Math.max(leadingMeta.maxLength,raw.length);leadingMeta.nul+=a.nul;leadingMeta.ctrl+=a.ctrl;leadingMeta.c1+=a.c1;leadingMeta.repl+=a.repl;leadingMeta.feff+=a.feff;if(leadingMeta.samples.length<5)leadingMeta.samples.push(raw);};
     const isTrueBlankBeforeSchema=rec=>{const raw=String(rec==null?'':rec);if(raw.trim()!=='')return false;try{const f=FORMATS[fmtKey].split(raw);return f.length===1&&String(f[0]||'').trim()==='';}catch(e){return true;}};
@@ -1254,6 +1277,9 @@ async function analyzeFileCore(file,opts={}){
     };
     const onRecord=async(rec,recordIdx)=>{
       check();r.logicalRecords++;maxRecord=Math.max(maxRecord,rec.length);if(delimiterProof)delimiterProof.observe(rec);
+      if((fmtKey==='pipe'||fmtKey==='tsv')&&plainDelimitedQuoteAmbiguity(rec,fmtKey==='pipe'?'|':'\t')){
+        plainQuotedAmbiguityRows++;if(plainQuotedAmbiguitySamples.length<5)plainQuotedAmbiguitySamples.push(recordIdx+1);
+      }
       let fields=null;
       if(!headerSeen){
         if(isTrueBlankBeforeSchema(rec)){noteLeadingBlank(rec);return;}
@@ -1304,9 +1330,11 @@ async function analyzeFileCore(file,opts={}){
     if(r.formatEvidence){
       const ev=r.formatEvidence,sel=ev.selected;
       if(ev.observed>=2&&(!sel||!sel.strong))addIssue(r,'WARN','FORMAT_STRUCTURE_UNPROVEN','Selected delimiter is not structurally proven across records',`The ${FORMATS[fmtKey].label} delimiter is not present with a stable multi-column width across the scanned records. This can be a legitimate one-column file, but client-ready PASS is blocked until the format is independently confirmed.`);
+      if(sel&&sel.strong&&headerSeen&&sel.modeWidth!==headerCount)addIssue(r,'FAIL','FORMAT_PARSER_EVIDENCE_WIDTH_MISMATCH','Parser width disagrees with delimiter structure',`The selected ${FORMATS[fmtKey].label} parser produced ${headerCount.toLocaleString()} columns, but quote-aware delimiter evidence consistently indicates ${sel.modeWidth.toLocaleString()}. This can occur when delimiters inside quoted-looking text are being split literally; field positions are not trustworthy.`);
       const meaningful=ev.competitors.filter(c=>!sel||c.score>=Math.max(0.5,sel.score*0.90));
       if(meaningful.length)addIssue(r,'WARN','FORMAT_COMPETING_DELIMITER','Competing delimiter can explain the records equally well',`Strong competing signal(s): ${meaningful.slice(0,4).map(c=>`${c.label} → ${c.modeWidth} columns, ${(c.coverage*100).toFixed(1)}% coverage, ${(c.consistency*100).toFixed(1)}% stable`).join('; ')}. Verify the vendor delimiter specification; a wrong but consistent parser can silently shift every field.`);
     }
+    if(plainQuotedAmbiguityRows)addIssue(r,'FAIL','PLAIN_DELIM_QUOTED_AMBIGUITY','Quoted-field syntax is unsafe in plain delimiter mode',`${plainQuotedAmbiguityRows.toLocaleString()} logical record(s) contain double-quote syntax that a quote-aware ${fmtKey==='pipe'?'pipe':'tab'} parser would interpret differently from this tool's literal splitter (first logical record(s): ${plainQuotedAmbiguitySamples.join(', ')}). Continuing could silently shift fields or treat quoted blanks as nonblank data. Use an approved quote-aware workflow or convert the source before client delivery.`);
     if(r.opticon){const o=r.opticon;
       if(!o.firstRowMarked)addIssue(r,'FAIL','OPT_FIRST_PAGE_MARKER','First Opticon row must start a document','Field 4 on the first image/page row is not “Y”. The first page must establish a document boundary.');
       if(o.missingPageId)addIssue(r,'FAIL','OPT_PAGE_ID_BLANK','Blank Opticon page identifier',`${o.missingPageId.toLocaleString()} row(s) have a blank field 1 page identifier.`);
@@ -1418,6 +1446,7 @@ const SELF_TEST_READY=(async function(){const fail=[];try{
   if(detectFormat('ID;Name|Status\r\n1;John|Active')!=='ambiguous')fail.push('custom competing delimiter detection');
   if(detectFormat('DOCID:NAME|STATUS\r\nA001:Alice|Active')!=='ambiguous')fail.push('generic custom delimiter detection');
   const de=createDelimiterProofTracker('pipe');de.observe('ID;Name|Status');de.observe('1;John|Active');de.observe('2;Jane|Active');const def=de.finish();if(!def.competitors.some(x=>x.key==='semicolon'))fail.push('delimiter structural competitor proof');
+  if(!plainDelimitedQuoteAmbiguity('DOCID|"TEXT|ALT"','|')||!plainDelimitedQuoteAmbiguity('"DOCID"|"TEXT"','|')||plainDelimitedQuoteAmbiguity('DOCID|He said "hello"','|'))fail.push('plain delimiter quoted-syntax ambiguity guard');
   const oi=optSplit('REL00001,REL01,D:\\IMAGES\\REL00001.TIF,Y,,,2');if(oi.length!==7||oi[3]!=='Y')fail.push('Opticon parser');
   threw=false;try{optSplit('REL00001,REL01,D:\\IMAGES\\REL00001.TIF,N,TIF,X,Z,EXTRA');}catch(e){threw=true;}if(!threw)fail.push('Opticon 7-field enforcement');
   const uit=createIdentityTracker(0,'DOCID');uit.observe('ABC001',1);uit.observe('ABC\u200B001',2);const uiq=uit.finish();if(!uiq.riskyInvisibleCharacters||uiq.canonicalCollisions!==1)fail.push('identity invisible Unicode collision');
@@ -1426,6 +1455,7 @@ const SELF_TEST_READY=(async function(){const fail=[];try{
   threw=false;try{ccSplit('junk^A^|^B^');}catch(e){threw=true;}if(!threw)fail.push('Concordance garbage rejection');
   if(classifyDateShape('2026-02-30 12:00').plausible!==false||classifyDateShape('31-FEB-2026').plausible!==false||classifyDateShape('2026-02-28 77:00').plausible!==false||classifyDateShape('03/04/2026').ambiguousNumeric!==true)fail.push('date/time validator');
   const emitted=[];const rs=new RecordStreamer('csv',async r=>emitted.push(r));await rs.push('A,B\r\n1,"x');await rs.push('\ny"\r');await rs.push('\n2,z\r\n');const br=await rs.flush();if(br||emitted.length!==3||emitted[1]!=='1,"x\ny"')fail.push('CSV streaming/chunk boundary');
+  let bomBlocked=false;try{await scanFile(new Blob([new Uint8Array([0x58,0x59,0x5A,0x41,0x7C,0x42])]),{kind:'utf-8',label:'UTF-8',hasBOM:true,bomBytes:3},'pipe',async()=>{});}catch(e){bomBlocked=/BOM/.test(String(e&&e.message||e));}if(!bomBlocked)fail.push('exact source BOM verification');
   if(!decoderSupported('utf-8'))fail.push('UTF-8 decoder unavailable');
   const ambBlob=new Blob([new Uint8Array([0x41,0x2C,0x42,0x0D,0x0A,0xC3,0xA9,0x2C,0x78])]);const ambMeta=await sniffMeta(ambBlob,'auto');if(!ambMeta.ambiguousLegacy||ambMeta.kind!=='utf-8')fail.push('encoding provenance ambiguity');
   let encBlocked=false;try{const badBlob=new Blob([new Uint8Array([0x41,0x2C,0x42,0x0D,0x0A,0x81,0x2C,0x78])]);await sniffMeta(badBlob,'auto');}catch(e){encBlocked=true;}if(!encBlocked)fail.push('legacy encoding fail-closed');
