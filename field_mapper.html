@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- Field Mapper v2.18.5 - RELEASE CANDIDATE STRICT FE/DC4 profile. Internal versioning only; shipping filename remains field_mapper.html. Topbar watermark centered and updated to bilingual owner mark. -->
+<!-- Field Mapper v2.19.1 - RELEASE CANDIDATE STRICT FE/DC4 profile. Manual mapping and per-row review. Shipping filename remains field_mapper.html. -->
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -441,7 +441,15 @@
     .startup-mode-tabs .mtab .mi{display:block}
   }
 
-</style>
+.mapping-review{margin-bottom:16px;border:2px solid #c4d6f5}
+  .mapping-review progress{width:100%;height:12px;margin:10px 0}
+  .review-detail{background:#f4f7fc;padding:12px;border-radius:8px;overflow-wrap:anywhere}
+  .review-detail pre{white-space:pre-wrap;max-height:180px;overflow:auto;margin:8px 0}
+  .review-detail h3{margin:0 0 8px}
+  .mapping-state{font-size:11px;white-space:nowrap;padding:4px 7px;border-radius:6px;background:#fff0cc;color:#694600}
+  .mapping-state.confirmed{background:#daf1e1;color:#165b31}
+  .client-row .cname{white-space:normal;overflow-wrap:anywhere}
+  </style>
 </head>
 <body>
 <div style="background:#fff3cd;color:#5c4300;padding:8px 14px;border-bottom:1px solid #e5c76b;font:600 13px system-ui">STRICT production profile: FE/DC4 DAT only · Column U+0014 (DC4) · Quote U+00FE (þ) · literal þ/raw CR-LF inside fields, mixed EOL, legacy no-DC4 FE, CP1252, and destructive overwrite are blocked.</div>
@@ -624,6 +632,20 @@ CUSTODIAN	Custodian
 </div>
 </div>
 <div class="hidden" id="clGridArea">
+<div class="card mapping-review">
+<div id="clProgress" role="status" aria-live="polite"></div>
+<progress id="clReviewProgress" max="1" value="0" aria-label="Confirmed mapping progress"></progress>
+<div class="toolbar">
+<label for="clFilter">Show</label><select id="clFilter"><option value="all">All rows</option><option value="pending">Unfinished</option><option value="reuse">Reused sources</option></select>
+<button class="btn sm" id="btnClNext">Next unfinished</button>
+<button class="btn sm" id="btnClUndo">Undo last change</button>
+<button class="btn sm" id="btnClReviewDownload">Download review checklist</button>
+</div>
+<div id="clReviewDetail" class="review-detail"></div>
+<div class="toolbar"><label><input type="checkbox" id="clAllowReplace"/> Allow replacing this row's link</label>
+<button class="btn primary" id="btnClConfirm">Confirm &amp; Next</button></div>
+<p class="meta">Each row needs confirmation before saving. Confirming records your review; it does not validate the full file. Session only — reloading clears progress.</p>
+</div>
 <div class="client-grid">
 <!-- Our source fields -->
 <article class="card client-pane" id="clSrcPane">
@@ -636,18 +658,10 @@ CUSTODIAN	Custodian
 </div>
 <div class="toolbar">
 <button class="btn sm" id="btnClUnlinkAll">✕ Unmap All</button>
-<label for="clTierSel" class="meta" style="font-size:12px;margin-left:2px">Match:</label>
-<select id="clTierSel" title="Strict auto-match: T1 exact or T2 normalized-name only. Fuzzy/alias T3 is disabled in production mode.">
-<option value="1">T1 Exact</option>
-<option value="2" selected>T2 Similar (recommended)</option>
-
-</select>
-<button class="btn sm" id="btnClAutoGuess" title="Automatically match client headers by exact or normalized name. Fuzzy/alias T3 is disabled in the strict production profile.">✨ Auto-Match</button>
-<label class="meta" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" title="Required before saving when normalized-name (T2) links exist."><input id="clApproveT2" type="checkbox"/> Approve all T2 links</label>
 </div>
 <div class="listbox" id="clSrcList"></div>
 <div class="preview-note" style="margin-top:8px;margin-bottom:0">
-<b>How to use:</b> ① click a client header row on the right ② click one of our fields on the left → its value is linked to that slot.
+<b>How to use:</b> ① select a client row ② click its source field ③ review the source number and samples above ④ Confirm &amp; Next. Confirmed rows still need full-file validation after saving.
           </div>
 </article>
 <!-- Client headers -->
@@ -761,25 +775,17 @@ CUSTODIAN	Custodian
 <span class="meta">A pasted field map is required for renamed columns.</span>
 </div>
 <p style="font-size:12.8px;color:var(--muted);margin-bottom:8px;line-height:1.7">
-          If the output header is a reordered subset of the original header, <b>✨ Auto-Match</b> links matching names automatically.
+          Files load with no links. Apply an explicit map using exact original and output names (including case and whitespace).
           For renamed columns such as BEGDOC → Bates_Begin, paste a two-column field map below:<br/>
 <b>left = original column name, right = output or delivery column name</b>.
         </p>
-<textarea id="valMapText" placeholder="Optional — 2-column map (original header / output header):
+<textarea id="valMapText" placeholder="2-column map (original header / output header):
 BEGDOC	Bates_Begin
 CUSTODIAN	Custodian
 ..." spellcheck="false"></textarea>
 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
 <button class="btn" id="btnValMapParse">✔ Apply Pasted Map</button>
-<label for="valTierSel" class="meta" style="font-size:12px">Auto-Match tier:</label>
-<select id="valTierSel" title="Strict auto-match: T1 exact or T2 normalized-name only. Fuzzy/alias T3 is disabled in production mode.">
-<option value="1">T1 Exact</option>
-<option value="2" selected>T2 Similar (recommended)</option>
-
-</select>
-<button class="btn primary" id="btnValAutoMap">✨ Auto-Match Headers</button>
 <button class="btn" id="btnValClearMap">Clear Map</button>
-<label class="meta" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" title="Required before validation when normalized-name (T2) links exist."><input id="valApproveT2" type="checkbox"/> Approve all T2 links</label>
 <span class="cl-sample" id="valMapPreview" style="margin-top:0"></span>
 <span style="flex:1"></span>
 <button class="btn-big" id="btnValidate">🚀 Validate Files</button>
@@ -840,8 +846,8 @@ CUSTODIAN	Custodian
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const TOOL_VERSION = '2.18.5';
-const TOOL_BUILD = '2026-09-06-h7';
+const TOOL_VERSION = '2.19.1';
+const TOOL_BUILD = '2026-09-17-m2';
 // R1: set by the startup pure-core self-test. When false, saving & validation
 // are disabled (fail-closed) so a regression in the core splitters/parsers can
 // never cause a silent bad delivery.
@@ -1633,112 +1639,6 @@ function detectFormat(text){
   return 'pipe';
 }
 
-/* =============================================================
-   3-tier field auto-matching (pure core)
-   ============================================================= */
-/* Higher maxTier maps strictly more rows: each tier only fills names the lower
-   tiers could not, so the mapped count is monotonic in the chosen tier.
-     tier 1 EXACT     exact source-cell equality (whitespace-sensitive, no trim)
-     tier 2 SIMILAR   normalized equality (lowercase, drop non alnum / Hangul)
-     tier 3 LENIENT   alias/canonical equality or safe fuzzy similarity
-   Ambiguity (several source columns tie) is never guessed - a tie maps nothing.
-   v2.18.2: tier 1 no longer trims either side. A source header or pasted name
-   with leading/trailing whitespace is preserved verbatim in output and only
-   matches at tier 2+, so whitespace normalization is never hidden inside a
-   claim of "exact" matching. */
-function foldHeader(s){
-  return String(s == null ? '' : s).toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9\uAC00-\uD7A3]+/g, '');
-}
-/* eDiscovery field-name synonym groups (folded). Two names that share a group
-   are treated as the same field at tier 3. Single-member groups are ignored. */
-const FIELD_ALIAS_GROUPS = [
-  ['begdoc','batesbegin','batesbegindoc','begbates','beginbates','beginningbatesnumber'],
-  ['enddoc','batesend','endbates','endingbates','batesenddoc','enddocid'],
-  ['docid','documentid','documentnumber','docno','docnum'],
-  ['controlno','controlnumber','controlnum','idcontrol'],
-  ['custodian','custodianname','cust'],
-  ['batesno','batesnumber','bates','batesnumbersequence'],
-  ['begno','beginnumber','begseqno','begsequence'],
-  ['endno','endnumber','endseqno','endsequence'],
-  ['familyid','familyno','familynumber','family'],
-  ['attachid','attachmentid','attachno','attachmentno'],
-  ['begattach','beginattach','beginattachmentid','begattachmentid'],
-  ['endattach','endattachmentid','endattachmentno']
-];
-function aliasFamily(fold){
-  for(let g = 0; g < FIELD_ALIAS_GROUPS.length; g++){
-    if(FIELD_ALIAS_GROUPS[g].indexOf(fold) >= 0) return FIELD_ALIAS_GROUPS[g];
-  }
-  return null;
-}
-function aliasEquals(aFold, bFold){
-  if(aFold === bFold) return true;
-  const A = aliasFamily(aFold), B = aliasFamily(bFold);
-  return A !== null && A === B;
-}
-function levenshtein(a, b){
-  if(a === b) return 0;
-  const m = a.length, n = b.length;
-  if(!m) return n; if(!n) return m;
-  let p = new Array(n + 1), q = new Array(n + 1);
-  for(let j = 0; j <= n; j++) p[j] = j;
-  for(let i = 1; i <= m; i++){
-    q[0] = i; const ca = a.charCodeAt(i - 1);
-    for(let j = 1; j <= n; j++){
-      const cost = ca === b.charCodeAt(j - 1) ? 0 : 1;
-      q[j] = Math.min(p[j] + 1, q[j - 1] + 1, p[j - 1] + cost);
-    }
-    const t = p; p = q; q = t;
-  }
-  return p[n];
-}
-/* Similarity used only at tier 3: 1 for identical or alias-equal, else a
-   normalized edit-distance ratio with a length-gap guard. */
-function headerNameSim(a, b){
-  const A = foldHeader(a), B = foldHeader(b);
-  if(!A || !B) return 0;
-  if(A === B) return 1;
-  if(aliasEquals(A, B)) return 0.98;
-  const L = Math.max(A.length, B.length);
-  if(L < 3) return 0;
-  let sim = 1 - levenshtein(A, B) / L;
-  const mn = Math.min(A.length, B.length);
-  if(Math.abs(A.length - B.length) > Math.max(2, Math.round(L * 0.5))) sim = Math.min(sim, 0.5);
-  return sim;
-}
-/* Best-match among srcNames for `name` within maxTier. Returns {idx,tier} or
-   null when nothing is safe (ambiguous tie / below threshold / no margin). */
-function findHeaderMatch(name, srcNames, maxTier){
-  const target = String(name == null ? '' : name);
-  // tier 1: exact (raw equality - whitespace and case are significant)
-  { const hits = [];
-    for(let i = 0; i < srcNames.length; i++) if(srcNames[i] === target) hits.push(i);
-    if(hits.length === 1) return { idx: hits[0], tier: 1 }; }
-  if(maxTier >= 2){
-    const f = foldHeader(target);
-    const hits = [];
-    for(let i = 0; i < srcNames.length; i++){
-      if(srcNames[i] !== target && foldHeader(srcNames[i]) === f) hits.push(i);
-    }
-    if(hits.length === 1) return { idx: hits[0], tier: 2 };
-  }
-  if(maxTier >= 3){
-    let best = -1, bestSim = -0.01, second = -0.02;
-    for(let i = 0; i < srcNames.length; i++){
-      const sim = headerNameSim(target, srcNames[i]);
-      if(sim > bestSim){ second = bestSim; bestSim = sim; best = i; }
-      else if(sim > second){ second = sim; }
-    }
-    const THR = 0.82, MARGIN = 0.04;
-    if(best >= 0 && bestSim >= THR && (bestSim - second) >= MARGIN && srcNames[best] !== target){
-      return { idx: best, tier: 3 };
-    }
-  }
-  return null;
-}
-
 /* Shared record-walker that mirrors buildFileIndex's header rule so EVERY
    full-file consumer (preflight, reorder save, client save, validator pairing)
    identifies the header exactly as the loader does: skip leading blank physical
@@ -2224,19 +2124,11 @@ const cl = {
   rows: [],        // {name (output header), hint (left col our-name when 2-col map), mapped: null|srcIdx}
   sel: null,       // selected client row index
   srcQ: '',
-  pastedName: ''
+  pastedName: '',
+  pasteDirty: false,
+  history: [],
+  filter: 'all'
 };
-
-function clearClientT2Approval(){
-  const cb = document.getElementById('clApproveT2');
-  if(cb) cb.checked = false;
-  clientT2ApprovalUtc = null;
-}
-function unapprovedClientT2Count(){
-  const n = (cl.rows || []).filter(r=>r.mapped !== null && r.tier === 2).length;
-  const cb = document.getElementById('clApproveT2');
-  return n && !(cb && cb.checked) ? n : 0;
-}
 
 function updateSaveGuardUi(){
   const un = unclosedQualifierInfo();
@@ -2687,7 +2579,7 @@ function showIssues(){
     list.push(`📏 ${p.mismatchedRows.toLocaleString()} row${p.mismatchedRows===1?'':'s'} differ from the header column count (${mainCnt}). Strict mode blocks every field-count mismatch (short or long); it never pads missing cells or discards extra cells.` + (parts.length ? ' Breakdown (limited detail): ' + parts.join(', ') : ''));
   }
   const srcDup = duplicateNameList(state.headerNames);
-  if(srcDup.length) list.push('⚠️ Duplicate source headers detected: ' + srcDup.map(d=>`${d.name} (cols ${d.columns.join(', ')})`).join('; ') + '. Name-based auto-mapping is disabled for ambiguous duplicates.');
+  if(srcDup.length) list.push('⚠️ Duplicate source headers detected: ' + srcDup.map(d=>`${d.name} (cols ${d.columns.join(', ')})`).join('; ') + '. Use source column numbers to distinguish duplicate names.');
   if(p.dataRecords === 0) list.push('📄 Header row only — no data rows found.');
   if(p.multiline > 0){
     list.push(`🚫 ${p.multiline.toLocaleString()} record${p.multiline===1?'':'s'} contain raw CR/LF inside a quoted field. Strict FE/DC4 treats this as unsafe; saving is blocked.`);
@@ -2964,8 +2856,7 @@ async function launchSavedValidation(){
   try{
     lastSavedOutput = await handle.getFile();
     // Load both real files into the validator (source = already-loaded File).
-    // autoMap=false: the mapping/identity is seeded from the save below, so the
-    // generic "auto-match after both loads" behaviour must not run here.
+    // Reuse the explicit saved column-index plan; never infer links from names.
     const loadedSource = await valLoadSide('src', sourceFile, false);
     const loadedOutput = await valLoadSide('out', lastSavedOutput, false);
     if(!loadedSource || !loadedOutput || validator.src !== sourceFile || validator.out !== lastSavedOutput){
@@ -3487,9 +3378,6 @@ const clPreviewTbody = $('#clPreviewBody');
 const clOutName = $('#clOutName');
 const clSaveFormatInfo = $('#clSaveFormatInfo');
 
-function normKey(s){
-  return String(s).toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]+/g,'').trim();
-}
 function duplicateNameList(names){
   const seen = new Map();
   (names || []).forEach((name, idx)=>{
@@ -3500,23 +3388,8 @@ function duplicateNameList(names){
   return Array.from(seen.entries()).filter(([,idxs])=>idxs.length > 1)
     .map(([name,idxs])=>({name, columns:idxs.map(i=>i+1)}));
 }
-function uniqueNormalizedIndex(names, candidate){
-  const key = normKey(candidate);
-  if(!key) return null;
-  const hits = [];
-  (names || []).forEach((name,i)=>{ if(normKey(name) === key) hits.push(i); });
-  return hits.length === 1 ? hits[0] : null;
-}
-
-/* Multi-cell fieldmap / header-list parser -------------------- */
-const FIELDMAP_HEADER_SIG = /(client\s*header|clientfield|client\s*field|our\s*field|ours\s*field|export\s*field|export|load\s*file\s*field|source\s*field|field\s*name|required\s*field|header\s*name)/i;
-
 function cleanCell(c){
-  // v2.18.2: preserve whitespace VERBATIM (no trim). The strict profile never
-  // silently normalizes a pasted header — trimming would rewrite the exact
-  // client-specified output header. Whitespace differences are only reconciled
-  // by the explicit T2 normalized auto-match, never hidden inside a claim of
-  // exactness. A lone UTF-16 surrogate still fails closed via sanitize.
+  // Preserve pasted cells exactly; never normalize header names.
   return sanitizeScalarValue(String(c == null ? '' : c));
 }
 
@@ -3562,6 +3435,104 @@ function parsePastedClientHeaders(text, requirePairs = false){
 }
 
 /* Row mapping helpers ----------------------------------------- */
+// Review is bound to the analyzed source, output position/name, source column,
+// and every other output sharing that source. Changes cannot retain approval.
+function clReviewKey(r,pos){
+  return JSON.stringify([state.parseInfo && state.parseInfo.byteHash,pos,r.name,r.mapped,
+    state.headerNames[r.mapped],cl.rows.map((x,i)=>x.mapped===r.mapped?i:null).filter(i=>i!==null)]);
+}
+function clValidLink(r){
+  return r && Number.isInteger(r.mapped) && r.mapped>=0 && r.mapped<state.headerNames.length;
+}
+function clIsReviewed(r,pos){
+  return !!(!cl.pasteDirty && clValidLink(r) && r.review && r.review.key===clReviewKey(r,pos));
+}
+function clCheckpoint(){
+  cl.history.push({rows:cl.rows.map(r=>({...r,review:null})),sel:cl.sel,pasteText:clPasteText.value,pasteDirty:cl.pasteDirty});
+  if(cl.history.length>20) cl.history.shift();
+  invalidateLastSaved();
+  $('#clAllowReplace').checked=false;
+}
+function clUndo(){
+  const previous=cl.history.pop();
+  if(!previous) return;
+  cl.rows=previous.rows; cl.sel=previous.sel;
+  clPasteText.value=previous.pasteText; cl.pasteDirty=previous.pasteDirty;
+  invalidateLastSaved();
+  $('#clAllowReplace').checked=false;
+  clRenderAll();
+  toast('Last change undone. Confirm the restored plan again before saving.');
+}
+function clNextPending(){
+  const start=cl.sel===null ? -1 : cl.sel;
+  for(let offset=1;offset<=cl.rows.length;offset++){
+    const i=(start+offset)%cl.rows.length;
+    if(!clIsReviewed(cl.rows[i],i)){
+      selectClRow(i);
+      const row=clRowsList.querySelector('[data-position="'+i+'"]');
+      if(row) row.scrollIntoView({block:'nearest'});
+      return;
+    }
+  }
+  clRenderAll();
+  toast('All mapping rows confirmed. Review the final output order, then save and validate.');
+}
+function clConfirmSelected(){
+  if(cl.pasteDirty){toast('Client headers changed. Press Parse Header List, then map and review the new plan.');return;}
+  const r=cl.rows[cl.sel];
+  if(!clValidLink(r)){toast('Map this output row to a valid source column first.');return;}
+  r.review={key:clReviewKey(r,cl.sel),utc:new Date().toISOString()};
+  invalidateLastSaved();
+  $('#clAllowReplace').checked=false;
+  clNextPending();
+}
+function clReviewReport(){
+  return {toolVersion:TOOL_VERSION,build:TOOL_BUILD,generatedUtc:new Date().toISOString(),
+    scope:'Operator mapping checklist only. Not full-file validation or saved-disk verification.',
+    unappliedHeaderEdits:cl.pasteDirty,
+    sourceName:state.file?state.file.name:null,sourceSHA256:state.parseInfo?state.parseInfo.byteHash:null,
+    rows:cl.rows.map((r,i)=>({outputColumn:i+1,outputHeader:r.name,
+      sourceColumn:clValidLink(r)?r.mapped+1:null,sourceHeader:clValidLink(r)?state.headerNames[r.mapped]:null,
+      status:!clValidLink(r)?'unmapped':clIsReviewed(r,i)?'confirmed':'needs-review',
+      confirmedUtc:clIsReviewed(r,i)?r.review.utc:null,
+      sharedWithOutputColumns:clValidLink(r)?cl.rows.flatMap((x,j)=>j!==i&&x.mapped===r.mapped?[j+1]:[]):[]}))};
+}
+function clRenderReview(){
+  const confirmed=cl.rows.filter((r,i)=>clIsReviewed(r,i)).length;
+  const unmapped=cl.rows.filter(r=>!clValidLink(r)).length;
+  const reused=[...clUsedBySrc().values()].filter(a=>a.length>1).length;
+  $('#clProgress').textContent=`${confirmed} / ${cl.rows.length} confirmed · ${cl.rows.length-unmapped-confirmed} need review · ${unmapped} unmapped · ${reused} reused source(s)`+
+    (cl.rows.length ? (confirmed===cl.rows.length?' — Mapping review complete.':' — Save blocked until every row is confirmed.'):'');
+  $('#clReviewProgress').max=cl.rows.length||1;
+  if(cl.pasteDirty) $('#clProgress').textContent='Save blocked — client headers changed. Press Parse Header List before mapping and review.';
+  $('#clReviewProgress').value=confirmed;
+  $('#btnClUndo').disabled=!cl.history.length;
+  $('#btnClNext').disabled=!cl.rows.length || confirmed===cl.rows.length;
+  $('#btnClConfirm').disabled=cl.pasteDirty || !clValidLink(cl.rows[cl.sel]);
+  $('#btnClReviewDownload').disabled=!cl.rows.length;
+  const box=$('#clReviewDetail'); box.innerHTML='';
+  const r=cl.rows[cl.sel];
+  const add=(tag,text)=>{const e=document.createElement(tag);e.textContent=text;box.appendChild(e);};
+  if(!r){add('p','Select an output row to review its source link.');return;}
+  add('h3',`Output #${cl.sel+1} / ${cl.rows.length}: ${JSON.stringify(r.name)}`);
+  if(r.hint!==null && r.hint!==undefined) add('p','Pasted source reference: '+JSON.stringify(r.hint)+' (reference only; choose the source manually)');
+  if(!clValidLink(r)){add('p','Unmapped — choose a source field from the list below.');return;}
+  add('p',`← Source #${r.mapped+1}: ${JSON.stringify(state.headerNames[r.mapped])} · ${clIsReviewed(r,cl.sel)?'Confirmed':'Needs review'}`);
+  const shared=(clUsedBySrc().get(r.mapped)||[]).filter(i=>i!==cl.sel);
+  if(shared.length) add('p','Reused source — also linked to output '+shared.map(i=>'#'+(i+1)+' '+JSON.stringify(cl.rows[i].name)).join(', ')+'. Confirm that copying this value is intentional.');
+  add('p','Sample values from the first available preview records (JSON quotes expose spaces and tabs; long values are truncated). This is a sample, not a full-file check.');
+  const samples=(state.previews||[]).slice(0,3);
+  if(!samples.length) add('p','No sample records available. Check the delivery specification before confirming.');
+  samples.forEach((entry,i)=>{
+    const rowNo=entry&&entry.row?entry.row:i+1;
+    if(entry&&entry.omitted){add('p',`Record ${rowNo}: preview omitted for a large record.`);return;}
+    try{
+      const fields=fmtInfo().split(typeof entry==='string'?entry:entry.record);
+      const value=fields[r.mapped];
+      add('pre',`Record ${rowNo}: `+(typeof value==='string'?JSON.stringify(value.slice(0,300))+(value.length>300?' … [truncated]':''):'[value unavailable]'));
+    }catch(e){add('p',`Record ${rowNo}: sample could not be parsed.`);}
+  });
+}
 /* srcIdx -> array of client row indices currently using that source.
    One source field may feed many client headers (1:N), so every linked
    row is collected instead of overwriting a single mapping. */
@@ -3579,42 +3550,53 @@ function clUsedBySrc(){
 
 function selectClRow(pos){
   cl.sel = pos;
+  $('#clAllowReplace').checked = false;
   clRenderAll();
 }
 function clUnmapRow(pos){
   if(!cl.rows[pos]) return;
+  clCheckpoint();
+  cl.rows[pos].review = null;
   cl.rows[pos].mapped = null;
   cl.rows[pos].tier = null;
-  clearClientT2Approval();
+
   clRenderAll();
 }
 function clMapSrcToRow(srcIdx, rowIdx){
-  if(cl.sel === null) return false;
-  if(srcIdx == null || rowIdx == null || !cl.rows[rowIdx]) return false;
+  if(!Number.isInteger(srcIdx) || srcIdx < 0 || srcIdx >= state.headerNames.length || !Number.isInteger(rowIdx) || !cl.rows[rowIdx]) return false;
+  const row = cl.rows[rowIdx];
+  if(row.mapped === srcIdx) return false;
+  if(row.mapped !== null && !$('#clAllowReplace').checked){ toast("This row already has a link. Enable Allow replacing this row's link before changing it."); return false; }
+  clCheckpoint();
+  row.review = null;
+  $('#clAllowReplace').checked = false;
   // Link only this row. Other client rows may already point at the same source
   // field (e.g. BEGDOC → Bates_Begin AND BEGDOC → Prod_Bates) — those 1:N
   // mappings are intentionally preserved.
   cl.rows[rowIdx].mapped = srcIdx;
   cl.rows[rowIdx].tier = 'manual';
-  clearClientT2Approval();
+
   return true;
 }
 function clRemoveRow(pos){
+  clCheckpoint();
   cl.rows.splice(pos,1);
-  clearClientT2Approval();
+
   if(cl.sel === pos) cl.sel = null;
   else if(cl.sel !== null && cl.sel > pos) cl.sel--;
   clRenderAll();
 }
 function clMoveRow(from, to){
   if(from === to || from < 0 || to < 0 || to >= cl.rows.length) return;
+  clCheckpoint();
   const item = cl.rows.splice(from,1)[0];
   cl.rows.splice(to,0,item);
-  clearClientT2Approval();
+
   cl.sel = to;
   clRenderAll();
 }
 function clResetRows(){
+  cl.history = [];
   cl.rows = [];
   cl.sel = null;
   clRenderAll();
@@ -3622,8 +3604,13 @@ function clResetRows(){
 /* Called after a source file is (re)parsed — clears client UI state.
    Safe via typeof guard because this function is defined after loadFile. */
 function clResetUi(){
+  cl.pasteDirty = false;
+  cl.history = [];
+  cl.filter = 'all';
+  $('#clFilter').value = 'all';
+  $('#clAllowReplace').checked = false;
   cl.rows = [];
-  clearClientT2Approval();
+
   cl.sel = null;
   clPasteText.value = '';
   clPastePreview.textContent = '';
@@ -3642,6 +3629,7 @@ function clRenderAll(){
   renderClSrc();
   renderClRows();
   renderClPreview();
+  clRenderReview();
   // Keep the unmapped hard-stop checkbox in sync with the current mapping
   // (runs after every parse / unmap / map / remove / move action).
   if(typeof updateSaveGuardUi === 'function') updateSaveGuardUi();
@@ -3683,9 +3671,7 @@ function renderClSrc(){
       }
       const ok = clMapSrcToRow(i, cl.sel);
       if(ok){
-        renderClSrc();
-        renderClRows();
-        renderClPreview();
+        clRenderAll();
         toast(`Mapped: ${name} → ${cl.rows[cl.sel].name}`);
       }
     });
@@ -3715,9 +3701,13 @@ function renderClRows(){
   if(b) b.textContent = `${unmapped} unmapped client header${unmapped===1?'':'s'}`;
 
   clRowsList.innerHTML = '';
+  const used = clUsedBySrc();
   cl.rows.forEach((r,pos)=>{
+    if(cl.filter === 'pending' && clIsReviewed(r,pos) && cl.sel !== pos) return;
+    if(cl.filter === 'reuse' && (used.get(r.mapped)||[]).length < 2 && cl.sel !== pos) return;
     const row = document.createElement('div');
     row.className = 'client-row' + (cl.sel === pos ? ' sel' : '');
+    row.dataset.position=String(pos);
     const no = document.createElement('span'); no.className='cno'; no.textContent=String(pos+1);
     const nm = document.createElement('span'); nm.className='cname'; nm.textContent=r.name; nm.title=r.name;
     const chip = document.createElement('span');
@@ -3727,30 +3717,25 @@ function renderClRows(){
       const srcName = (r.mapped >= 0 && r.mapped < state.headerNames.length)
         ? state.headerNames[r.mapped]
         : '(invalid source index — unmap & remap)';
-      const b = document.createElement('b'); b.textContent = srcName;
-      const tb = document.createElement('span');
-      if(r.tier === 1 || r.tier === 2 || r.tier === 3){
-        tb.textContent = 'T' + r.tier;
-        tb.style.cssText = (r.tier === 3)
-          ? 'font-size:9px;padding:0 5px;border-radius:6px;background:#fff3e0;color:#a15c00;border:1px solid #f0cf9f;margin-left:5px;white-space:nowrap;'
-          : 'font-size:9px;padding:0 5px;border-radius:6px;background:#e7efff;color:#1556c9;margin-left:5px;white-space:nowrap;';
-        tb.title = (r.tier === 3)
-          ? 'Low-confidence lenient auto-match (T3) — verify before saving'
-          : (r.tier === 2 ? 'Matched by normalized name (T2)' : 'Matched exactly (T1)');
-      }
+      const b = document.createElement('b'); b.textContent = `#${r.mapped+1} ${srcName}`;
       const un = document.createElement('button'); un.className='unlink'; un.textContent='✕'; un.type='button';
       un.title='Unmap this field';
       un.addEventListener('click', e=>{ e.stopPropagation(); clUnmapRow(pos); toast(`Unmapped: ${r.name}`); });
-      chip.append(dir, b, tb, un);
+      chip.append(dir, b, un);
     } else {
       chip.className='cmap un';
-      const b = document.createElement('b'); b.textContent='(Empty Header)';
+      const b = document.createElement('b'); b.textContent='Unmapped';
       chip.appendChild(b);
     }
     // Clicking the row selects it; clicking a mapped chip (except its ✕) also selects
     chip.addEventListener('click', e=>{ e.stopPropagation(); selectClRow(pos); });
     // The mapping chip sits left (next to the number) so the header name gets wide room.
-    row.append(no, chip, nm);
+    const status = document.createElement('span');
+    const reviewed = clIsReviewed(r,pos);
+    status.className = 'mapping-state' + (reviewed ? ' confirmed' : '');
+    status.textContent = r.mapped === null ? 'Unmapped' : reviewed ? 'Confirmed' : 'Needs review';
+    if((used.get(r.mapped)||[]).length > 1) status.textContent += ' · Reused';
+    row.append(no, chip, nm, status);
     row.addEventListener('click', ()=> selectClRow(pos));
     clRowsList.appendChild(row);
   });
@@ -3837,6 +3822,7 @@ async function saveClientFileCore(){
   if(state.parseInfo && state.parseInfo.parseErrors){ toast(`❌ Save blocked: ${state.parseInfo.parseErrors} malformed FE/DC4 record(s).`); return; }
   if(!state.file){ toast('No file loaded.'); return; }
   if(cl.rows.length === 0){ toast('⚠️ No client header list. Paste headers above and press Parse first.'); return; }
+  if(cl.pasteDirty){toast('⛔ Save blocked — client headers changed. Press Parse Header List, then map and review again.');return;}
 
   // ---- Save guards (hard stops before any file dialog) ----
   if(state.utf16TruncatedTail){
@@ -3865,11 +3851,8 @@ async function saveClientFileCore(){
     updateSaveGuardUi();
     return;
   }
-  const unapprovedT2 = unapprovedClientT2Count();
-  if(unapprovedT2 > 0){
-    toast(`⛔ Save blocked — ${unapprovedT2} normalized-name (T2) mapping${unapprovedT2===1?' requires':'s require'} explicit operator approval.`);
-    return;
-  }
+  const pendingReview = cl.rows.filter((r,i)=>!clIsReviewed(r,i)).length;
+  if(pendingReview){ toast('⛔ Save blocked — '+pendingReview+' mapping(s) need review. Review each row and press Confirm & Next.'); return; }
 
   const clientDupHeaders = duplicateNameList(rows.map(r=>r.name));
   if(clientDupHeaders.length){
@@ -4079,13 +4062,17 @@ async function saveClientFileCore(){
 
 /* Client-mode events ------------------------------------------ */
 function bindClientMode(){
-  const clT2Approve = document.getElementById('clApproveT2');
-  if(clT2Approve) clT2Approve.addEventListener('change', ()=>{
-    clientT2ApprovalUtc = clT2Approve.checked ? new Date().toISOString() : null;
+  clPasteText.addEventListener('input',()=>{
+    cl.pasteDirty=true;
+    cl.rows.forEach(r=>{r.review=null;});
     invalidateLastSaved();
+    clRenderAll();
   });
   btnClParsePaste.addEventListener('click', ()=>{
-    clearClientT2Approval();
+    cl.pasteDirty=false;
+
+    cl.history = []; invalidateLastSaved();
+    $('#clAllowReplace').checked = false;
     cl.rows = []; cl.sel = null; clRenderAll();
     let out;
     try { out = parsePastedClientHeaders(clPasteText.value); }
@@ -4107,7 +4094,9 @@ function bindClientMode(){
   });
 
   btnClClearPaste.addEventListener('click', ()=>{
-    clearClientT2Approval();
+
+    clCheckpoint();
+    cl.pasteDirty=false;
     clPasteText.value = '';
     clPastePreview.textContent = '';
     cl.rows = [];
@@ -4117,47 +4106,21 @@ function bindClientMode(){
   });
 
   clSrcSearch.addEventListener('input', renderClSrc);
+  $('#clFilter').addEventListener('change',()=>{cl.filter=$('#clFilter').value;clRenderAll();});
+  $('#btnClNext').addEventListener('click',clNextPending);
+  $('#btnClConfirm').addEventListener('click',clConfirmSelected);
+  $('#btnClUndo').addEventListener('click',clUndo);
+  $('#btnClReviewDownload').addEventListener('click',()=>downloadTextFile(timestampedDownloadName('mapping_review','json'),JSON.stringify(clReviewReport(),null,2)));
+
 
   $('#btnClUnlinkAll').addEventListener('click', ()=>{
-    clearClientT2Approval();
-    cl.rows.forEach(r=> r.mapped = null);
+
+    clCheckpoint();
+    cl.rows.forEach(r=> {r.mapped = null; r.review = null;});
     clRenderAll();
     toast('All client header mappings cleared.');
   });
 
-  $('#btnClAutoGuess').addEventListener('click', ()=>{
-    if(cl.rows.length === 0){ toast('Load client headers first (paste & Parse).'); return; }
-    const sel = document.getElementById('clTierSel');
-    const maxTier = (sel && sel.value) ? Math.max(1, Math.min(3, Number(sel.value) || 2)) : 2;
-    const srcNames = state.headerNames;
-    let n1 = 0, n2 = 0, n3 = 0, skipped = 0;
-    // Guard: within one run a tier-3 (fuzzy/alias) source is used once only, so
-    // several *different* client headers cannot silently claim the same column.
-    const usedT3 = new Set();
-    clearClientT2Approval();
-    cl.rows.forEach(r=>{
-      if(r.mapped !== null) return;
-      const targets = [r.hint, r.name].filter(Boolean);
-      let res = null;
-      for(const t of targets){ res = findHeaderMatch(t, srcNames, maxTier); if(res) break; }
-      if(res){
-        if(res.tier === 3 && usedT3.has(res.idx)){ skipped++; return; }
-        if(res.tier === 3) usedT3.add(res.idx);
-        r.mapped = res.idx; r.tier = res.tier;
-        if(res.tier === 1) n1++; else if(res.tier === 2) n2++; else n3++;
-      }
-    });
-    clRenderAll();
-    const parts = [];
-    if(n1) parts.push('T1 exact ' + n1);
-    if(n2) parts.push('T2 similar ' + n2);
-    if(n3) parts.push('T3 lenient ' + n3);
-    let msg = 'Auto-match (tier ' + maxTier + ') — ' + (parts.length ? parts.join(', ') : '0 mapped');
-    if(skipped) msg += ' · ' + skipped + ' lenient link(s) skipped (source already used).';
-    else msg += '.';
-    if(n3) msg += ' Review the highlighted lenient links before saving.';
-    toast(msg);
-  });
   const btn = (id,fn)=>{ const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
   btn('btnClMoveTop', ()=>{ if(cl.sel===null){ toast('Select a client header row first.'); return; } clMoveRow(cl.sel,0); });
   btn('btnClMoveUp', ()=>{ if(cl.sel===null){ toast('Select a client header row first.'); return; } clMoveRow(cl.sel, Math.max(0, cl.sel-1)); });
@@ -4252,7 +4215,7 @@ const validator = {
   srcRecords: 0,
   outRecords: 0,
   mapping: null,     // array per OUTPUT column -> src col index or null(blank)
-  mappingTiers: null,// per OUTPUT column: 'manual' | 1 | 2 | null
+  mappingTiers: null,// explicit provenance per OUTPUT column: 'manual-exact' | 'saved-approved' | null
   mappingSource: 'none', // 'auto' | 'pasted'
   expectedBlank: new Set() // output column indexes explicitly approved as blank
 };
@@ -4282,14 +4245,10 @@ const validatorLoadToken = { src:0, out:0 };
 let identityUserChoice = null;
 let currentValidationOperation = null;
 let identityApprovalUtc = null;
-let validatorT2ApprovalUtc = null;
-let clientT2ApprovalUtc = null;
 
 function clearValidatorApprovals(){
   const i = document.getElementById('valApproveIdentity'); if(i) i.checked = false;
-  const t = document.getElementById('valApproveT2'); if(t) t.checked = false;
   identityApprovalUtc = null;
-  validatorT2ApprovalUtc = null;
 }
 function cancelCurrentValidation(reason, publish){
   const op = currentValidationOperation;
@@ -4337,7 +4296,7 @@ function validationPreflightBlock(){
   const identitySel = $('#valIdentityField');
   const identityIdx = identitySel && identitySel.value !== '' ? Number(identitySel.value) : -1;
   if(!validator.src || !validator.out) return 'load both the original and the output file.';
-  if(!validator.mapping || validator.mapping.length !== (validator.outHdr||[]).length) return 'build a full column mapping first (Auto-Match or paste).';
+  if(!validator.mapping || validator.mapping.length !== (validator.outHdr||[]).length) return 'apply an explicit column mapping first.';
   if(identityIdx < 0) return 'select the approved record identity field.';
   const identityApproval = document.getElementById('valApproveIdentity');
   if(!(identityApproval && identityApproval.checked)) return 'explicitly approve the selected identity field.';
@@ -4346,9 +4305,6 @@ function validationPreflightBlock(){
   if(validator.mapping.some(si => si !== null && (!Number.isInteger(si) || si < 0 || si >= (validator.srcHdr||[]).length))){
     return 'the mapping contains an invalid source column index; unmap and remap it.';
   }
-  const t2Count = (validator.mappingTiers || []).filter(t=>t===2).length;
-  const t2Approval = document.getElementById('valApproveT2');
-  if(t2Count && !(t2Approval && t2Approval.checked)) return `explicitly approve ${t2Count} normalized-name (T2) mapping${t2Count===1?'':'s'}.`;
   const unresolved = [];
   validator.mapping.forEach((si,oi)=>{ if(si === null && !validator.expectedBlank.has(oi)) unresolved.push(oi); });
   if(unresolved.length) return `${unresolved.length} output column${unresolved.length===1?' is':'s are'} unmapped and not marked Expected Blank.`;
@@ -4405,9 +4361,8 @@ function valClearMappingSummary(note){
   valInvalidateResult(note || 'Column mapping changed — validation must be run again.');
 }
 
-async function valLoadSide(kind, file, autoMap){
+async function valLoadSide(kind, file){
   if(!file) return;
-  if(autoMap === undefined) autoMap = true;
   const loadToken = ++validatorLoadToken[kind];
   const loadBusyOwner = newBusyOwner('validator-load-' + kind);
   // v2.18.1 HIGH fix: remove the old side and old PASS before parsing begins.
@@ -4442,11 +4397,6 @@ async function valLoadSide(kind, file, autoMap){
     title.textContent = file.name;
     tag.textContent = `${meta.label} · ${metaFmt.label} · ${parsed.dataRecords.toLocaleString()} data records · ${parsed.headerNames.length} columns`;
     valClearMappingSummary();
-    // B-1: once BOTH files are present in the manual validator, link headers by
-    // name automatically — no extra ✨ Auto-Match button press required.
-    if(autoMap && validator.src && validator.out && validator.srcHdr && validator.outHdr){
-      valAutoMap();
-    }
     toast(`${kind==='src'?'Original':'Output'} loaded — ${file.name}`);
     return true;
   } catch(err){
@@ -4471,34 +4421,20 @@ function valFileName(side){
   return validator.out ? validator.out.name : 'output';
 }
 
-/* Convert pasted field map or auto names into OUTPUT-column→SRC index.
+/* Convert an explicit pasted field map into OUTPUT-column→SRC index.
    Also expose the human readable mapping summary string. */
 function valBuildMapFromPairs(pairs){
+  valClearMappingSummary('Applying a new explicit map — previous result invalidated.');
   validator.expectedBlank = new Set();
-  const t2Approval = document.getElementById('valApproveT2'); if(t2Approval) t2Approval.checked = false;
-  validatorT2ApprovalUtc = null;
   const identityApproval = document.getElementById('valApproveIdentity'); if(identityApproval) identityApproval.checked = false;
   identityApprovalUtc = null;
   if(!validator.srcHdr || !validator.outHdr){ toast('Load both files first.'); return false; }
   const srcIdxByName = new Map();
   validator.srcHdr.forEach((n,i)=> { if(!srcIdxByName.has(n)) srcIdxByName.set(n, []); srcIdxByName.get(n).push(i); });
 
-  const linkFromNames = (srcName) => {
-    // Return BOTH index and truthful provenance. A normalized resolution is
-    // never labelled manual: it is T2 and requires the existing T2 approval.
-    const norm = (s)=>String(s).toLowerCase().replace(/[^a-z0-9\uAC00-\uD7A3]+/g,'');
-    if(srcIdxByName.has(srcName) && srcIdxByName.get(srcName).length === 1){
-      return { idx:srcIdxByName.get(srcName)[0], tier:'manual-exact' };
-    }
-    const nk = norm(srcName); if(!nk) return null;
-    // unique normalized collision only allowed when one exact
-    let found = null, collisions = 0;
-    for(const [name, arr] of srcIdxByName){
-      if(name === srcName || norm(name) === nk){
-        found = arr[0]; collisions += arr.length;
-      }
-    }
-    return collisions === 1 ? { idx:found, tier:2 } : null;
+  const linkFromNames = srcName => {
+    const hits = srcIdxByName.get(srcName);
+    return hits && hits.length === 1 ? {idx:hits[0],tier:'manual-exact'} : null;
   };
 
   const map = [];
@@ -4509,10 +4445,18 @@ function valBuildMapFromPairs(pairs){
   // the first pair for every duplicate occurrence.
   const pairQueues = new Map();
   if(pairs){
-    pairs.forEach(p=>{
-      if(!pairQueues.has(p.out)) pairQueues.set(p.out, []);
-      pairQueues.get(p.out).push(p);
-    });
+    const outputNames = new Set(validator.outHdr);
+    for(const p of pairs){
+      if(!outputNames.has(p.out) || pairQueues.has(p.out)){
+        const error = new Error(!outputNames.has(p.out)
+          ? 'Pasted map references an unknown output header: '+JSON.stringify(p.out)
+          : 'Pasted map repeats an output header: '+JSON.stringify(p.out));
+        reportOperationError('validator-map',error);
+        toast('Pasted map blocked: '+error.message);
+        return false;
+      }
+      pairQueues.set(p.out,[p]);
+    }
   }
   validator.outHdr.forEach((outName, outCol)=>{
     let srcName = null;
@@ -4520,9 +4464,6 @@ function valBuildMapFromPairs(pairs){
     if(queue && queue.length){
       const p = queue.shift();
       srcName = p.src;
-    } else if(!pairs){
-      // pure auto: treat same-named column as a candidate only when unique.
-      if(srcIdxByName.has(outName) && srcIdxByName.get(outName).length === 1) srcName = outName;
     }
     const resolved = srcName != null ? linkFromNames(srcName) : null;
     const si = resolved ? resolved.idx : null;
@@ -4549,49 +4490,6 @@ function valMappingSummaryText(){
     L.push(`${String(outCol+1).padStart(2,' ')}. out[${String(outCol+1).padStart(2,' ')}] ${outName}  ←  ${si===null?'(blank)': 'src['+(si+1)+'] '+srcName}${tier}`);
   });
   return L.join('\n');
-}
-
-function valAutoMap(){
-  if(!validator.src || !validator.out){ toast('Load both files first (original + output).'); return; }
-  if(!validator.srcHdr || !validator.outHdr){ toast('Files loaded but headers are missing.'); return; }
-  const sel = document.getElementById('valTierSel');
-  const maxTier = (sel && sel.value) ? Math.max(1, Math.min(3, Number(sel.value) || 2)) : 2;
-  validator.expectedBlank = new Set();
-  const identityApproval = document.getElementById('valApproveIdentity'); if(identityApproval) identityApproval.checked = false;
-  identityApprovalUtc = null;
-  const srcNames = validator.srcHdr.map(n => String(n == null ? '' : n));
-  const used = new Set();
-  const n = { 1:0, 2:0, 3:0 };
-  const tiers = [];
-  const mapping = validator.outHdr.map((outName)=>{
-    const res = findHeaderMatch(String(outName == null ? '' : outName), srcNames, maxTier);
-    if(!res){ tiers.push(null); return null; }
-    // Tier 1/2 reuse is a deliberate 1:N (identical/duplicate output names).
-    // A tier-3 (fuzzy/alias) match is single-use: it must not claim every column.
-    if(res.tier >= 3 && used.has(res.idx)){ tiers.push(null); return null; }
-    used.add(res.idx);
-    n[res.tier]++;
-    tiers.push(res.tier);
-    return res.idx;
-  });
-  validator.mapping = mapping;
-  validator.mappingTiers = tiers;
-  const t2Approval = document.getElementById('valApproveT2'); if(t2Approval) t2Approval.checked = false;
-  validatorT2ApprovalUtc = null;
-  validator.mappingSource = 'auto';
-  valInvalidateResult('Auto-mapped columns changed — validation must be run again.');
-  valRenderMapping(3);
-  const parts = [];
-  if(n[1]) parts.push('T1 exact ' + n[1]);
-  if(n[2]) parts.push('T2 similar ' + n[2]);
-  if(n[3]) parts.push('T3 lenient ' + n[3]);
-  let msg = 'Auto-Match (tier ' + maxTier + ') — ' + (parts.length ? parts.join(', ') : '0 mapped')
-    + ' · ' + mapping.filter(si=>si===null).length + ' unmapped.';
-  if(n[3]) msg += ' Lenient links are low-confidence — verify before validating.';
-  toast(msg);
-  // B-4: re-select identity to a column that is actually mapped so validation
-  // is not blocked by an unmapped default identity pick.
-  valSelectMappedIdentity();
 }
 
 /* B-4 identity picker. If the user EXPLICITLY chose an identity in the dropdown
@@ -4644,20 +4542,12 @@ function valParsePastedMap(){
     const outN = r.name;
     pairs.push({ src: srcN, out: outN });
   });
-  // If the paste was a single-column list, user only listed output names:
-  // pair each to its same-named original (auto handled if identical exists).
-  const verticalLines = String(text).replace(/^\uFEFF/,'').split(/\r\n|\r|\n/);
-  if(verticalLines.length > 1 && verticalLines[verticalLines.length-1] === '') verticalLines.pop();
-  const wasVertical = verticalLines.every(l=>!l.includes('\t')&&!l.includes('|')&&!l.includes(','));
-  if(wasVertical || pairs.length === 0){
-    // Preserve every character exactly; parsePastedClientHeaders already
-    // rejected internal blank rows and unsafe structure.
-    const lines = parsed.map(r=>r.name);
-    pairs.length = 0;
-    lines.forEach(l => pairs.push({ src: l, out: l }));
+  if(!pairs.length || parsed.some(r=>r.hint===null)){
+    toast('Provide two explicit columns: original header and output header. A one-column list does not define a mapping.');
+    return;
   }
   // Ensure each output col is covered; only overwrite cols whose output header matches one of the pair rows.
-  valBuildMapFromPairs(pairs);
+  if(!valBuildMapFromPairs(pairs)) return;
   validator.mappingSource = 'pasted';
   valRenderMapping(3);
 }
@@ -4803,7 +4693,7 @@ async function valRunValidateCore(validationToken, operation){
   if(identityIdx < 0) return toast('Select the approved record identity field before validation.');
   if(!validator.src || !validator.out){ toast('Both original and output files are required.'); return; }
   if(!validator.mapping || validator.mapping.length !== validator.outHdr.length){
-    toast('Build a column mapping first — ✨ Auto-Match or paste the field map.');
+    toast('Apply an explicit field map first.');
     return;
   }
   if(!Number.isInteger(identityIdx) || identityIdx >= validator.srcHdr.length ||
@@ -5019,8 +4909,7 @@ async function valRunValidateCore(validationToken, operation){
     encMismatch || eolMismatch || mixedEolStrictFail || diskSrcMismatch || diskOutMismatch || analyzedBytesMismatch;
   const status = failed ? VALIDATION_STATUS.FAIL : (stat.expected > 0 ? VALIDATION_STATUS.PASS_WITH_EXPECTED : VALIDATION_STATUS.PASS);
   valReportText = valBuildReportText({ stat, srcRec, outRec, recMatch, headerCountMatch, srcSkip, outSkip, status });
-  const t2Mappings = (validator.mappingTiers || []).filter(t=>t===2).length;
-  valReportText += `\n== Mapping assurance ==\nMapping source    : ${validator.mappingSource}\nLinked columns   : ${validator.mapping.filter(x=>x!==null).length}\nT2 normalized    : ${t2Mappings}\nT2 approval UTC  : ${t2Mappings ? (validatorT2ApprovalUtc || '(approved in current UI session; timestamp unavailable)') : 'not required'}\nIdentity field   : ${validator.srcHdr[identityIdx] || '(unnamed)'} (source column ${identityIdx+1})\nIdentity linked  : YES\nIdentity approved: YES\nIdentity approval UTC: ${identityApprovalUtc || '(approved in current UI session; timestamp unavailable)'}\nExpected blanks  : ${validator.expectedBlank.size}\nUnapproved blanks: 0\n`;
+  valReportText += `\n== Mapping assurance ==\nMapping source    : ${validator.mappingSource}\nLinked columns   : ${validator.mapping.filter(x=>x!==null).length}\nIdentity field   : ${validator.srcHdr[identityIdx] || '(unnamed)'} (source column ${identityIdx+1})\nIdentity linked  : YES\nIdentity approved: YES\nIdentity approval UTC: ${identityApprovalUtc || '(approved in current UI session; timestamp unavailable)'}\nExpected blanks  : ${validator.expectedBlank.size}\nUnapproved blanks: 0\n`;
   if(validator.expectedBlank.size) [...validator.expectedBlank].forEach(oi=>{ valReportText += `  out[${oi+1}] ${validator.outHdr[oi] || '(empty header)'}\n`; });
 
   // ---- Identity row-linkage (G2) ----------------------------------------
@@ -5237,11 +5126,12 @@ function valRefreshIdentityOptions(){
 }
 
 function bindValidator(){
+  val.mapText.addEventListener('input',()=>valClearMappingSummary('Pasted map edited — apply the new map and validate again.'));
   const srcInput = $('#valSrcInput');
   const outInput = $('#valOutInput');
   wireValDrop(val.srcZone, srcInput, (f)=> valLoadSide('src', f));
   wireValDrop(val.outZone, outInput, (f)=> valLoadSide('out', f));
-  // Track the user's explicit identity pick so auto-map / re-parse never
+  // Track the user's explicit identity pick so map changes / re-parse never
   // overwrite it (see valSelectMappedIdentity).
   const idSel = $('#valIdentityField');
   if(idSel) idSel.addEventListener('change', ()=>{
@@ -5257,13 +5147,7 @@ function bindValidator(){
     identityApprovalUtc = idApprove.checked ? new Date().toISOString() : null;
     valInvalidateResult('Identity approval changed — validation must be run again.');
   });
-  const t2Approve = document.getElementById('valApproveT2');
-  if(t2Approve) t2Approve.addEventListener('change', ()=>{
-    validatorT2ApprovalUtc = t2Approve.checked ? new Date().toISOString() : null;
-    valInvalidateResult('T2 mapping approval changed — validation must be run again.');
-  });
   $('#btnValMapParse').addEventListener('click', valParsePastedMap);
-  $('#btnValAutoMap').addEventListener('click', valAutoMap);
   $('#btnValClearMap').addEventListener('click', ()=>{ valClearMappingSummary(); val.mapText.value=''; });
   $('#btnValidate').addEventListener('click', ()=> valRunValidate());
   $('#btnCancelValidation').addEventListener('click', ()=>{
@@ -5594,12 +5478,8 @@ function buildAuditReport(info){
       ', EDML controls=', ack.edmlControl, ', lone surrogates=', ack.loneSurrogate,
       ', CP1252 loss=', ack.cpLoss);
   }
-  A('Mapping method                       : ', info.mode === 'client' ? 'manual / exact normalized auto-match' : 'source-column index plan');
-  if(info.mode === 'client'){
-    const t2 = (cl.rows || []).filter(r=>r.mapped !== null && r.tier === 2).length;
-    A('T2 normalized mappings              : ', t2);
-    A('T2 operator approval UTC            : ', t2 ? (clientT2ApprovalUtc || '(approval state unavailable)') : 'not required');
-  }
+  A('Mapping method                       : ', info.mode === 'client' ? 'manual, individually reviewed' : 'source-column index plan');
+  if(info.mode === 'client') A('Reviewed output columns              : ', cl.rows.filter((r,i)=>clIsReviewed(r,i)).length, '/', cl.rows.length);
   A('NOTE. Row counts above reflect the in-memory transformation loop ONLY.');
   A('They are NOT a re-read of the saved file, so file-system write errors /');
   A('truncated trailing EOL are not detected by the counter above.');
@@ -5660,7 +5540,8 @@ function buildAuditReport(info){
         } else {
           seen.set(r.mapped, pos+1);
         }
-        A(String(pos+1).padStart(2,' ') + '. ', r.name, '  ← ', name, reuse);
+        A(String(pos+1).padStart(2,' ') + '. ', r.name, '  ← source #', r.mapped+1, ' ', name, reuse,
+          '  [reviewed UTC: ', clIsReviewed(r,pos) ? r.review.utc : 'NOT CONFIRMED', ']');
       } else {
         A(String(pos+1).padStart(2,' ') + '. ', r.name, '  ← (empty — emitted as blank)');
       }
@@ -5775,19 +5656,6 @@ function runCoreSelfTest(){
       const le = textToBytes({ kind: 'utf-16le' }, 'A\u00FE');
       t(le.length === 4 && le[2] === 0xFE && le[3] === 0x00, 'utf-16le byte order');
     }
-    // tiered auto-match: normalized tier2, alias tier3, ambiguity never guessed
-    {
-      const srcs = ['DOCID','Control Number','BEGDOC'];
-      const t1 = findHeaderMatch('docid', srcs, 1);
-      const t2 = findHeaderMatch('docid', srcs, 2);
-      t(t1 === null && !!t2 && t2.tier === 2, 'tier 2 maps docid (tier 1 does not)');
-      const al = findHeaderMatch('Control No.', srcs, 3);
-      t(!!al && al.idx === 1 && al.tier === 3, 'tier 3 alias Control No. -> Control Number');
-      const bb = findHeaderMatch('Bates_Begin', srcs, 3);
-      t(!!bb && bb.idx === 2 && bb.tier === 3, 'tier 3 alias Bates_Begin -> BEGDOC');
-      const am = findHeaderMatch('controlno', ['ControlNumber','CONTROLNUMBER'], 3);
-      t(am === null, 'ambiguous alias is never guessed');
-    }
   } catch(e){ fails.push('self-test crashed: ' + (e && e.message ? e.message : String(e))); }
   return { ok: fails.length === 0, fails };
 }
@@ -5827,104 +5695,7 @@ function runSelfTest(interactive){
 
 console.info('DAT Field Reorder v' + TOOL_VERSION + ' — STRICT FE/DC4 production profile. Legacy no-DC4 FE, literal þ/raw CR-LF in fields, mixed EOL, leading blank lines, CP1252 and destructive overwrite are blocked. All local.');
 
-/* v2.18.5 (build 2026-09-06-h7) RELEASE CANDIDATE: shipping filename remains
-   field_mapper.html. Cosmetic topbar owner watermark update; version metadata,
-   documentation and tests synchronized. No DAT transformation contract change. */
-/* v2.18.4 (build 2026-09-06-h6) RELEASE CANDIDATE: shipping filename remains
-   field_mapper.html. Pasted Validator mappings now record manual-exact versus
-   normalized T2 provenance truthfully; T2 requires operator approval; output
-   columns omitted from the pasted map remain unresolved instead of being
-   silently auto-filled by matching output/source names. */
-/* v2.18.3 (build 2026-09-06-h5): shipping filename remains field_mapper.html.
-   Adds real cooperative Validator cancellation (including pair-queue wakeup),
-   fixes validationActive recovery after settings supersede a run, coordinates
-   concurrent source/output load busy ownership, requires explicit operator
-   approval for identity and T2 normalized mappings, stops 1-Click from
-   auto-validating an unapproved identity, rejects rather than deletes blank
-   pasted rows/columns/extra empty columns, preserves Validator vertical-map
-   whitespace, and lowers the fail-closed UI/record column cap to 2,000. */
-/* v2.18.2 (build 2026-09-06-h4):
-   P1 the shipped filename stays field_mapper.html (docs/tests now reference it);
-      only the internal TOOL_VERSION/BUILD advance;
-   P2 strict per-record COLUMN cap (MAX_FIELD_COUNT) is enforced with a bounded
-      delimiter scan BEFORE split()/array/DOM allocation;
-   P3 the row-width histogram is bounded (MAX_TRACKED_WIDTHS detail rows) while
-      matching/mismatching/short/long totals and the first mismatch stay exact;
-   P4 pasted client headers are preserved VERBATIM (no implicit trim); T1 Exact is
-      raw whitespace/case exact; whitespace folding is confined to the explicit T2;
-   P5 Validator has explicit UNVERIFIED/RUNNING/BLOCKED/CANCELLED/ERROR states and
-      a synchronous start preflight, so a blocked run is never stuck as RUNNING
-      and a stale PASS is always cleared first;
-   P6 Validator identity fallback selects the first mapped SOURCE index (the old
-      findIndex fallback returned an OUTPUT column position);
-   P7 superseded Validator loads can no longer clear a newer load's busy overlay
-      (owner token in valLoadSide);
-   P8 save abort/cleanup/reopen failures are recorded and surfaced (no empty
-      catch suppression remains on integrity paths);
-   P9 the transformation audit report states the FSA durability scope truthfully
-      (no fsync/atomic-replace claim for the browser);
-   P10 a local-only CSP meta tag is added and the local-only static check is part
-      of the test suite (no network API usage is allowed). */
-/* v2.18.1 production-hardening hotfix:
-   H1 selecting a replacement source invalidates the prior source immediately;
-   H2 validator side/mapping/identity/Expected-Blank changes clear stale PASS/report state immediately;
-   H3 save self-check failures propagate into the audit report as OUTPUT UNUSABLE;
-   M1 single-record cap reduced to 64M UTF-16 units and preview retention capped at 1M units/record;
-   M2 validator identity choice is retained by exact source column index + name, safe with duplicate names. */
-/* v2.18.0 strict production profile: FE/DC4 only; ambiguous legacy no-DC4 FE,
-   literal U+00FE inside fields, raw CR/LF inside fields, mixed record EOL, CP1252,
-   field-count mismatches, leading blank lines, unmapped delivery columns, duplicate output headers, T3 fuzzy auto-match, and
-   replacement of existing non-empty destinations are fail-closed. Validator
-   no longer treats mixed EOL/value EOL normalization as an expected PASS.
-   v2.17.0 completes short-row harmonization: the validator's indexed/structural
-   FAIL previously used srcInfo/outInfo.mismatched (which counts SHORT + LONG rows
-   together), so even a purely short-row (trailing-empty) file still failed. Now
-   structural FAIL is driven only by LONG rows (extra cells), matching the padded
-   per-row comparison; the report labels short rows as "padded as trailing empties".
-   v2.16.0 adds: on-demand core diagnostics (footer button re-runs the pure-core
-   self-test; failures keep saving/validation disabled fail-closed) and an instant
-   saved-file header/structure self-check after every save (single-record read of
-   the just-saved file verifies header text + column width before the full 1-Click
-   re-read validator is offered).
-   v2.15.0 fixes a header-alignment bug: when leading blank lines are tolerated,
-   every record consumer must identify the header the same way the loader does.
-   Added dataRowStreamer()/isBlankPhysicalRecord() (skip leading blanks, first
-   non-blank = header) and applied it uniformly to index build, preflight, reorder
-   and client saves, and validator pairing - so a file starting with blank line(s)
-   can no longer have its real header written or sent as a data row.
-   v2.14.0 adds: validator short-row harmonization (source/output rows with fewer
-   cells than the header are padded as trailing empties and compared - matching the
-   writer - so override/mismatch saves validate cleanly instead of false-FAILing;
-   only rows with EXTRA cells are treated as schema corruption and fail). Also adds
-   periodic macrotask yields to the index build for huge files, and widens the startup
-   self-test (UTF-16 byte round-trip + tiered auto-match monotonic/alias/ambiguity).
-   v2.13.0 adds: tiered field auto-matching shared by client Auto-Match and
-   validator Auto-Match Headers — T1 Exact, T2 Similar (normalized), T3 Lenient
-   (eDiscovery alias/synonym groups + guarded fuzzy similarity). Higher tiers map
-   strictly more rows (monotonic); ambiguity is never guessed; tier-3 low-confidence
-   links are tagged and flagged for review; within one run a tier-3 source is single-use.
-   v2.12.0 lineage note. Adds (R) hardening wave on top of v2.11:
-   R1  startup pure-core self-test - saving & validation are DISABLED (fail-closed)
-       if any core splitter/composer/detector/encoder regresses at runtime;
-   R2  EOL accounting is now RECORD-SEPARATOR based (embedded newlines inside
-       text fields are ignored), and a genuinely mixed source keeps its DOMINANT
-       separator style instead of silently forcing CRLF;
-   R3  a stray blank line before the header is tolerated for detection/parsing,
-       so a genuine FE/DC4 file with a leading empty line is no longer rejected;
-   R4  the Node test harness now covers the full File->sniff->index path plus the
-       A-1 decoder-availability branch;
-   R5  removed the unused decodeBuf() helper.
-   v2.11 base: fail-closed decoder-support guard (A-1); structural FE/DC4 format
-   detection (A-2); post-save written-row-count == source data-records (B-5);
-   recoverable backup before replacing an existing destination (B-4); advisory
-   identity uniqueness/blank/sequence-gap QC (B-6); EOL semantics clarified (A-3);
-   Node pure-core test harness (C-7).
-   v2.10 base: streaming FE/DC4 load/reorder/client-map, fail-closed preflight,
-   SHA-256 audit, post-save size self-check, overwrite consent + partial-write
-   warnings, beforeunload guard, 1-Click re-read validator with disk==saved hash
-   chain, identity row linkage, encoding/BOM/EOL style-and-count equality,
-   stale-context invalidation, timestamped report downloads. */
 </script>
-<!-- v2.18.5 RC (field_mapper.html fixed name): bilingual owner watermark; version metadata synchronized. -->
+<!-- v2.18.4 RC (field_mapper.html fixed name): truthful pasted-map provenance; omitted output columns stay unresolved. -->
 </body>
 </html>
