@@ -1,221 +1,721 @@
-<!DOCTYPE html>
-<!-- Canonical filename: load_file_package_reconciler.html · v1.0.1. 100% local, read-only eDiscovery package reconciliation. Built from the defensive design language of universal_load_file_preflight.html. -->
-<html lang="en">
+<!doctype html>
+<html lang="ko">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"/>
-<title>Load File Package Reconciler</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNTU2YzkiLz48cGF0aCBkPSJNMTQgMTZoMTZ2MTJIMTR6TTM0IDM2aDE2djEySDM0ek0xNCA0NGgxNnY2SDE0ek0zNCAxNGgxNnYxNEgzNHoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMjcgMjJoMTBNMjcgNDdoMTBNMzkgMjF2MjBNMjEgNDJ2LTkiIHN0cm9rZT0iI2M5ZTVmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMjYgMzNsNSA1IDEwLTEyIiBmaWxsPSJub25lIiBzdHJva2U9IiMwODc4M2IiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; child-src blob:; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Load File Package Reconciler · HYUNSOO LEE</title>
 <style>
-:root{--bg:#eef1f6;--card:#fff;--ink:#1c2430;--muted:#5b6b7f;--line:#d7dee8;--brand:#1556c9;--brand2:#1a6ae0;--ok:#08783b;--warn:#9b6900;--bad:#b3342c;--info:#3f5f8f;--shadow:0 1px 3px rgba(20,30,60,.08),0 8px 24px rgba(20,30,60,.06);--radius:14px}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Segoe UI",system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg)}
-button,input,select{font:inherit}.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(115deg,#102b5c,var(--brand) 72%,var(--brand2));color:#fff;padding:15px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:var(--shadow);overflow:hidden}.brand{display:flex;align-items:center;gap:12px;position:relative;z-index:1}.logo{width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:23px}.brand h1{font-size:18px;margin:0}.brand p{font-size:12px;opacity:.84;margin:2px 0 0}.privacy{font-size:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;padding:7px 12px;white-space:nowrap;position:relative;z-index:1}.name-watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.34);text-shadow:0 1px 0 rgba(0,0,0,.08);pointer-events:none;user-select:none;white-space:nowrap;text-align:center;z-index:0}
-main{max-width:1500px;margin:24px auto 60px;padding:0 22px;display:grid;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}.card h2{font-size:16px;margin:0}.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px;flex-wrap:wrap}.small{font-size:12px;color:var(--muted)}
-.controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.control{display:grid;gap:5px}.control label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.control select{min-width:210px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff}.check{min-height:38px;display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:12.5px;color:#34435a}.check input{width:16px;height:16px;margin:0}.btn{border:1px solid var(--line);background:#f2f5fa;border-radius:9px;padding:8px 12px;cursor:pointer;color:#34435a}.btn:hover{background:#e9eef7}.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:650}.btn.primary:hover{background:#0d3e91}.btn.danger{border-color:#e6b9b5;color:var(--bad);background:#fff8f7}.btn:disabled{opacity:.45;pointer-events:none}.hidden{display:none!important}
-.folder-zone{border:2px dashed #9fb4d8;border-radius:16px;padding:28px 24px;text-align:center;background:linear-gradient(180deg,#f7faff,#eef4ff)}.folder-icon{font-size:40px}.folder-title{font-size:17px;font-weight:700;margin-top:5px}.folder-sub{font-size:12.5px;color:var(--muted);margin:7px auto 14px;max-width:800px;line-height:1.5}
-.progress-wrap{margin-top:14px}.progress-line{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);margin-bottom:6px}.progress{height:10px;border-radius:999px;background:#e6ebf3;overflow:hidden}.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .12s}
-.summary-grid{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:10px}.stat{background:#f7f9fc;border:1px solid var(--line);border-radius:11px;padding:11px 13px;min-width:0}.stat .k{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.stat .v{font-size:15px;font-weight:750;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stat .v.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:11px}.verdict{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 11px;font-weight:800;font-size:12px}.verdict.PASS{background:#e2f5e9;color:var(--ok)}.verdict.WARN{background:#fff2d6;color:var(--warn)}.verdict.FAIL{background:#fdecea;color:var(--bad)}
-.issue-group{display:grid;gap:8px}.issue{border:1px solid var(--line);border-left-width:5px;border-radius:10px;padding:10px 12px;background:#fbfcfe}.issue.FAIL{border-left-color:var(--bad);background:#fff8f7}.issue.WARN{border-left-color:#d49a15;background:#fffdf7}.issue.INFO{border-left-color:#6d8fbe}.issue-title{font-size:13px;font-weight:750}.issue-code{font-family:Consolas,monospace;font-size:10px;color:var(--muted);margin-left:7px}.issue-detail{font-size:12.5px;color:#44536a;margin-top:3px;line-height:1.5}.sev{display:inline-block;font-size:10px;font-weight:800;border-radius:999px;padding:2px 7px;margin-right:7px}.sev.FAIL{background:#fdecea;color:var(--bad)}.sev.WARN{background:#fff2d6;color:var(--warn)}.sev.INFO{background:#eaf1fb;color:var(--info)}
-.meta-grid{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:10px}.meta-item{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fbfcfe}.meta-item b{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}.meta-item span{font-size:12.5px;word-break:break-word}
-.table-wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:520px}table{border-collapse:collapse;width:100%;font-size:12px}thead th{position:sticky;top:0;background:#f1f5fb;color:#33415a;text-align:left;padding:8px 9px;border-bottom:1px solid #d3dce8;white-space:nowrap;z-index:2}tbody td{padding:7px 9px;border-bottom:1px solid #edf0f6;vertical-align:top}tbody tr:hover{background:#f8fafd}.mono{font-family:Consolas,"Cascadia Mono",Menlo,monospace}.bad-txt{color:var(--bad);font-weight:700}.warn-txt{color:var(--warn);font-weight:700}.ok-txt{color:var(--ok);font-weight:700}.preview-cell{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mapping{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:10px;margin-top:14px}.mapping .control select{width:100%;min-width:0}.note{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:8px}.actions{display:flex;gap:8px;flex-wrap:wrap}.filter{padding:7px 10px;border:1px solid var(--line);border-radius:8px;min-width:260px}.report-pre{white-space:pre-wrap;word-break:break-word;max-height:440px;overflow:auto;background:#0f1723;color:#e6edf7;border-radius:10px;padding:13px;font:11.5px/1.55 Consolas,"Cascadia Mono",monospace}
-footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,100px);opacity:0;transition:.25s;background:#202a38;color:#fff;border-radius:10px;padding:10px 16px;max-width:90%;z-index:50;font-size:12.5px}.toast.show{transform:translate(-50%,0);opacity:1}
-@media(max-width:1200px){.summary-grid{grid-template-columns:repeat(4,1fr)}.meta-grid{grid-template-columns:repeat(3,1fr)}.mapping{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.topbar{padding:12px;justify-content:center;text-align:center;flex-wrap:wrap}.privacy{display:none}.name-watermark{font-size:10px;opacity:.28}.brand{margin-top:0}main{padding:0 10px}.summary-grid,.meta-grid,.mapping{grid-template-columns:1fr 1fr}.card{padding:14px}.control{width:100%}.control select{width:100%}.filter{min-width:0;width:100%}}
+:root{--ink:#182f38;--muted:#6c7e86;--line:#dce5e7;--bg:#f4f7f7;--accent:#0c786b;--mint:#e6f3ef;--red:#b43c41;--amber:#986313;--purple:#7351a0;--radius:14px}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif}button,input,select{font:inherit}button{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #5ca99c;outline-offset:3px}button:disabled{cursor:not-allowed;opacity:.43}button:not(:disabled):hover{filter:brightness(.97)}[hidden]{display:none!important}.watermark{text-align:center;height:26px;background:#183b43;color:#e4f0ee;font-size:11px;letter-spacing:1.8px;line-height:26px}.topbar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-bottom:1px solid var(--line);padding:20px 3.8vw;gap:20px}.brand{display:flex;align-items:center;gap:12px;font-weight:720;font-size:19px;letter-spacing:-.5px}.brandmark{display:grid;place-items:center;width:36px;height:36px;background:var(--accent);border-radius:10px;color:white;font-size:22px;font-weight:800;box-shadow:inset 0 0 0 1px #ffffff30}.edition{font-size:10px;color:var(--muted);font-weight:650;letter-spacing:1px;margin-left:14px}.offline{font-size:12px;color:var(--accent);white-space:nowrap;background:#f2f8f5;padding:7px 12px;border:1px solid #d4e8df;border-radius:30px;display:flex;align-items:center;gap:7px}.offline span{width:6px;height:6px;background:var(--accent);border-radius:50%}main{max-width:1640px;margin:auto;padding:32px 3.8vw 22px}.intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}.eyebrow{font-size:10px;letter-spacing:1.7px;font-weight:750;color:var(--accent)}h1{font-size:clamp(21px,2.2vw,31px);font-weight:730;letter-spacing:-1px;line-height:1.3;margin:9px 0}h2{font-size:20px;letter-spacing:-.5px;margin:10px 0 8px}h3{font-size:15px;margin:0 0 6px}p{margin:4px 0 12px}.intro p{color:var(--muted);font-size:13px;margin:0}.textbtn{border:0;background:none;color:var(--accent);font-size:12px;white-space:nowrap}.workspace{display:grid;grid-template-columns:278px minmax(0,1fr);gap:22px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 3px 10px #122b3303}.controls{padding:24px;position:sticky;top:16px}.step{font-size:12px;font-weight:700;display:flex;align-items:center;gap:9px}.step span{color:var(--accent);font-size:10px;border:1px solid #cfe4df;border-radius:5px;padding:2px 5px}.folderart{width:69px;margin:26px 0 16px}.controls h2{font-size:16px;overflow-wrap:anywhere}.muted{color:var(--muted)}.small{font-size:12px}.fine{font-size:10px;text-align:center;color:var(--muted);margin:10px 0 0}.primary,.secondary,.danger{border:1px solid transparent;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:600}.primary{background:var(--accent);color:white;border-color:var(--accent)}.secondary{background:white;color:#405c65;border-color:var(--line)}.danger{background:#fff;color:var(--red);border-color:#ebd8da}.wide{display:block;width:100%;margin-top:9px}.controls .primary.wide{margin-top:24px;padding:11px 10px}hr{border:0;border-top:1px solid var(--line);margin:23px 0}.toggle{display:flex;gap:9px;margin-top:18px;font-size:12px;cursor:pointer;align-items:flex-start}.toggle input{accent-color:var(--accent);margin:4px 0 0;flex:none}.toggle small{display:block;font-size:10px;font-weight:400;color:var(--muted);margin-top:4px;line-height:1.65}.actionrow{display:flex;gap:8px;margin-top:20px}.actionrow>*{flex:1}.demo{margin-top:9px}.privacy{display:flex;gap:8px;color:#68817e;font-size:10px;background:#f4f8f6;padding:12px;border-radius:8px;margin-top:23px}.privacy>span{color:var(--accent);font-size:14px}.maincolumn{min-width:0}.status{padding:23px 27px;border-top:3px solid #9db7bd;min-height:143px}.statusrow{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.status h2{font-size:23px;margin:5px 0 6px}.status p{font-size:12px;color:var(--muted);max-width:670px;margin:0;overflow-wrap:anywhere}.statuspill{border:1px solid #d8e3e4;background:#f3f6f7;border-radius:6px;font-size:11px;font-weight:750;padding:5px 10px;white-space:nowrap;letter-spacing:.4px}.status.pass{border-top-color:var(--accent)}.status.pass .statuspill{background:var(--mint);border-color:#b8dace;color:var(--accent)}.status.review{border-top-color:#c2933a}.status.review .statuspill{background:#fff6e3;border-color:#eddbb5;color:var(--amber)}.status.fail,.status.error{border-top-color:var(--red)}.status.fail .statuspill,.status.error .statuspill{background:#fff0f0;border-color:#f0cfd0;color:var(--red)}.status.incomplete,.status.stale,.status.cancelled{border-top-color:var(--purple)}.status.incomplete .statuspill,.status.stale .statuspill,.status.cancelled .statuspill{background:#f4effb;border-color:#e5d6f3;color:var(--purple)}.status.running{border-top-color:var(--accent)}.progresswrap{margin-top:20px}.progressbar{height:4px;border-radius:5px;background:#e9efef;overflow:hidden}.progressbar i{display:block;background:var(--accent);width:30%;height:100%;transition:width .2s}.progressbar.indeterminate i{animation:loading 1.8s linear infinite}@keyframes loading{0%{transform:translateX(-120%)}100%{transform:translateX(450%)}}.progressmeta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px;gap:12px}.progressmeta span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.resultstamp{border-top:1px solid var(--line);font-size:10px;color:var(--muted);padding-top:12px;margin-top:17px;overflow-wrap:anywhere}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;margin:18px 0;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}.metrics>div{background:#fff;padding:17px 14px}.metrics span{font-size:10px;color:var(--muted);display:block;white-space:nowrap}.metrics strong{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;display:block;line-height:1.4;margin-top:5px;letter-spacing:-.7px}.metrics>div:nth-last-child(2) strong{color:var(--red)}.metrics>div:last-child strong{color:var(--amber)}.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 24px;gap:25px;overflow-x:auto}.tabs button{padding:17px 1px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}.tabs span{font-size:9px;border-radius:4px;padding:1px 5px;background:#edf2f2;margin-left:3px}.tabbody{padding:24px}.resultshead{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.exportgroup{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.export{font-size:10px;padding:7px 9px;white-space:nowrap}.filters{display:flex;gap:8px;margin:14px 0 0}.filters select,.filters input{border:1px solid var(--line);background:#fff;border-radius:6px;padding:8px 10px;font-size:11px;color:#46606a;min-width:0}.filters select{max-width:220px}.filters input{flex:1}.empty{text-align:center;padding:53px 15px 58px}.emptyicon{display:grid;place-items:center;font-size:32px;width:60px;height:60px;border-radius:16px;background:#f1f6f5;color:#71998f;margin:0 auto 16px}.empty h3{font-size:14px}.empty p{font-size:11px;color:var(--muted)}.checktags{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:22px}.checktags span{font-size:10px;background:#f8faf9;border:1px solid var(--line);border-radius:4px;padding:4px 8px;color:#71867e}.tablewrap{overflow:auto;margin-top:18px}table{border-collapse:collapse;width:100%}th{text-align:left;color:var(--muted);background:#f7f9f9;font-size:10px;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line)}td{font-size:11px;vertical-align:top;padding:13px 12px;border-bottom:1px solid #edf1f2;overflow-wrap:anywhere}th:first-child{width:24%}th:nth-child(2){width:29%}.issuebadge{font-size:9px;padding:2px 5px;border-radius:4px;background:#f0f3f4;display:inline-block;font-weight:700}.issuebadge.ERROR{background:#ffeded;color:var(--red)}.issuebadge.WARNING{background:#fff4df;color:var(--amber)}.issuebadge.BLOCKED{background:#f0eafb;color:var(--purple)}.issuecode{font:10px/1.5 ui-monospace,Consolas,monospace;display:block;margin-top:6px;overflow-wrap:anywhere}.location{font-size:10px;color:var(--muted);margin-top:5px}.issuevalue{font:10px/1.5 ui-monospace,Consolas,monospace;display:block;background:#f6f8f9;padding:5px 7px;border-radius:4px;margin-top:6px;max-height:90px;overflow:auto;white-space:pre-wrap}.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:18px;color:var(--muted);font-size:10px}.pagination button{padding:5px 12px;font-size:10px;margin-left:6px}.callout{background:#f2f7f6;border:1px solid #dce9e5;border-radius:7px;padding:12px 14px;font-size:11px;line-height:1.8;color:#4b6961;margin:17px 0}.callout.warning{background:#fffbf1;border-color:#efe4c8;color:#836526}.manualsource{font-size:11px;margin:20px 0}.manualsource>div{display:flex;gap:8px;margin:7px 0}.manualsource input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:8px;font-size:11px}.sourcecard{border:1px solid var(--line);border-radius:8px;margin:12px 0;background:#fff;overflow:hidden}.sourcecard>summary{padding:14px 16px;cursor:pointer;list-style:none;background:#fbfcfc;display:flex;align-items:flex-start;gap:10px;justify-content:space-between}.sourcename{font:11px/1.5 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;min-width:0}.sourcehint{font-size:10px;color:var(--muted);margin-top:4px}.sourcebadge{font-size:9px;color:var(--accent);white-space:nowrap;background:#eaf3ef;border-radius:4px;padding:2px 6px}.sourcebadge.bad{color:var(--purple);background:#f0eafb}.sourceoptions{padding:16px;border-top:1px solid var(--line)}.sourcegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.sourcegrid label,.mappinggrid label{font-size:10px;color:var(--muted);display:block}.sourcegrid select,.sourcegrid input,.mappinggrid select{display:block;width:100%;max-width:100%;min-width:0;margin-top:4px;padding:7px 6px;border:1px solid var(--line);border-radius:5px;font-size:10px;background:#fff;color:var(--ink)}.spanall{grid-column:1/-1}.mappingheading{display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px;font-size:11px}.mappinggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.previewheaders{font:10px/1.7 ui-monospace,Consolas,monospace;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f9fa;padding:10px;border-radius:5px;max-height:100px;overflow:auto;margin-top:12px}.emptytext{font-size:12px;color:var(--muted);padding:30px 0}.coverageitem{display:flex;justify-content:space-between;gap:20px;padding:14px 0;border-bottom:1px solid #edf1f2;font-size:12px}.coverageitem small{display:block;font-size:10px;color:var(--muted);margin-top:3px}.coverageitem .coverbadge{font-size:10px;color:var(--accent);align-self:flex-start;white-space:nowrap;background:#edf6f2;padding:3px 7px;border-radius:4px}.coverageitem .coverbadge.muted{background:#f1f3f6;color:#7a838e}.audit{margin-top:22px;font-size:11px}.audit summary{cursor:pointer;color:var(--muted)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f9;border-radius:6px;padding:15px;font:10px/1.7 ui-monospace,Consolas,monospace}.help{font-size:12px;line-height:1.9;color:#47606a}.help h3{margin:22px 0 9px;color:var(--ink)}.help h3:first-child{margin-top:0}.help ol{padding-left:22px}.help li{margin:9px 0}.help p{margin-bottom:12px}code{font:11px/1.7 ui-monospace,Consolas,monospace;background:#f2f5f6;padding:2px 4px;border-radius:4px}.helpcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:25px}.helpcards>div{border:1px solid var(--line);padding:13px;border-radius:7px}.helpcards b{font-size:11px}.helpcards p{font-size:11px;margin:5px 0 0;color:var(--muted)}.green{color:var(--accent)}.amber{color:var(--amber)}.red{color:var(--red)}.purple{color:var(--purple)}footer{display:flex;justify-content:space-between;gap:15px;font-size:9px;color:#8b9c9e;padding:20px 1px}footer span:last-child{font-size:9px}.toast{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:#183b43;color:#fff;border-radius:8px;padding:12px 20px;box-shadow:0 5px 25px #183b4330;max-width:min(90vw,600px);font-size:12px;z-index:50}.sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(min-width:1550px){.workspace{grid-template-columns:294px minmax(0,1fr)}.tabbody{padding:28px}.metrics>div{padding:20px}}
+@media(max-width:1150px){.workspace{grid-template-columns:248px minmax(0,1fr);gap:16px}.controls{padding:20px}.resultshead{flex-wrap:wrap}.exportgroup{justify-content:flex-start}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.tabs{gap:15px;padding:0 18px}.tabbody{padding:20px}.filters{flex-wrap:wrap}.filters input{min-width:170px}.edition{display:none}}
+@media(max-width:790px){.topbar{padding:15px 20px}.brand{font-size:16px}.offline{font-size:10px;padding:5px 8px}main{padding:24px 16px}.intro{align-items:flex-start}.intro p{font-size:12px}.textbtn{display:none}.workspace{grid-template-columns:1fr}.controls{position:static;display:block}.folderart{display:none}.controls h2{margin-top:16px}.controls hr,.controls .step:nth-of-type(2){margin:18px 0}.controls .wide{display:inline-block;width:calc(50% - 5px);vertical-align:bottom}.controls .wide+.wide{margin-left:5px}.privacy{margin-top:15px}.controls .actionrow{max-width:400px}.controls .toggle{display:inline-flex;width:48%;vertical-align:top;padding-right:15px}.metrics strong{font-size:22px}.status{padding:20px}.status h2{font-size:21px}.sourcegrid{grid-template-columns:repeat(2,minmax(0,1fr))}footer>span:last-child{display:none}}
+@media(max-width:470px){.brandmark{width:30px;height:30px}.offline{font-size:9px}.brand{font-size:14px;gap:8px}.topbar{gap:10px}.statusrow{gap:7px}.statuspill{font-size:9px;padding:4px 7px}.tabbody{padding:16px}.tabs{gap:15px;padding:0 15px}.tabs button{font-size:11px}.metrics>div{padding:12px}.helpcards,.mappinggrid{grid-template-columns:1fr}.sourcegrid{grid-template-columns:1fr}.controls .toggle{width:100%}.filters select{max-width:48%}.filters input{width:100%;flex:auto}.findingstable{min-width:580px}.intro h1{font-size:21px}.controls .wide{width:100%;margin-left:0!important}footer{font-size:8px}}
+
 </style>
 </head>
 <body>
-<div class="topbar"><div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div><div class="brand"><div class="logo">🔗</div><div><h1>Load File Package Reconciler</h1><p>Load-file ↔ package file integrity reconciliation · v1.0.1</p></div></div><div class="privacy">🔒 100% local · network blocked by CSP · source files read-only</div></div>
+<div class="watermark">이현수 / HYUNSOO LEE</div>
+<header class="topbar">
+ <div class="brand"><span class="brandmark" aria-hidden="true">R</span><div>Package Reconciler <span class="edition">LOCAL QC <span id="version"></span></span></div></div>
+ <span class="offline"><span></span> 오프라인 · 읽기 전용</span>
+</header>
 <main>
-<section class="card">
-  <div class="card-head"><h2>1. Select package root</h2><span class="small">Chrome / Edge recommended · recursive read-only inventory</span></div>
-  <div class="folder-zone">
-    <div class="folder-icon">📁</div><div class="folder-title">Select the package root folder</div>
-    <div class="folder-sub">The reconciler inventories filenames, sizes and modified times, then compares load-file paths against that inventory. It never writes to the selected folder and never sends data over the network.</div>
-    <div class="actions" style="justify-content:center"><button id="btnFolder" class="btn primary">Select Package Folder</button><button id="btnFallback" class="btn">Folder Upload Fallback</button></div>
-    <input id="folderInput" type="file" webkitdirectory multiple class="hidden"/>
-    <div id="folderTag" class="small" style="margin-top:11px"></div>
-  </div>
-  <div id="progressWrap" class="progress-wrap hidden"><div class="progress-line"><span id="progressLabel">Preparing…</span><span id="progressPct">0%</span></div><div class="progress"><div id="progressBar"></div></div></div>
-</section>
-
-<section id="configCard" class="card hidden">
-  <div class="card-head"><h2>2. Select load files & confirm schema</h2><span id="inventoryTag" class="small"></span></div>
-  <div class="controls">
-    <div class="control"><label>Metadata load file</label><select id="metaFile"></select></div>
-    <div class="control"><label>Image load file</label><select id="optFile"><option value="">— None —</option></select></div>
-    <div class="control"><label>Encoding</label><select id="encoding"><option value="auto">Auto-safe</option><option value="utf-8">UTF-8</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option><option value="cp1252">Windows-1252</option><option value="euc-kr">Korean EUC-KR / Windows-949</option><option value="shift_jis">Japanese Shift_JIS</option><option value="gbk">Simplified Chinese GBK</option><option value="big5">Traditional Chinese Big5</option></select></div>
-    <div class="control"><label>Metadata format</label><select id="format"><option value="auto">Auto-detect</option><option value="fe">Strict FE/DC4 DAT</option><option value="csv">CSV</option><option value="tsv">Tab-delimited</option><option value="pipe">Pipe-delimited</option></select></div>
-    <div class="control"><label>Header mode · required</label><select id="headerMode"><option value="">— Select —</option><option value="yes">Header present</option><option value="no">No header</option></select></div>
-    <button id="btnInspect" class="btn">Inspect Header</button>
-  </div>
-  <div id="mappingWrap" class="hidden">
-    <div class="mapping">
-      <div class="control"><label>NativePath field</label><select id="nativeField"></select></div>
-      <div class="control"><label>TextPath field</label><select id="textField"></select></div>
-      <div class="control"><label>ImagePath field (metadata)</label><select id="imageField"></select></div>
-      <label class="check"><input id="strictCounts" type="checkbox"/> Treat count mismatches as FAIL</label>
+ <section class="intro"><div><div class="eyebrow">EDISCOVERY PACKAGE VALIDATION</div><h1>폴더 하나로, 패키지 전체를 대조하세요.</h1><p>DAT · CSV · OPT의 참조를 실제 native · text · image 파일과 연결해 검사합니다.</p></div><button class="textbtn" id="helpTop">사용 방법 ↗</button></section>
+ <section class="workspace">
+  <aside class="panel controls">
+   <div class="step"><span>01</span> 패키지 선택</div>
+   <div class="folderart" aria-hidden="true"><svg viewBox="0 0 80 64" fill="none"><path d="M7 15a5 5 0 0 1 5-5h18l8 9h29a5 5 0 0 1 5 5v29a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V15Z" fill="#e3eeec" stroke="#177e72" stroke-width="2"/><path d="M7 28h65" stroke="#177e72" stroke-width="2"/><path d="m30 42 7 7 14-15" stroke="#177e72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+   <h2 id="folderName">패키지 루트 폴더</h2><p class="muted small" id="folderMeta">LoadFiles, Native, Text, Images를 함께 포함하는 상위 폴더를 선택하세요.</p>
+   <button id="chooseFolder" class="primary wide">폴더 선택 · 자동 검사</button>
+   <button id="chooseFallback" class="secondary wide">호환 모드로 폴더 선택</button>
+   <input id="folderInput" type="file" webkitdirectory multiple hidden>
+   <div id="modeNote" class="fine">Chrome / Edge 데스크톱 권장</div>
+   <hr>
+   <div class="step"><span>02</span> 검사 옵션</div>
+   <label class="toggle"><input type="checkbox" id="hashAll"><span>전체 파일 SHA-256 계산<small>Native 등도 지문을 생성합니다. 대용량 패키지는 시간이 더 걸립니다.</small></span></label>
+   <label class="toggle"><input type="checkbox" id="multiPath"><span>경로의 ®를 다중값으로 해석<small>납품 규격에서 ASCII 174를 경로 구분자로 사용할 때만 켜세요.</small></span></label>
+   <div class="actionrow"><button class="primary" id="rerun" disabled>다시 검사</button><button class="danger" id="cancel" disabled>중지</button></div>
+   <hr>
+   <div class="small muted">실제 자료 없이 먼저 확인해 보세요.</div><div class="actionrow demo"><button class="secondary" id="demoGood">정상 샘플</button><button class="secondary" id="demoBad">오류 샘플</button></div>
+   <div class="privacy"><span aria-hidden="true">✓</span><div>파일은 이 브라우저에서만 읽습니다.<br>업로드 · 원본 수정 · 자동 복구 없음</div></div>
+  </aside>
+  <div class="maincolumn">
+   <section id="statusPanel" class="panel status idle" aria-live="polite">
+    <div class="statusrow"><div><div class="eyebrow" id="statusLabel">READY TO INSPECT</div><h2 id="statusTitle">폴더를 선택해 주세요</h2><p id="statusDetail">자동 감지부터 경로 대조, 문서·페이지 교차 검사까지 한 번에 진행합니다.</p></div><span class="statuspill" id="statusBadge">대기</span></div>
+    <div class="progresswrap" hidden id="progressWrap"><div class="progressbar"><i id="progressBar"></i></div><div class="progressmeta"><span id="progressText"></span><span id="elapsed"></span></div></div>
+    <div id="resultStamp" class="resultstamp" hidden></div>
+   </section>
+   <section class="metrics" aria-label="검사 수량">
+    <div><span>전체 파일</span><strong id="metricFiles">—</strong></div><div><span>DAT / CSV 문서</span><strong id="metricDocs">—</strong></div><div><span>OPT 페이지</span><strong id="metricPages">—</strong></div><div><span>경로 참조</span><strong id="metricRefs">—</strong></div><div><span>해결 안 된 참조</span><strong id="metricMissing">—</strong></div><div><span>미참조 파일</span><strong id="metricOrphan">—</strong></div>
+   </section>
+   <section class="panel details">
+    <div class="tabs" role="tablist" aria-label="검사 상세"><button role="tab" aria-selected="true" data-tab="findings">검사 결과 <span id="findingCount">0</span></button><button role="tab" aria-selected="false" data-tab="sources">로드 파일 설정 <span id="sourceCount">0</span></button><button role="tab" aria-selected="false" data-tab="coverage">검사 범위</button><button role="tab" aria-selected="false" data-tab="help">사용 방법</button></div>
+    <div class="tabbody" id="tab-findings" role="tabpanel">
+     <div class="resultshead"><div><h3>확인이 필요한 항목</h3><p class="small muted">오류 위치와 원래 값이 보고서에 함께 기록됩니다.</p></div><div class="exportgroup"><button class="secondary export" id="exportCSV" disabled>오류 CSV ↓</button><button class="secondary export" id="exportJSON" disabled>전체 JSON ↓</button><button class="secondary export" id="exportManifest" disabled>파일 목록 ↓</button></div></div>
+     <div class="filters"><label class="sr" for="severity">심각도</label><select id="severity"><option value="ALL">모든 심각도</option><option value="ERROR">오류 · ERROR</option><option value="BLOCKED">미완료 · BLOCKED</option><option value="WARNING">확인 필요 · WARNING</option><option value="INFO">정보 · INFO</option></select><label class="sr" for="codeFilter">오류 유형</label><select id="codeFilter"><option value="ALL">모든 유형</option></select><label class="sr" for="search">결과 검색</label><input id="search" placeholder="경로, 문서 ID, 오류 코드 검색" type="search"></div>
+     <div id="truncatedNote" class="callout warning" hidden></div>
+     <div id="findingsEmpty" class="empty"><div class="emptyicon" aria-hidden="true">⌕</div><h3>검사 결과가 여기에 표시됩니다</h3><p>왼쪽에서 폴더를 선택하거나 샘플을 실행해 보세요.</p><div class="checktags"><span>경로 누락</span><span>DAT 열 밀림</span><span>중복 ID</span><span>OPT 페이지 수</span></div></div>
+     <div class="tablewrap" id="findingsTableWrap" hidden><table class="findingstable"><thead><tr><th>수준 / 코드</th><th>위치</th><th>상세</th></tr></thead><tbody id="findingsRows"></tbody></table></div>
+     <div class="pagination" id="pagination" hidden><span id="pageInfo"></span><div><button class="secondary" id="prevPage">이전</button><button class="secondary" id="nextPage">다음</button></div></div>
     </div>
-    <div id="schemaNote" class="note"></div>
-    <div class="actions" style="margin-top:14px"><button id="btnRun" class="btn primary">Run Package Reconciliation</button><button id="btnCancel" class="btn" disabled>Cancel</button></div>
+    <div class="tabbody" id="tab-sources" role="tabpanel" hidden>
+     <h3>자동 감지한 로드 파일</h3><p class="small muted">필요한 경우만 수정한 뒤 ‘다시 검사’를 누르세요. 설정을 바꾸면 이전 판정은 즉시 무효화됩니다.</p>
+     <div class="callout">같은 납품 패키지의 DAT와 OPT는 같은 <b>그룹</b>을 사용합니다. 관계없는 납품본을 한 폴더에서 검사한다면 그룹 이름을 나누세요.</div>
+     <div class="manualsource"><label for="manualPath">자동 감지에서 빠진 로드 파일</label><div><input id="manualPath" placeholder="선택한 루트 기준 상대경로, 예: Native/special.dat"><button id="addSource" class="secondary" disabled>추가</button></div><small class="muted">기본적으로 Native/Text/Image 폴더 안의 파일은 콘텐츠로 취급합니다.</small></div>
+     <div id="sourcesList" class="sourceslist"><p class="emptytext">폴더를 선택하면 DAT · CSV · TSV · OPT · LOAD 후보가 나타납니다.</p></div>
+    </div>
+    <div class="tabbody" id="tab-coverage" role="tabpanel" hidden>
+     <h3>무엇을 확인했나요?</h3><p class="small muted">‘검사하지 않음’을 0건 또는 통과로 표시하지 않습니다.</p><div id="coverageList"></div>
+     <div class="callout warning"><b>실제 PDF/TIFF 내부 페이지 수와 파일 내용의 정상 여부는 검사하지 않습니다.</b><br>페이지 수 대조는 DAT에 적힌 수와 OPT의 실제 레코드 수를 비교합니다. SHA-256은 파일 지문이며, 정답 해시와 비교하지 않으면 내용이 올바르다는 증거가 되지 않습니다.</div>
+     <details class="audit"><summary>실행 기록과 지문</summary><pre id="auditText">검사 후 표시됩니다.</pre></details>
+    </div>
+    <div class="tabbody help" id="tab-help" role="tabpanel" hidden>
+     <h3>처음 사용하는 방법</h3><ol><li>이 HTML 파일을 <b>Edge 또는 Chrome</b>에서 여세요. 인터넷과 별도 설치는 필요하지 않습니다.</li><li>DAT/OPT와 Native/Text/Images 폴더를 함께 포함하는 <b>패키지 루트 폴더</b>를 선택하세요. 자동으로 검사를 시작합니다.</li><li><b>REVIEW / INCOMPLETE</b>이면 ‘로드 파일 설정’에서 인코딩, 구분자, 문서 ID와 경로 필드를 확인한 뒤 다시 검사하세요.</li><li>결과를 필터링하고 CSV 또는 JSON 보고서를 저장하세요. 원본 파일은 직접 수정되지 않습니다.</li></ol>
+     <h3>판정 읽기</h3><div class="helpcards"><div><b class="green">PASS</b><p>선택 범위 검사가 완료됐고 보고할 오류·경고가 없습니다. 고객사별 납품 규격 인증을 의미하지 않습니다.</p></div><div><b class="amber">REVIEW</b><p>전체 검사는 끝났지만 인코딩 추정, 미참조 파일, 대소문자 차이 등 확인할 항목이 있습니다.</p></div><div><b class="red">FAIL</b><p>경로 누락, 중복 문서, OPT 불일치 등 오류를 발견했습니다.</p></div><div><b class="purple">INCOMPLETE</b><p>해석 모호성, 읽기 실패, 자료 변경 또는 자원 제한으로 검사가 완료되지 않았습니다. 오류도 함께 있을 수 있습니다.</p></div></div>
+     <h3>지원하는 규격</h3><p>Concordance <code>ASCII 20 / þ (254)</code>, <code>^value^|^value^</code>, CSV, TSV, pipe, caret. 한 줄에 하나의 OPT 이미지 레코드, 7개 필드, <code>Y</code> 문서 시작, 시작 레코드의 페이지 수를 지원합니다. 공백 또는 <code>N</code>은 문서 계속입니다.</p><p>인코딩은 UTF-8, UTF-16LE/BE, Windows-1252를 지원하며, 다른 문자 집합은 설정에서 명시적으로 선택할 수 있습니다. BOM 없는 비 UTF-8 추정은 경고로 남깁니다. 따옴표와 줄바꿈을 포함한 필드도 나눠 읽으며 보존합니다.</p>
+     <h3>경로와 매핑</h3><p>기본 경로 기준은 패키지 루트와 로드 파일 위치입니다. 둘이 다른 실제 파일을 가리키면 모호성 오류가 납니다. Windows의 <code>\</code> 구분자를 지원하고, 같은 파일명만으로 임의 연결하지 않습니다.</p><p><code>X:\Export001\Native\a.msg</code> 같은 경로는 해당 소스의 ‘제거할 경로 접두사’에 <code>X:\Export001\</code>을 지정하면 선택한 루트를 기준으로 대조합니다. 지정한 접두사가 일치하는 경로에만 적용됩니다.</p><p>OPT 연결 키는 <b>Begin Bates</b>이며 없으면 Document ID입니다. Parent ID는 존재 여부, 자기 참조, 순환 참조를 검사합니다. 단순 숫자 Bates 범위의 중첩도 검사합니다. 날짜·시간대와 다른 메타데이터 값은 변환하지 않습니다.</p>
+     <h3>범위와 성능</h3><p>파일 100,000개, 로드 파일 500개, 논리 레코드 합계 500,000개, 저장할 상세 오류 10,000개가 상한입니다. 상한에 도달하면 정상 통과시키지 않습니다. 파일과 ID 인덱스는 메모리를 사용하므로 큰 자료는 납품 단위로 나눠 검사하세요.</p><p>기본 검사에서는 native/text/image 파일의 경로와 크기를 확인합니다. 전체 해시는 옵션이며 PDF 복구, 실제 페이지 디코딩, OCR 정확도, 악성코드 검사, Relativity import 시뮬레이션은 수행하지 않습니다. ZIP/PST 내부는 열지 않습니다.</p><p>호환 모드에서는 선택 당시 파일 목록만 검사할 수 있으므로 결과는 최소 REVIEW입니다. 기본 폴더 모드는 검사 종료 시 목록·크기·수정 시간을 다시 읽습니다. 어떤 모드도 폴더를 잠그지 않으므로 검사 중 외부에서 파일을 변경하지 마세요.</p>
+     <h3>보고서</h3><p>JSON에는 실행 시작·종료 시각, 설정, 파일 목록, SHA-256 지문, 검사 범위, 오류의 원래 값이 저장됩니다. CSV는 Excel 수식 실행을 막기 위해 위험한 셀에 작은따옴표를 붙일 수 있습니다. 정확한 원문 확인에는 JSON을 사용하세요.</p><p>앱은 검사 데이터를 브라우저 저장소에 남기지 않습니다. 새로고침하거나 닫으면 결과가 사라지므로 필요한 보고서를 먼저 저장하세요.</p>
+    </div>
+   </section>
+   <footer>Load File Package Reconciler <span id="footerVersion"></span> · 이현수 / HYUNSOO LEE <span>Local processing. Explicit coverage. Read-only inputs.</span></footer>
   </div>
-</section>
-
-<section id="results" class="hidden" style="display:grid;gap:18px">
-  <section class="card"><div class="card-head"><h2>3. Overall verdict</h2><span id="verdict" class="verdict PASS">PASS</span></div><div id="summaryGrid" class="summary-grid"></div></section>
-  <section class="card"><div class="card-head"><h2>Issues & findings</h2><span id="issueCounts" class="small"></span></div><div id="issues" class="issue-group"></div></section>
-  <section class="card"><div class="card-head"><h2>Reconciliation summary</h2></div><div class="table-wrap"><table><thead><tr><th>Role</th><th>Refs</th><th>Unique</th><th>Resolved</th><th>Missing</th><th>Invalid path</th><th>Duplicate refs</th><th>Case mismatch</th><th>Orphans</th><th>Scope</th></tr></thead><tbody id="reconBody"></tbody></table></div></section>
-  <section class="card"><div class="card-head"><h2>Package / load-file provenance</h2></div><div id="metaGrid" class="meta-grid"></div></section>
-  <section class="card"><div class="card-head"><h2>Missing / invalid / duplicate reference samples</h2><input id="refFilter" class="filter" placeholder="Filter path, role, issue…"/></div><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Role</th><th>Row</th><th>Issue</th><th>Referenced path</th><th>Normalized / note</th></tr></thead><tbody id="refBody"></tbody></table></div></section>
-  <section class="card"><div class="card-head"><h2>Orphan file samples</h2><span class="small">Only files inside inferred role scope are eligible; load/control files are excluded.</span></div><div class="table-wrap"><table><thead><tr><th>Role</th><th>Path</th><th>Size</th><th>Modified</th></tr></thead><tbody id="orphanBody"></tbody></table></div></section>
-  <section class="card"><div class="card-head"><h2>Audit report</h2><div class="actions"><button id="btnTxt" class="btn primary">Download TXT</button><button id="btnJson" class="btn">Download JSON</button><button id="btnCopy" class="btn">Copy report</button></div></div><pre id="reportPre" class="report-pre"></pre></section>
-</section>
-<footer>Read-only diagnostic utility. PASS means the implemented checks found no FAIL/WARN condition. Matter-specific export rules can legitimately allow blank paths or count differences, so count alignment is advisory unless Strict Counts is enabled.</footer>
+ </section>
 </main>
-<div id="toast" class="toast"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script id="engine">
+/* Load File Package Reconciler — offline, read-only. No third-party runtime. */
+(function (global) {
+'use strict';
+const VERSION = '2.0.0';
+const LIMITS = Object.freeze({files:100000, sources:500, rows:500000, issues:10000, columns:8192, fieldChars:16*1024*1024, recordChars:32*1024*1024, sample:512*1024, chunk:256*1024});
+const FORMATS = Object.freeze({
+  concordance:{name:'Concordance · DC4 / þ', delimiter:'\x14', quote:'þ', requireQuotes:true},
+  caretpipe:{name:'Pipe / ^ qualifier',delimiter:'|',quote:'^',requireQuotes:true},
+  csv:{name:'CSV · comma / "',delimiter:',',quote:'"'},
+  tsv:{name:'TSV · tab / "',delimiter:'\t',quote:'"'},
+  pipe:{name:'Pipe / "',delimiter:'|',quote:'"'},
+  caret:{name:'Caret / "',delimiter:'^',quote:'"'}
+});
+const ROLES = {id:'Document ID',begin:'Begin Bates / OPT key',end:'End Bates',pages:'Page count',native:'Native path',text:'Text path',image:'Image path',parent:'Parent ID'};
+const ALIASES = {
+ id:['DOCID','DOCUMENTID','CONTROLNUMBER','CONTROLNO','DOCUMENTNUMBER','DOCNUMBER','DOCNO'],
+ begin:['BEGBATES','BEGINBATES','BATESBEGIN','BEGDOC','BEGNO','STARTBATES','BEGINNINGBATES','BEGINNINGPRODUCTIONNUMBER'],
+ end:['ENDBATES','BATESEND','ENDDOC','ENDNO','ENDINGBATES','ENDINGPRODUCTIONNUMBER'],
+ pages:['PAGECOUNT','NUMPAGES','NUMBEROFPAGES','PAGES','IMAGECOUNT'],
+ native:['NATIVEPATH','NATIVEFILE','NATIVEFILEPATH','NATIVELINK','NATIVEFILELINK','NATIVE','LINKTONATIVE'],
+ text:['TEXTPATH','TEXTFILE','TEXTFILEPATH','TEXTLINK','OCRPATH','OCRFILE','EXTRACTEDTEXTPATH','LINKTOTEXT'],
+ image:['IMAGEPATH','IMAGEFILE','IMAGEFILEPATH','FIRSTIMAGEPATH','TIFFPATH','TIFFFILE'],
+ parent:['PARENTID','PARENTDOCID','PARENTDOCUMENTID','PARENTCONTROLNUMBER']
+};
+const sorted = a => a.sort((x,y)=>x<y?-1:x>y?1:0);
+const keyHeader = x => x.trim().toUpperCase().replace(/[ _\-.]/g,'');
+const dirname = p => p.includes('/') ? p.slice(0,p.lastIndexOf('/')) : '';
+const extname = p => (p.match(/\.([^./]+)$/)||[])[1]?.toLowerCase() || '';
+const contentDir = p => /(?:^|\/)(?:native|natives|text|texts|image|images|tiff|tiffs|ocr)(?:\/)/i.test(p);
+function classify(path) {
+  if (/(?:^|\/)(?:native|natives)\//i.test(path)) return 'native';
+  if (/(?:^|\/)(?:text|texts|ocr)\//i.test(path)) return 'text';
+  if (/(?:^|\/)(?:image|images|tiff|tiffs)\//i.test(path)) return 'image';
+  const ext=extname(path);
+  if (['tif','tiff','jpg','jpeg','png','bmp','gif','jp2'].includes(ext)) return 'image';
+  if (ext==='txt') return 'text';
+  if (['pdf','msg','eml','doc','docx','xls','xlsx','ppt','pptx','zip','pst','mp4','wav'].includes(ext)) return 'native';
+  return 'other';
+}
+class QCError extends Error {
+  constructor(code,message,line,record) { super(message); this.name='QCError'; this.code=code; this.line=line; this.record=record; }
+}
+/* Strict incremental parser. Preserves field content, including quoted CR/LF. */
+class DelimitedParser {
+  constructor(format,onRow,limits={}) {
+    this.f=format; this.onRow=onRow; this.limits={...LIMITS,...limits}; this.state='start';
+    this.fields=[]; this.field=''; this.rowChars=0; this.touched=false; this.row=0;
+    this.line=1; this.startLine=1; this.skipLF=false; this.pendingCR=false; this.previousCR=false;
+    this.eols={CRLF:0,LF:0,CR:0}; this.quoted=false;
+  }
+  error(code,message){throw new QCError(code,message,this.line,this.row+1);}
+  append(c){this.field+=c;if(this.field.length>this.limits.fieldChars)this.error('FIELD_LIMIT','A field exceeds the configured memory limit.');}
+  push(){this.fields.push(this.field);this.field='';this.state='start';if(this.fields.length>this.limits.columns)this.error('COLUMN_LIMIT','Too many columns.');}
+  emit(){
+    this.push(); this.row++; const fields=this.fields; const line=this.startLine;
+    const blank=!this.touched && fields.length===1 && fields[0]==='';
+    this.fields=[];this.rowChars=0;this.touched=false;
+    this.onRow(fields,{record:this.row,line,blank});
+  }
+  feed(text){
+    for(let i=0;i<text.length;i++){
+      const c=text[i];
+      if(this.pendingCR){this.eols[c==='\n'?'CRLF':'CR']++;this.pendingCR=false;}
+      else if(c==='\n')this.eols.LF++;
+      if(c==='\r')this.pendingCR=true;
+      if(this.skipLF && c==='\n'){this.skipLF=false;this.previousCR=false;continue;}
+      this.skipLF=false; this.rowChars++;
+      if(this.rowChars>this.limits.recordChars)this.error('RECORD_LIMIT','A record exceeds the configured memory limit.');
+      if(c==='\0')this.error('NUL_CHARACTER','NUL found: wrong encoding or binary input.');
+      const newline=c==='\r'||c==='\n';
+      if(this.state==='quoted'){
+        if(c===this.f.quote)this.state='after'; else this.append(c);
+      }else if(this.state==='after'){
+        if(c===this.f.quote){this.append(c);this.state='quoted';}
+        else if(c===this.f.delimiter){this.push();this.touched=true;}
+        else if(newline){this.emit();this.startLine=this.line+1;this.skipLF=c==='\r';}
+        else this.error('MALFORMED_QUOTE','Unexpected character after a closing qualifier.');
+      }else if(newline){this.emit();this.startLine=this.line+1;this.skipLF=c==='\r';}
+      else if(c===this.f.delimiter){this.push();this.touched=true;}
+      else if(this.state==='start' && c===this.f.quote){this.state='quoted';this.touched=true;}
+      else {
+        if(c===this.f.quote)this.error('BARE_QUOTE','Qualifier found inside an unquoted field.');
+        if(this.state==='start' && this.f.requireQuotes)this.error('MISSING_QUALIFIER','Non-empty Concordance fields must be qualified.');
+        this.state='bare';this.touched=true;this.append(c);
+      }
+      if(c==='\r' || (c==='\n'&&!this.previousCR))this.line++;
+      this.previousCR=c==='\r';
+    }
+  }
+  finish(){
+    if(this.pendingCR){this.eols.CR++;this.pendingCR=false;}
+    if(this.state==='quoted')this.error('UNCLOSED_QUOTE','End of file inside a qualified field.');
+    if(this.touched || this.fields.length || this.field.length)this.emit();
+    return this.eols;
+  }
+}
+/* Incremental SHA-256 (FIPS 180-4); verified against Node crypto in tests. */
+const SHA_K=new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+const rotr=(v,n)=>(v>>>n)|(v<<(32-n));
+class SHA256 {
+ constructor(){this.h=new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);this.buf=new Uint8Array(64);this.used=0;this.bytes=0;this.w=new Uint32Array(64);this.done=false;}
+ block(b,offset=0){
+  const w=this.w,h=this.h;
+  for(let i=0;i<16;i++){let j=offset+i*4;w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0;}
+  for(let i=16;i<64;i++){let x=w[i-15],y=w[i-2];w[i]=(w[i-16]+(rotr(x,7)^rotr(x,18)^(x>>>3))+w[i-7]+(rotr(y,17)^rotr(y,19)^(y>>>10)))>>>0;}
+  let [a,bv,c,d,e,f,g,hh]=h;
+  for(let i=0;i<64;i++){const t1=(hh+(rotr(e,6)^rotr(e,11)^rotr(e,25))+((e&f)^(~e&g))+SHA_K[i]+w[i])>>>0;const t2=((rotr(a,2)^rotr(a,13)^rotr(a,22))+((a&bv)^(a&c)^(bv&c)))>>>0;hh=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=bv;bv=a;a=(t1+t2)>>>0;}
+  const v=[a,bv,c,d,e,f,g,hh];for(let i=0;i<8;i++)h[i]=(h[i]+v[i])>>>0;
+ }
+ update(b){if(this.done)throw Error('Hash finalized');this.bytes+=b.length;let p=0;
+  if(this.used){while(p<b.length&&this.used<64)this.buf[this.used++]=b[p++];if(this.used===64){this.block(this.buf);this.used=0;}}
+  while(p+64<=b.length){this.block(b,p);p+=64;}
+  while(p<b.length)this.buf[this.used++]=b[p++];return this;
+ }
+ digest(){if(this.done)throw Error('Hash finalized');const bits=BigInt(this.bytes)*8n;this.buf[this.used++]=0x80;if(this.used>56){this.buf.fill(0,this.used);this.block(this.buf);this.used=0;}this.buf.fill(0,this.used,56);for(let i=0;i<8;i++)this.buf[63-i]=Number((bits>>BigInt(i*8))&255n);this.block(this.buf);this.done=true;return Array.from(this.h,x=>x.toString(16).padStart(8,'0')).join('');}
+}
+const shaText=x=>new SHA256().update(new TextEncoder().encode(x)).digest();
+async function hashFile(file,onBytes=()=>{}){const h=new SHA256();for(let p=0;p<file.size;p+=LIMITS.chunk){const b=new Uint8Array(await file.slice(p,p+LIMITS.chunk).arrayBuffer());h.update(b);onBytes(Math.min(p+b.length,file.size));}return h.digest();}
+function bomOf(b){if(b[0]===0xef&&b[1]===0xbb&&b[2]===0xbf)return 'utf-8';if(b[0]===0xff&&b[1]===0xfe)return 'utf-16le';if(b[0]===0xfe&&b[1]===0xff)return 'utf-16be';return null;}
+function decodeSample(bytes,requested,totalSize){
+  const bom=bomOf(bytes);let encoding=requested&&requested!=='auto'?requested:bom;let assumed=false;
+  if(bom && encoding!==bom)throw new QCError('BOM_CONFLICT',`Selected ${encoding} conflicts with the ${bom} BOM.`);
+  if(!encoding){
+    try {const d=new TextDecoder('utf-8',{fatal:true});const text=d.decode(bytes,{stream:bytes.length<totalSize});
+      if(text.includes('\0'))throw Error('Possible UTF-16');return {encoding:'utf-8',text,assumed:false,bom};
+    }catch{
+      let even=0,odd=0;for(let i=0;i<Math.min(bytes.length,4096);i++)if(bytes[i]===0)(i%2?odd++:even++);
+      if(odd>8&&odd>even*4)encoding='utf-16le';else if(even>8&&even>odd*4)encoding='utf-16be';else encoding='windows-1252';
+      assumed=true;
+    }
+  }
+  let text;try{text=new TextDecoder(encoding,{fatal:true}).decode(bytes,{stream:bytes.length<totalSize});}catch{throw new QCError('DECODE_ERROR',`Input cannot be decoded strictly as ${encoding}.`);}
+  if(text.includes('\0'))throw new QCError('NUL_CHARACTER','NUL found in decoded input; select the correct encoding.');
+  return {encoding,text,assumed,bom};
+}
+function sampleRows(text,format,complete){
+  const rows=[];let parseError=null;
+  const p=new DelimitedParser(format,(r,m)=>{if(!m.blank)rows.push(r);if(rows.length>=24)throw new QCError('SAMPLE_END','');});
+  try{p.feed(text);if(complete)p.finish();}catch(e){if(e.code!=='SAMPLE_END')parseError=e;}
+  return {rows,parseError};
+}
+function detectFormat(text,complete,requested='auto'){
+  if(requested!=='auto'){
+    if(!FORMATS[requested])throw new QCError('UNSUPPORTED_FORMAT','Unsupported delimiter selection.');
+    const x=sampleRows(text,FORMATS[requested],complete);
+    if(!x.rows.length){if(x.parseError)throw x.parseError;throw new QCError('HEADER_NOT_FOUND','A complete header was not found within the preview limit.');}
+    return {format:requested,headers:x.rows[0],sampleError:x.parseError?.message||null};
+  }
+  const found=[];
+  for(const [name,f] of Object.entries(FORMATS)){
+    if(name==='caretpipe'&&!text.replace(/^[\r\n]+/,'').startsWith('^'))continue;
+    const x=sampleRows(text,f,complete),h=x.rows[0];
+    if(!h||h.length<2)continue;
+    /* A valid header is sufficient; malformed later rows must not hide a format. */
+    if(h.some(v=>/[\x14\0]/.test(v))&&name!=='concordance')continue;
+    found.push({format:name,headers:h,sampleError:x.parseError?.message||null});
+  }
+  const known=found.filter(x=>!x.headers.some(h=>!h.trim())&&x.headers.some(h=>Object.values(ALIASES).some(a=>a.includes(keyHeader(h)))));
+  const choices=known.length?known:found.filter(x=>!x.headers.some(h=>!h.trim()));
+  if(choices.length===1)return choices[0];
+  if(!choices.length)throw new QCError('FORMAT_UNRESOLVED','No unambiguous supported multi-column header found. Choose a delimiter; malformed input is not repaired.');
+  throw new QCError('FORMAT_AMBIGUOUS',`Multiple formats are plausible: ${choices.map(x=>x.format).join(', ')}. Select the intended format.`);
+}
+function mapHeaders(headers,overrides={}){
+  const keys=headers.map(keyHeader),mapping={},ambiguous={};
+  for(const [role,aliases] of Object.entries(ALIASES)){
+    if(Object.hasOwn(overrides,role)&&overrides[role]!=='auto'){
+      const n=Number(overrides[role]);if(!Number.isInteger(n)||n< -1||n>=headers.length)throw new QCError('MAPPING_INVALID',`Invalid ${role} column mapping.`);mapping[role]=n;continue;
+    }
+    const matches=keys.flatMap((k,i)=>aliases.includes(k)?[i]:[]);
+    mapping[role]=matches.length===1?matches[0]:-1;if(matches.length>1)ambiguous[role]=matches;
+  }
+  if(mapping.id<0&&!Object.hasOwn(ambiguous,'id')&&(!Object.hasOwn(overrides,'id')||overrides.id==='auto')&&mapping.begin>=0)mapping.id=mapping.begin;
+  return {mapping,ambiguous};
+}
+function candidatePaths(entries){return entries.filter(e=>{
+ const ext=extname(e.path);if(contentDir(e.path))return false;
+ return ['dat','csv','tsv','opt','load'].includes(ext)||(ext==='txt'&&/(?:load|metadata|concordance)/i.test(e.path));
+});}
+async function inspectSource(entry,override={}){
+ const ext=extname(entry.path),kind=override.kind||(ext==='opt'?'opt':'metadata');
+ const result={path:entry.path,kind,scope:override.scope||'package',base:override.base||'auto',prefix:override.prefix||'',encodingRequested:override.encoding||'auto',formatRequested:override.format||'auto',headers:[],mapping:{},ambiguous:{},size:entry.file.size};
+ if(kind==='ignore'){result.ignored=true;return result;}
+ try{
+  const bytes=new Uint8Array(await entry.file.slice(0,LIMITS.sample).arrayBuffer());
+  const d=decodeSample(bytes,result.encodingRequested,entry.file.size);Object.assign(result,{encoding:d.encoding,encodingAssumed:d.assumed,bom:d.bom});
+  if(kind==='opt')result.format='csv';
+  else {Object.assign(result,detectFormat(d.text,bytes.length===entry.file.size,result.formatRequested));Object.assign(result,mapHeaders(result.headers,override.mapping));}
+ }catch(e){result.error={code:e.code||'READ_ERROR',message:e.message};}
+ return result;
+}
+/* Path matching intentionally never uses a basename or arbitrary suffix. */
+function normalizeRelative(path,base=''){
+  const out=base?base.split('/'):[];
+  for(const bit of path.replace(/\\/g,'/').split('/')){
+    if(bit===''||bit==='.')continue;
+    if(bit==='..'){if(!out.length)return null;out.pop();}else out.push(bit);
+  }
+  return out.join('/');
+}
+class PathIndex {
+ constructor(entries,rootName){this.exact=new Map();this.folded=new Map();this.rootName=rootName;
+  for(const e of entries){if(!this.exact.has(e.path))this.exact.set(e.path,[]);this.exact.get(e.path).push(e);const k=e.path.toLowerCase();if(!this.folded.has(k))this.folded.set(k,[]);this.folded.get(k).push(e);}
+ }
+ resolve(raw,source){
+  if(raw!==raw.trim())return {code:'PATH_WHITESPACE',message:'Leading/trailing whitespace in path; no trimming applied.'};
+  if(/[\x00-\x1f\x7f\ufeff]/.test(raw))return {code:'PATH_CONTROL_CHARACTER',message:'A path contains a control character or embedded BOM.'};
+  let value=raw.replace(/\\/g,'/'),mapped=false;
+  if(source.prefix){const prefix=source.prefix.replace(/\\/g,'/').replace(/\/+$/,'')+'/';if(value.startsWith(prefix)){value=value.slice(prefix.length);mapped=true;}}
+  if(/^(?:[a-z]:|\/|[a-z][a-z0-9+.-]*:)/i.test(value))return {code:'ABSOLUTE_PATH',message:'Absolute/UNC/URI paths need an explicit prefix mapping to this package root.'};
+  if(!value)return {code:'EMPTY_PATH',message:'Empty path after mapping.'};
+  const candidates=[];
+  const add=(base,mode,v=value)=>{const path=normalizeRelative(v,base);if(path)candidates.push({path,mode});};
+  if(mapped||source.base==='root')add('','root');
+  else if(source.base==='load')add(dirname(source.path),'load');
+  else {
+    add('','root');add(dirname(source.path),'load');
+    if(this.rootName&&value.startsWith(this.rootName+'/'))add('','root-name',value.slice(this.rootName.length+1));
+  }
+  const hits=new Map();
+  for(const c of candidates){for(const e of this.folded.get(c.path.toLowerCase())||[])if(!hits.has(e.path))hits.set(e.path,{entry:e,mode:c.mode,caseMismatch:e.path!==c.path,mapped});}
+  if(hits.size>1)return {code:'AMBIGUOUS_PATH',message:'Multiple files match the allowed path interpretations.',candidates:[...hits.keys()]};
+  if(hits.size===1)return {...[...hits.values()][0],parentSegment:value.split('/').includes('..')};
+  if(!candidates.length)return {code:'PATH_ESCAPES_ROOT',message:'Path escapes the selected package root.'};
+  return {code:'MISSING_FILE',message:'Referenced file not found under the selected package root.',candidates:candidates.map(c=>c.path)};
+ }
+}
+async function walkDirectory(root,onProgress=()=>{},limit=LIMITS.files){
+ const entries=[],stack=[{handle:root,path:''}];let last=0;
+ while(stack.length){const current=stack.pop();const pending=[];
+  for await (const [name,h] of current.handle.entries()){
+   const path=current.path?current.path+'/'+name:name;
+   if(h.kind==='directory')stack.push({handle:h,path});
+   else {pending.push({path,handle:h});if(entries.length+pending.length>limit)throw new QCError('FILE_LIMIT',`Folder exceeds ${limit.toLocaleString()} files.`);}
+  }
+  for(let i=0;i<pending.length;i+=24){const batch=await Promise.all(pending.slice(i,i+24).map(async e=>({...e,file:await e.handle.getFile()})));entries.push(...batch);
+   if(Date.now()-last>150){onProgress(entries.length);last=Date.now();}
+  }
+ }
+ entries.sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);onProgress(entries.length);return entries;
+}
+class IssueLog {
+ constructor(limit=LIMITS.issues){this.items=[];this.counts={ERROR:0,WARNING:0,INFO:0,BLOCKED:0};this.codes={};this.limit=limit;this.total=0;this.truncated=false;}
+ add(severity,code,message,context={}){
+  this.total++;this.counts[severity]++;this.codes[code]=(this.codes[code]||0)+1;
+  if(this.items.length<this.limit)this.items.push({severity,code,message,...context});else this.truncated=true;
+ }
+}
+const namespace=(scope,id)=>JSON.stringify([scope,id]);
+const nonnegative=x=>/^\d+$/.test(x)&&Number.isSafeInteger(Number(x));
+const batesNumber=x=>{const m=/^(.*?)(\d+)$/.exec(x);return m?{prefix:m[1],width:m[2].length,n:BigInt(m[2])}:null;};
+async function scanDelimited(entry,source,onRow,onProgress){
+ const hash=new SHA256(),decoder=new TextDecoder(source.encoding,{fatal:true});
+ const parser=new DelimitedParser(FORMATS[source.format],onRow);let read=0;
+ try{
+  for(let pos=0;pos<entry.file.size;pos+=LIMITS.chunk){
+   const bytes=new Uint8Array(await entry.file.slice(pos,pos+LIMITS.chunk).arrayBuffer());
+   hash.update(bytes);read+=bytes.length;let text;
+   try{text=decoder.decode(bytes,{stream:true});}catch{throw new QCError('DECODE_ERROR',`Invalid ${source.encoding} sequence; no replacement characters inserted.`,parser.line,parser.row+1);}
+   parser.feed(text);onProgress(read,parser.row);
+  }
+  let tail;try{tail=decoder.decode();}catch{throw new QCError('DECODE_ERROR',`Truncated ${source.encoding} byte sequence at EOF.`,parser.line,parser.row+1);}
+  parser.feed(tail);const eols=parser.finish();
+  return {sha256:hash.digest(),bytesRead:read,records:parser.row,eols,complete:true};
+ }catch(e){e.scan={bytesRead:read,records:parser.row,complete:false,eols:parser.eols};throw e;}
+}
+async function runPackage(input,emit=()=>{}){
+ const startedAt=new Date().toISOString(),entries=[...input.entries].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
+ const settings={hashAll:false,multiPath:false,...input.settings};
+ const log=new IssueLog(),index=new PathIndex(entries,input.rootName||''),references=new Map(),documents=new Map(),docFolded=new Map(),begins=new Map(),optDocs=new Map(),optPageIDs=new Map(),optImageRefs=new Map();
+ const sources=[],summaries=[],rolesCount={native:0,text:0,image:0,other:0},manifest=[];
+ const totals={files:entries.length,bytes:0,loadFiles:0,metadataRows:0,optPages:0,optDocuments:0,references:0,matchedReferences:0,missingReferences:0,unreferenced:0,zeroBytes:0};
+ let incomplete=false,totalRows=0,lastProgress=0;const push=(phase,detail,more={})=>{if(Date.now()-lastProgress>120||more.force){emit({type:'progress',phase,detail,...more});lastProgress=Date.now();}};
+ const add=(severity,code,message,context={})=>{log.add(severity,code,message,context);if(severity==='BLOCKED')incomplete=true;};
+ function rowContext(source,m,docID,field,value){const o={file:source.path,record:m?.record,line:m?.line,docID,field,value,scope:source.scope};for(const k of Object.keys(o))if(o[k]===undefined)delete o[k];return o;}
+ if(entries.length>LIMITS.files)add('BLOCKED','FILE_LIMIT',`More than ${LIMITS.files} files selected.`);
+ if(!entries.length)add('BLOCKED','EMPTY_PACKAGE','No files found in the selected directory.');
+ for(const [path,values] of index.exact)if(values.length>1)add('ERROR','DUPLICATE_PHYSICAL_PATH','Multiple input files have the same relative path.',{file:path});
+ for(const [fold,values] of index.folded)if(values.length>1)add('ERROR','PATH_CASE_COLLISION','Paths collide under case-insensitive matching.',{file:values[0].path,related:values.map(x=>x.path)});
+ for(const e of entries){totals.bytes+=e.file.size;rolesCount[classify(e.path)]++;if(e.file.size===0)totals.zeroBytes++;}
+ let candidates=candidatePaths(entries);
+ for(const path of Object.keys(input.overrides||{}))if(!candidates.some(e=>e.path===path)&&index.exact.has(path))candidates.push(index.exact.get(path)[0]);
+ candidates.sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
+ if(candidates.length>LIMITS.sources){add('BLOCKED','SOURCE_LIMIT',`Found ${candidates.length} load-file candidates; limit is ${LIMITS.sources}. Split the package.`);candidates=candidates.slice(0,LIMITS.sources);}
+ for(const entry of candidates){
+  push('detect',entry.path);const s=await inspectSource(entry,input.overrides?.[entry.path]);sources.push(s);emit({type:'source',source:s});
+ }
+ const active=sources.filter(s=>!s.ignored),loadPaths=new Set(active.map(s=>s.path));totals.loadFiles=active.length;
+ if(!active.length)add('BLOCKED','NO_LOAD_FILES','No DAT/CSV/TSV/OPT/load-file candidates selected. Files under Native/Text/Image folders are treated as content by default.');
+ if(sources.some(s=>s.ignored))add('WARNING','EXCLUDED_LOAD_FILES','Some detected load-file candidates were explicitly excluded.',{related:sources.filter(s=>s.ignored).map(s=>s.path)});
+ function checkValueIdentity(value,source,m,field){
+  if(!value)add('ERROR','EMPTY_ID','A required identifier is empty.',rowContext(source,m,value,field,value));
+  else if(value!==value.trim()||/[\x00-\x1f\x7f\ufeff]/.test(value))add('ERROR','ID_WHITESPACE_OR_CONTROL','Identifier contains outer whitespace or a control/BOM character; no normalization applied.',rowContext(source,m,value,field,value));
+ }
+ function resolveOne(value,role,source,m,docID){
+  totals.references++;const ctx=rowContext(source,m,docID,role,value),found=index.resolve(value,source);
+  if(found.code){totals.missingReferences++;add('ERROR',found.code,found.message,{...ctx,related:found.candidates||[]});return null;}
+  totals.matchedReferences++;const e=found.entry;
+  if(found.caseMismatch)add('WARNING','PATH_CASE_MISMATCH','Reference and file differ in case.',{...ctx,related:[e.path]});
+  if(found.mode==='root-name')add('WARNING','ROOT_NAME_PREFIX','Matched after removing the selected folder name. Confirm the intended path base.',{...ctx,related:[e.path]});
+  if(found.parentSegment)add('WARNING','PARENT_PATH_SEGMENT','Path uses .. within the package. Confirm the load-file path base.',{...ctx,related:[e.path]});
+  if(loadPaths.has(e.path))add('ERROR','CONTENT_IS_LOAD_FILE','A content path resolves to a selected load file.',{...ctx,related:[e.path]});
+  if(e.file.size===0)add(role==='text'?'WARNING':'ERROR','ZERO_BYTE_REFERENCE',`Referenced ${role} file is empty.`,{...ctx,related:[e.path]});
+  if(!references.has(e.path))references.set(e.path,{count:0,roles:new Set(),first:{...ctx},perRole:new Map()});
+  const ref=references.get(e.path),refKey=namespace(source.scope,role),prev=ref.perRole.get(refKey);
+  if(prev&&role!=='opt-image')add('WARNING','SHARED_FILE_REFERENCE','Multiple rows/fields reference the same content file.',{...ctx,related:[e.path,`${prev.file}:${prev.record}`]});
+  if(!prev)ref.perRole.set(refKey,{file:source.path,record:m.record,docID});ref.count++;ref.roles.add(role);
+  return e.path;
+ }
+ function resolvePaths(value,role,source,m,docID){
+  if(!value)return [];
+  const parts=settings.multiPath?value.split('®'):[value];
+  const out=[];for(const part of parts){if(!part){add('ERROR','EMPTY_MULTI_PATH','Empty component in a multi-value path.',rowContext(source,m,docID,role,value));continue;}const p=resolveOne(part,role,source,m,docID);if(p)out.push(p);}return out;
+ }
+ function countRow(){totalRows++;if(totalRows>LIMITS.rows)throw new QCError('ROW_LIMIT',`Package exceeds ${LIMITS.rows.toLocaleString()} logical records.`);}
+ for(const source of active){
+  const entry=index.exact.get(source.path)[0],summary={path:source.path,kind:source.kind,scope:source.scope,encoding:source.encoding||null,format:source.format||null,rows:0,complete:false};summaries.push(summary);
+  if(source.error){add('BLOCKED',source.error.code,source.error.message,{file:source.path});continue;}
+  if(!source.scope.trim()){add('BLOCKED','EMPTY_SCOPE','Package group cannot be blank.',{file:source.path});continue;}
+  if(source.encodingAssumed)add('WARNING','ENCODING_ASSUMED',`Detected ${source.encoding} without a BOM. Select the encoding explicitly after confirming the source.`,{file:source.path});
+  if(source.kind==='metadata'){
+   const h=source.headers,map=source.mapping,seenHeader=new Map();
+   for(let i=0;i<h.length;i++){
+    const k=keyHeader(h[i]);if(!k)add('ERROR','EMPTY_HEADER','A column header is empty.',{file:source.path,field:String(i+1)});
+    if(seenHeader.has(k))add('ERROR','DUPLICATE_HEADER','Column names are duplicate or normalize to the same name.',{file:source.path,field:h[i]});seenHeader.set(k,i);
+    if(h[i]!==h[i].trim())add('WARNING','HEADER_WHITESPACE','Header has outer whitespace; alias detection trims headers only.',{file:source.path,field:h[i]});
+    if(/(?:PATH|LINK|NATIVEFILE|TEXTFILE|IMAGEFILE)/.test(k)&&!['native','text','image'].some(role=>map[role]===i))add('WARNING','UNMAPPED_PATH_COLUMN','A path-like column is not mapped to native/text/image; its values will not be reconciled.',{file:source.path,field:h[i]});
+   }
+   for(const [role,indices] of Object.entries(source.ambiguous))add('BLOCKED','MAPPING_AMBIGUOUS',`Multiple possible ${ROLES[role]} columns. Select one.`,{file:source.path,field:role,related:indices.map(i=>h[i])});
+   if(map.id<0)add('BLOCKED','ID_NOT_MAPPED','Document ID could not be mapped. Select its column.',{file:source.path});
+   if(['native','text','image'].every(r=>map[r]<0)&&!active.some(s=>s.kind==='opt'&&s.scope===source.scope))add('WARNING','NO_CONTENT_MAPPING','No native/text/image path columns or OPT file are available for this metadata group.',{file:source.path});
+   const roleCols=new Map();for(const [role,col]of Object.entries(map)){if(col<0)continue;if(roleCols.has(col)&&![role,roleCols.get(col)].every(r=>['id','begin'].includes(r)))add('BLOCKED','MAPPING_REUSED_COLUMN','One column is mapped to incompatible roles.',{file:source.path,field:h[col]});roleCols.set(col,role);}
+   const override=input.overrides?.[source.path];if(override?.expectedHeaders&&JSON.stringify(override.expectedHeaders)!==JSON.stringify(h))add('BLOCKED','HEADER_CHANGED','Headers changed since manual mapping. Reset the mapping and inspect again.',{file:source.path});
+   let headerRead=false;
+   try{
+    const scan=await scanDelimited(entry,source,(row,m)=>{
+     countRow();if(m.blank){add('WARNING','BLANK_RECORD','Blank physical record.',rowContext(source,m));return;}
+     if(!headerRead){headerRead=true;if(JSON.stringify(row)!==JSON.stringify(h))throw new QCError('HEADER_CHANGED','Header changed after detection.',m.line,m.record);return;}
+     summary.rows++;totals.metadataRows++;
+     if(row.length!==h.length){add('ERROR','COLUMN_COUNT',`Expected ${h.length} columns; found ${row.length}. Row was not realigned.`,rowContext(source,m));return;}
+     const val=r=>map[r]>=0?row[map[r]]:'';const id=val('id'),begin=map.begin>=0?val('begin'):id,end=val('end'),pageRaw=val('pages'),parent=val('parent');
+     if(map.id>=0)checkValueIdentity(id,source,m,h[map.id]);
+     if(map.begin>=0&&begin)checkValueIdentity(begin,source,m,h[map.begin]);
+     let pages=null;if(pageRaw!==''){if(!nonnegative(pageRaw))add('ERROR','INVALID_PAGE_COUNT','Page count must be a non-negative safe integer.',rowContext(source,m,id,h[map.pages],pageRaw));else pages=Number(pageRaw);}
+     if(end){checkValueIdentity(end,source,m,h[map.end]);const a=batesNumber(begin),b=batesNumber(end);if(a&&b&&a.prefix===b.prefix&&a.width===b.width){if(b.n<a.n)add('ERROR','REVERSED_BATES_RANGE','End Bates precedes Begin Bates.',rowContext(source,m,id,h[map.end],end));else if(pages!==null&&BigInt(pages)!==b.n-a.n+1n)add('WARNING','BATES_SPAN_VS_COUNT','Numeric Bates span differs from page count; numbering may be non-consecutive.',rowContext(source,m,id,h[map.pages],pageRaw));}}
+     const native=resolvePaths(val('native'),'native',source,m,id),text=resolvePaths(val('text'),'text',source,m,id),image=resolvePaths(val('image'),'image',source,m,id);
+     if(!val('native')&&!val('text')&&!val('image')&&!active.some(s=>s.kind==='opt'&&s.scope===source.scope))add('WARNING','ROW_WITHOUT_CONTENT_REFERENCE','Row has no non-empty content reference and no OPT in its group.',rowContext(source,m,id));
+     const doc={id,begin,end,pages,parent,native,text,image,rawImage:val('image'),source,record:m.record,line:m.line};
+     if(id){const key=namespace(source.scope,id),fold=namespace(source.scope,id.toLowerCase());if(documents.has(key))add('ERROR','DUPLICATE_DOCUMENT_ID','Duplicate Document ID in the same package group.',{...rowContext(source,m,id),related:[`${documents.get(key).source.path}:${documents.get(key).record}`]});else documents.set(key,doc);
+      if(docFolded.has(fold)&&docFolded.get(fold)!==id)add('ERROR','DOCUMENT_ID_CASE_COLLISION','Document IDs differ only in case.',rowContext(source,m,id));else docFolded.set(fold,id);
+     }
+     if(begin){const key=namespace(source.scope,begin);if(begins.has(key))add('ERROR','DUPLICATE_BEGIN_BATES','Multiple metadata rows share the OPT join key.',rowContext(source,m,id,'begin',begin));else begins.set(key,doc);}
+    },(bytes,rows)=>push('metadata',source.path,{bytes,totalBytes:entry.file.size,rows}));Object.assign(summary,scan);
+    if(!summary.rows)add('ERROR','NO_METADATA_ROWS','Metadata contains no data rows.',{file:source.path});
+   }catch(e){Object.assign(summary,e.scan||{});add('BLOCKED',e.code||'READ_ERROR',e.message,{file:source.path,record:e.record,line:e.line});}
+  }else if(source.kind==='opt'){
+   let group=null;
+   function closeGroup(){if(!group)return;totals.optDocuments++;if(group.declared!==null&&group.declared!==group.count)add('ERROR','OPT_PAGE_COUNT_MISMATCH',`OPT declares ${group.declared} pages; ${group.count} records belong to this document.`,{file:source.path,record:group.record,line:group.line,docID:group.begin});
+    const key=namespace(source.scope,group.begin);if(optDocs.has(key))add('ERROR','DUPLICATE_OPT_DOCUMENT','Duplicate OPT document start ID.',{file:source.path,record:group.record,docID:group.begin});else optDocs.set(key,group);
+   }
+   try{
+    const scan=await scanDelimited(entry,source,(row,m)=>{
+     countRow();if(m.blank){add('WARNING','BLANK_RECORD','Blank OPT record.',rowContext(source,m));return;}
+     summary.rows++;totals.optPages++;
+     if(row.length!==7){add('ERROR','OPT_COLUMN_COUNT',`OPT requires 7 fields; found ${row.length}.`,rowContext(source,m));return;}
+     const [id,volume,path,br,folder,box,count]=row;checkValueIdentity(id,source,m,'Image ID');
+     for(const [field,v]of [['Document break',br],['Folder break',folder],['Box break',box]])if(!['','Y','N'].includes(v))add('ERROR','OPT_MARKER','OPT markers must be Y, N, or empty.',rowContext(source,m,id,field,v));
+     if(!group&&br!=='Y')add('ERROR','OPT_FIRST_BREAK','First OPT record must start a document with Y.',rowContext(source,m,id,'Document break',br));
+     if(br==='Y'||!group){closeGroup();let declared=null;if(count==='')add('WARNING','OPT_PAGE_COUNT_MISSING','Document-start OPT page count is empty.',rowContext(source,m,id,'Page count',count));else if(!nonnegative(count)||Number(count)<1)add('ERROR','OPT_INVALID_PAGE_COUNT','Document-start page count must be a positive safe integer.',rowContext(source,m,id,'Page count',count));else declared=Number(count);
+      group={begin:id,end:id,count:0,declared,firstImage:null,source,record:m.record,line:m.line};
+     }else if(count!==''&&count!=='0')add('ERROR','OPT_CONTINUATION_COUNT','Continuation pages must have a blank or zero page-count field.',rowContext(source,m,id,'Page count',count));
+     const pageKey=namespace(source.scope,id);if(optPageIDs.has(pageKey))add('ERROR','DUPLICATE_OPT_PAGE_ID','Duplicate OPT page ID.',{...rowContext(source,m,id),related:[optPageIDs.get(pageKey)]});else optPageIDs.set(pageKey,`${source.path}:${m.record}`);
+     if(group.count){const prev=batesNumber(group.end),next=batesNumber(id);if(prev&&next&&prev.prefix===next.prefix&&prev.width===next.width&&next.n!==prev.n+1n)add('WARNING','OPT_NONCONSECUTIVE_BATES','Adjacent page IDs are not numerically consecutive.',rowContext(source,m,id));}
+     group.count++;group.end=id;
+     if(!path)add('ERROR','OPT_EMPTY_IMAGE_PATH','OPT image path is empty.',rowContext(source,m,id,'Image path',path));
+     else {const resolved=resolveOne(path,'opt-image',source,m,id);if(group.count===1)group.firstImage=resolved;
+      if(resolved){const k=namespace(source.scope,resolved);if(optImageRefs.has(k))add('ERROR','DUPLICATE_OPT_IMAGE_REFERENCE','The same image file is used by multiple OPT pages.',{...rowContext(source,m,id,'Image path',path),related:[optImageRefs.get(k)]});else optImageRefs.set(k,`${source.path}:${m.record}`);}
+     }
+    },(bytes,rows)=>push('opt',source.path,{bytes,totalBytes:entry.file.size,rows}));Object.assign(summary,scan);closeGroup();
+    if(!summary.rows)add('ERROR','NO_OPT_PAGES','OPT contains no page records.',{file:source.path});
+   }catch(e){Object.assign(summary,e.scan||{});add('BLOCKED',e.code||'READ_ERROR',e.message,{file:source.path,record:e.record,line:e.line});}
+  }else add('BLOCKED','UNSUPPORTED_KIND','Unknown load-file type.',{file:source.path});
+  if(summary.eols&&Object.values(summary.eols).filter(n=>n>0).length>1)add('WARNING','MIXED_LINE_ENDINGS','Multiple physical line-ending styles occur in this file (including quoted fields).',{file:source.path,value:JSON.stringify(summary.eols)});
+ }
+ push('crosscheck','DAT ↔ OPT / parent IDs',{force:true});
+ let joined=0,unmatchedOPT=0,missingOPT=0,pageComparisons=0,endComparisons=0,parentChecks=0;
+ for(const [key,group]of optDocs){const doc=begins.get(key);
+  if(!doc){unmatchedOPT++;add(active.some(s=>s.kind==='metadata'&&s.scope===group.source.scope)?'ERROR':'WARNING','OPT_WITHOUT_METADATA','OPT document has no matching metadata Begin Bates / Document ID in this group.',{file:group.source.path,docID:group.begin,record:group.record});continue;}
+  joined++;const ctx={file:doc.source.path,record:doc.record,line:doc.line,docID:doc.id,related:[group.source.path]};
+  if(doc.pages!==null){pageComparisons++;if(doc.pages!==group.count)add('ERROR','DAT_OPT_PAGE_COUNT',`Metadata page count ${doc.pages} differs from OPT count ${group.count}.`,ctx);}
+  if(doc.end){endComparisons++;if(doc.end!==group.end)add('ERROR','DAT_OPT_END_BATES',`Metadata End Bates ${doc.end} differs from OPT final ID ${group.end}.`,ctx);}
+  if(doc.image.length&&group.firstImage&&doc.image[0]!==group.firstImage)add('ERROR','DAT_OPT_FIRST_IMAGE','Metadata first-image path differs from the OPT document start.',ctx);
+ }
+ const parentLinks=new Map();
+ for(const [key,doc]of documents){
+  const ctx={file:doc.source.path,record:doc.record,line:doc.line,docID:doc.id};
+  const scopeOPTs=active.some(s=>s.kind==='opt'&&s.scope===doc.source.scope);
+  if(!optDocs.has(namespace(doc.source.scope,doc.begin))&&(doc.pages>0||doc.rawImage||doc.end)){
+   missingOPT++;add(scopeOPTs?'ERROR':'WARNING',scopeOPTs?'METADATA_WITHOUT_OPT':'NO_OPT_FOR_PAGECHECK',scopeOPTs?'Metadata expects image pages, but no OPT document matches its join key.':'Metadata indicates pages/images but no OPT is selected for this group.',ctx);
+  }
+  if(doc.parent){parentChecks++;const pk=namespace(doc.source.scope,doc.parent);if(!documents.has(pk))add('ERROR','MISSING_PARENT','Parent ID does not exist in the same group.',{...ctx,value:doc.parent});else if(pk===key)add('ERROR','SELF_PARENT','Document refers to itself as parent.',ctx);else parentLinks.set(key,pk);}
+ }
+ const visited=new Set();for(const key of parentLinks.keys()){if(visited.has(key))continue;const chain=[],positions=new Map();let k=key;while(k&&parentLinks.has(k)&&!visited.has(k)){if(positions.has(k)){const cycle=chain.slice(positions.get(k));const d=documents.get(k);add('ERROR','PARENT_CYCLE','Parent relationships form a cycle.',{file:d.source.path,docID:d.id,related:cycle.map(x=>documents.get(x).id)});break;}positions.set(k,chain.length);chain.push(k);k=parentLinks.get(k);}for(const x of chain)visited.add(x);}
+ const rangeGroups=new Map();for(const d of documents.values()){const a=batesNumber(d.begin),b=batesNumber(d.end);if(!a||!b||a.prefix!==b.prefix||a.width!==b.width||b.n<a.n)continue;const k=namespace(d.source.scope,`${a.prefix}\0${a.width}`);if(!rangeGroups.has(k))rangeGroups.set(k,[]);rangeGroups.get(k).push({doc:d,a:a.n,b:b.n});}
+ for(const ranges of rangeGroups.values()){ranges.sort((x,y)=>x.a<y.a?-1:x.a>y.a?1:0);let previous=null;for(const r of ranges){if(previous&&r.a<=previous.b)add('ERROR','OVERLAPPING_BATES_RANGES','Document Bates ranges overlap.',{file:r.doc.source.path,record:r.doc.record,docID:r.doc.id,related:[previous.doc.id]});if(!previous||r.b>previous.b)previous=r;}}
+ for(const e of entries){
+  const ref=references.get(e.path),role=loadPaths.has(e.path)?'load':classify(e.path);
+  if(!loadPaths.has(e.path)&&!ref){totals.unreferenced++;add('WARNING','UNREFERENCED_FILE','No selected load-file path references this file. It may be an orphan or supporting material.',{file:e.path,field:role});}
+  if(!ref&&e.file.size===0)add(loadPaths.has(e.path)?'ERROR':'WARNING','ZERO_BYTE_FILE','File is empty.',{file:e.path,field:role});
+  manifest.push({path:e.path,size:e.file.size,lastModified:e.file.lastModified,role,references:ref?.count||0,referenceRoles:ref?[...ref.roles]:[],sha256:null});
+ }
+ const summaryMap=new Map(summaries.map(s=>[s.path,s]));
+ for(let i=0;i<manifest.length;i++){
+  const item=manifest[i],s=summaryMap.get(item.path);if(s?.sha256)item.sha256=s.sha256;
+  if(settings.hashAll&&!item.sha256){push('hash',item.path,{fileIndex:i+1,totalFiles:manifest.length});try{item.sha256=await hashFile(entries[i].file,n=>push('hash',item.path,{bytes:n,totalBytes:entries[i].file.size,fileIndex:i+1,totalFiles:manifest.length}));}catch(e){add('BLOCKED','HASH_READ_ERROR',e.message,{file:item.path});}}
+ }
+ let liveInventory='NOT_CHECKED',loadRecheck='NOT_CHECKED';let freshEntries=null;
+ if(input.rootHandle){
+  push('recheck','Re-enumerating selected folder',{force:true});
+  try{
+   freshEntries=await walkDirectory(input.rootHandle,n=>push('recheck',`${n.toLocaleString()} files`));const fresh=new Map(freshEntries.map(e=>[e.path,e]));let changed=false;
+   for(const e of entries){const f=fresh.get(e.path);if(!f){changed=true;add('BLOCKED','SOURCE_REMOVED','File disappeared during validation.',{file:e.path});}else if(f.file.size!==e.file.size||f.file.lastModified!==e.file.lastModified){changed=true;add('BLOCKED','SOURCE_CHANGED','File size or modified time changed during validation.',{file:e.path});}}
+   for(const e of freshEntries)if(!index.exact.has(e.path)){changed=true;add('BLOCKED','SOURCE_ADDED','New file appeared during validation.',{file:e.path});}
+   liveInventory=changed?'CHANGED':'VERIFIED';
+  }catch(e){liveInventory='FAILED';add('BLOCKED',e.code||'RECHECK_ERROR','Folder could not be re-enumerated: '+e.message);}
+ }else if(input.mode==='demo')liveInventory='DEMO_SNAPSHOT';
+ else {liveInventory='SNAPSHOT_ONLY';add('WARNING','SNAPSHOT_ONLY','Compatibility folder selection cannot detect files added/removed after selection. This result applies to the selected snapshot; re-select the folder to refresh.');}
+ const freshMap=new Map((freshEntries||entries).map(e=>[e.path,e]));let checked=0,recheckFailed=false;
+ for(const summary of summaries){
+  if(!summary.complete||!summary.sha256){recheckFailed=true;continue;}
+  const e=freshMap.get(summary.path);if(!e){recheckFailed=true;continue;}
+  push('verify',summary.path,{force:true});
+  try{
+   const fresh=e.handle?await e.handle.getFile():e.file;
+   const hash=await hashFile(fresh,n=>push('verify',summary.path,{bytes:n,totalBytes:fresh.size}));
+   summary.recheckSha256=hash;
+   if(hash!==summary.sha256||fresh.size!==e.file.size||fresh.lastModified!==e.file.lastModified){recheckFailed=true;add('BLOCKED','LOAD_FILE_CHANGED','Load-file bytes or metadata changed between passes.',{file:summary.path});}else checked++;
+  }catch(e){recheckFailed=true;add('BLOCKED','RECHECK_READ_ERROR',e.message,{file:summary.path});}
+ }
+ loadRecheck=recheckFailed?'INCOMPLETE':checked&&checked===active.length?'VERIFIED':'NOT_CHECKED';
+ if(log.truncated){incomplete=true;log.add('BLOCKED','ISSUE_LIMIT',`Only the first ${LIMITS.issues.toLocaleString()} issue details are retained; aggregate counts include all findings. Split the package to obtain all details.`);}
+ const coverage={
+  inventory:{status:liveInventory,files:entries.length},
+  structure:{status:active.length&&summaries.every(s=>s.complete)?'CHECKED':'INCOMPLETE',completed:summaries.filter(s=>s.complete).length,selected:active.length},
+  documentIDs:{status:active.filter(s=>s.kind==='metadata').length?(active.filter(s=>s.kind==='metadata').every(s=>s.mapping.id>=0&&!s.error)?'CHECKED':'INCOMPLETE'):'NOT_APPLICABLE',unique:documents.size},
+  paths:{status:totals.references?'CHECKED':'NOT_CHECKED',references:totals.references,matched:totals.matchedReferences},
+  datOpt:{status:joined?'CHECKED':active.some(s=>s.kind==='opt')?'INCOMPLETE':'NOT_APPLICABLE',joined,unmatchedOPT,missingOPT,pageComparisons,endComparisons},
+  parents:{status:active.some(s=>s.mapping.parent>=0)?'CHECKED':'NOT_APPLICABLE',nonempty:parentChecks},
+  loadFileHash:{status:loadRecheck,verified:checked,selected:active.length},
+  contentHashes:{status:settings.hashAll?(manifest.every(x=>x.sha256)?'COMPUTED':'INCOMPLETE'):'NOT_REQUESTED',hashed:manifest.filter(x=>x.sha256).length,meaning:'Computed digests are fingerprints, not proof of correctness against a trusted manifest.'},
+  binaryContent:{status:'NOT_CHECKED',meaning:'No PDF/TIFF decoding, actual page counting, native opening, OCR quality, malware scanning, or vendor import validation.'}
+ };
+ if(!totals.references)add('WARNING','NO_REFERENCES_CHECKED','No non-empty file references were checked. Review the field mapping.');
+ const outcome=incomplete||log.counts.BLOCKED?'INCOMPLETE':log.counts.ERROR?'FAIL':log.counts.WARNING?'REVIEW':'PASS';
+ const config={settings,overrides:input.overrides||{},sources:sources.map(s=>({...s}))};
+ const configurationSHA256=shaText(JSON.stringify(config));
+ const invHash=new SHA256();for(const item of manifest)invHash.update(new TextEncoder().encode(JSON.stringify([item.path,item.size,item.lastModified])+'\n'));
+ const inventorySHA256=invHash.digest(),fingerprint=shaText(JSON.stringify({version:VERSION,configurationSHA256,inventorySHA256,loadFiles:summaries.map(s=>[s.path,s.sha256||null])}));
+ const report={schema:'load-file-package-reconciler/report-2',version:VERSION,watermark:'이현수 / HYUNSOO LEE',runID:input.runID||startedAt,rootName:input.rootName||'',mode:input.mode||'snapshot',startedAt,finishedAt:new Date().toISOString(),outcome,complete:!incomplete,totals,rolesCount,coverage,configuration:config,configurationSHA256,inventorySHA256,fingerprint,sources:summaries,issues:log.items,issueCounts:log.counts,issueCodes:log.codes,totalIssues:log.total,issueDetailsTruncated:log.truncated,manifest,limitations:[
+  'PASS covers the selected load files, recognized/mapped fields and selected package snapshot only.',
+  'Input files are never modified. No basename guessing, automatic repair, date/time conversion, or vendor-specific import simulation.',
+  'Directory recheck compares membership, size and modified time. A changing folder cannot be locked; stop external writes and rerun after changes.',
+  'Native/text/image bytes are not decoded. Actual PDF/TIFF page counts, text quality and correctness against an external hash manifest are outside scope.',
+  'DAT multi-value separator U+00AE is split in path fields only when explicitly enabled; ordinary field values are preserved.',
+  'Package groups define ID/OPT join namespaces. Related volume files should use the same group; unrelated productions should use different groups.',
+  'Resource limits are explicit. Aborted, undecodable or truncated work is INCOMPLETE, never PASS.'
+ ]};
+ emit({type:'progress',phase:'complete',detail:outcome,force:true});return report;
+}
+/* Excel-safe human-view CSV; JSON retains exact original strings. */
+function csvCell(value){let s=value===undefined||value===null?'':typeof value==='object'?JSON.stringify(value):String(value);if(/^[\s\x00-\x1f]*[=+@-]/.test(s)||/^[\t\r\n]/.test(s)||/^0\d+$/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+function toCSV(rows,columns){return '\ufeff'+[columns.map(csvCell).join(','),...rows.map(r=>columns.map(k=>csvCell(r[k])).join(','))].join('\r\n')+'\r\n';}
+const API={VERSION,LIMITS,FORMATS,ROLES,ALIASES,QCError,DelimitedParser,SHA256,shaText,hashFile,decodeSample,detectFormat,mapHeaders,candidatePaths,inspectSource,PathIndex,normalizeRelative,walkDirectory,IssueLog,runPackage,toCSV,csvCell,classify};
+if(typeof module!=='undefined'&&module.exports)module.exports=API;else global.Reconciler=API;
+})(typeof self!=='undefined'?self:globalThis);
+
+</script>
 <script>
 'use strict';
-const APP_VERSION='1.0.1';
-const FE='\u00FE', DC4='\u0014';
-const MAX_COLUMNS=50000, MAX_FILES=250000, MAX_PATH_UNITS=64*1024*1024, MAX_RECORD_UNITS=64*1024*1024, CHUNK_BYTES=4*1024*1024;
-const LOAD_EXTS=new Set(['.dat','.csv','.txt','.load','.opt','.log','.lst','.xml','.json']);
-const IMAGE_EXTS=new Set(['.tif','.tiff','.jpg','.jpeg','.png','.bmp','.gif','.pdf','.jpf','.jp2']);
-const TEXT_EXTS=new Set(['.txt','.text','.rtf','.html','.htm','.xml']);
-const $=s=>document.querySelector(s);
-function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function fmtBytes(n){if(n==null||!Number.isFinite(n))return '—';const u=['B','KiB','MiB','GiB','TiB'];let x=n,i=0;while(x>=1024&&i<u.length-1){x/=1024;i++;}return(i?x.toFixed(x>=100?0:x>=10?1:2):String(x))+' '+u[i];}
-function extOf(p){const m=/\.[^./\\]+$/.exec(String(p||''));return m?m[0].toLowerCase():'';}
-function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),3600);}
-function setProgress(show,label,pct){$('#progressWrap').classList.toggle('hidden',!show);if(label!=null)$('#progressLabel').textContent=label;const p=Math.max(0,Math.min(100,Number(pct)||0));$('#progressPct').textContent=Math.round(p)+'%';$('#progressBar').style.width=p+'%';}
-function countChar(s,ch){let n=0,p=-1;while((p=String(s).indexOf(ch,p+1))>=0)n++;return n;}
-function tooManyColumns(){throw new Error(`Blocked pathological schema: more than ${MAX_COLUMNS.toLocaleString()} columns.`);}
-function stablePathCompare(a,b){return a.path.localeCompare(b.path,'en',{sensitivity:'variant',numeric:false});}
-function canonicalKey(path){return String(path||'').normalize('NFC').toLowerCase();}
-function metadataLine(e){return `${e.path}\u0000${e.size}\u0000${e.lastModified||0}\n`;}
-function addIssue(r,severity,code,title,detail){r.issues.push({severity,code,title,detail});}
-function checkToken(token){if(token!==runToken)throw new Error('Operation cancelled or superseded.');}
+(() => {
+ const R=Reconciler,$=id=>document.getElementById(id);
+ const state={entries:[],rootHandle:null,rootName:'',mode:'snapshot',overrides:{},sources:[],report:null,worker:null,workerURL:null,token:0,running:false,page:0,started:0,timer:null};
+ const fmt=n=>Number(n||0).toLocaleString();
+ const bytes=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':n<1073741824?(n/1048576).toFixed(1)+' MB':(n/1073741824).toFixed(2)+' GB';
+ const elem=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
+ const issueDescriptions={
+  MISSING_FILE:'참조한 파일이 폴더에 없습니다.',AMBIGUOUS_PATH:'서로 다른 파일 두 개 이상이 이 경로에 해당합니다.',PATH_CASE_MISMATCH:'참조 경로와 실제 파일명의 대소문자가 다릅니다.',PATH_CASE_COLLISION:'대소문자를 무시하면 같은 경로인 파일이 있습니다.',ABSOLUTE_PATH:'절대경로입니다. 설정에서 제거할 접두사를 지정하세요.',PATH_WHITESPACE:'경로 앞뒤에 공백이 있습니다.',PATH_ESCAPES_ROOT:'선택한 루트 밖으로 나가는 경로입니다.',PATH_CONTROL_CHARACTER:'경로에 제어문자 또는 BOM이 들어 있습니다.',DUPLICATE_DOCUMENT_ID:'같은 그룹에 문서 ID가 중복됩니다.',DUPLICATE_BEGIN_BATES:'OPT 연결 키가 중복됩니다.',COLUMN_COUNT:'열 수가 헤더와 다릅니다. 자동으로 열을 옮기지 않았습니다.',OPT_COLUMN_COUNT:'OPT는 7개 필드여야 합니다.',UNCLOSED_QUOTE:'닫히지 않은 따옴표가 있습니다.',MALFORMED_QUOTE:'닫는 따옴표 뒤에 허용하지 않는 문자가 있습니다.',BARE_QUOTE:'따옴표가 잘못된 위치에 있습니다.',DECODE_ERROR:'선택된 인코딩으로 읽을 수 없는 바이트가 있습니다.',ENCODING_ASSUMED:'BOM 없는 인코딩을 추정했습니다. 원본 규격을 확인해 명시적으로 선택하세요.',FORMAT_AMBIGUOUS:'가능한 구분자가 여러 개입니다. 직접 선택하세요.',FORMAT_UNRESOLVED:'구분자를 확정할 수 없습니다. 형식과 인코딩을 확인하세요.',ID_NOT_MAPPED:'문서 ID 열을 찾지 못했습니다. 필드 매핑에서 선택하세요.',MAPPING_AMBIGUOUS:'한 역할에 해당하는 열이 여러 개입니다. 사용할 열을 선택하세요.',ZERO_BYTE_REFERENCE:'참조된 파일이 0바이트입니다.',ZERO_BYTE_FILE:'0바이트 파일입니다.',UNREFERENCED_FILE:'어떤 로드 파일에서도 참조하지 않습니다. 부속 파일인지 누락된 참조인지 확인하세요.',OPT_PAGE_COUNT_MISMATCH:'OPT에 적힌 페이지 수와 실제 페이지 레코드 수가 다릅니다.',DAT_OPT_PAGE_COUNT:'DAT의 페이지 수와 OPT의 실제 페이지 수가 다릅니다.',DAT_OPT_END_BATES:'DAT의 End Bates와 OPT의 마지막 페이지 ID가 다릅니다.',DAT_OPT_FIRST_IMAGE:'DAT와 OPT가 가리키는 첫 이미지가 다릅니다.',METADATA_WITHOUT_OPT:'이미지가 예상되는 DAT 문서에 대응하는 OPT 문서가 없습니다.',OPT_WITHOUT_METADATA:'OPT 문서에 대응하는 DAT 문서가 없습니다.',NO_OPT_FOR_PAGECHECK:'페이지 수를 대조할 OPT가 없습니다.',DUPLICATE_OPT_PAGE_ID:'OPT 페이지 ID가 중복됩니다.',DUPLICATE_OPT_IMAGE_REFERENCE:'여러 OPT 페이지가 같은 이미지 파일을 참조합니다.',SHARED_FILE_REFERENCE:'여러 행에서 같은 파일을 참조합니다.',SNAPSHOT_ONLY:'호환 모드는 선택한 시점의 파일 목록만 검사합니다. 폴더 변경 여부는 재선택해야 확인할 수 있습니다.',LOAD_FILE_CHANGED:'검사 도중 로드 파일 내용이 바뀌었습니다.',SOURCE_CHANGED:'검사 도중 파일 크기 또는 수정 시각이 바뀌었습니다.',SOURCE_ADDED:'검사 도중 파일이 추가됐습니다.',SOURCE_REMOVED:'검사 도중 파일이 없어졌습니다.',EMPTY_ID:'필수 문서 ID가 비어 있습니다.',MISSING_PARENT:'부모 문서 ID를 찾지 못했습니다.',PARENT_CYCLE:'부모 참조가 순환합니다.',SELF_PARENT:'자기 자신을 부모로 참조합니다.',OVERLAPPING_BATES_RANGES:'서로 다른 문서의 Bates 범위가 겹칩니다.',BLANK_RECORD:'빈 레코드가 있습니다.',MIXED_LINE_ENDINGS:'CRLF, LF, CR 줄바꿈이 혼용돼 있습니다.',OPT_FIRST_BREAK:'OPT 첫 페이지의 문서 시작 표시가 Y가 아닙니다.',HEADER_CHANGED:'필드 매핑 이후 헤더가 바뀌었습니다. 매핑을 초기화하고 다시 검사하세요.',NO_REFERENCES_CHECKED:'검사한 파일 참조가 없습니다. 매핑을 확인하세요.',ISSUE_LIMIT:'상세 오류 저장 한도에 도달했습니다. 패키지를 나눠 검사하세요.'
+ };
+ $('version').textContent='v'+R.VERSION;$('footerVersion').textContent='v'+R.VERSION;
+ function showToast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>$('toast').hidden=true,4800);}
+ function setStatus(kind,title,detail,badge){$('statusPanel').className='panel status '+kind;$('statusTitle').textContent=title;$('statusDetail').textContent=detail;$('statusBadge').textContent=badge||kind.toUpperCase();$('statusLabel').textContent=state.mode==='demo'?'SYNTHETIC DEMO · 실제 자료 아님':'PACKAGE VALIDATION';}
+ function selectTab(name){document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===name)));for(const id of ['findings','sources','coverage','help'])$('tab-'+id).hidden=id!==name;}
+ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));$('helpTop').onclick=()=>selectTab('help');
+ function setBusy(busy){state.running=busy;$('cancel').disabled=!busy;$('rerun').disabled=busy||!state.entries.length;$('addSource').disabled=!state.entries.length;$('progressWrap').hidden=!busy;clearInterval(state.timer);if(busy){state.started=Date.now();state.timer=setInterval(()=>$('elapsed').textContent=((Date.now()-state.started)/1000).toFixed(0)+'초',500);}else $('elapsed').textContent='';}
+ function stopWorker(){if(state.worker)state.worker.terminate();if(state.workerURL)URL.revokeObjectURL(state.workerURL);state.worker=null;state.workerURL=null;}
+ function clearResult(){state.report=null;state.page=0;for(const id of ['metricFiles','metricDocs','metricPages','metricRefs','metricMissing','metricOrphan'])$(id).textContent='—';for(const id of ['exportCSV','exportJSON','exportManifest'])$(id).disabled=true;$('findingCount').textContent='0';$('resultStamp').hidden=true;$('truncatedNote').hidden=true;$('codeFilter').replaceChildren(new Option('모든 유형','ALL'));renderFindings();renderCoverage();}
+ function invalidate(reason='설정이 바뀌었습니다. 다시 검사해 주세요.'){
+  state.token++;stopWorker();setBusy(false);clearResult();
+  if(state.entries.length)setStatus('stale','검사를 다시 실행해 주세요',reason,'STALE');
+ }
+ function progress(p){const phase={detect:'형식과 인코딩 감지',metadata:'DAT / CSV 검사',opt:'OPT 검사',crosscheck:'문서·페이지 교차 검사',hash:'파일 해시 계산',recheck:'폴더 변경 여부 확인',verify:'로드 파일 지문 재검증',inventory:'폴더 탐색',complete:'완료'}[p.phase]||p.phase;
+  $('progressText').textContent=(p.detail||'')+(p.rows?' · '+fmt(p.rows)+' 레코드':'');$('statusTitle').textContent=phase;$('statusDetail').textContent=p.detail||'';
+  const bar=$('progressBar');if(p.totalBytes){bar.parentElement.classList.remove('indeterminate');bar.style.width=Math.max(2,Math.min(100,p.bytes/p.totalBytes*100))+'%';}else{bar.parentElement.classList.add('indeterminate');bar.style.width='25%';}
+ }
+ function setFolderInfo(){$('folderName').textContent=state.rootName||'패키지 루트 폴더';$('folderMeta').textContent=fmt(state.entries.length)+'개 파일 · '+bytes(state.entries.reduce((n,e)=>n+e.file.size,0));$('modeNote').textContent=state.mode==='live'?'폴더 목록 재검증 사용':state.mode==='demo'?'합성 데이터 · 원본 폴더 없음':'호환 모드 · 선택 당시 파일 목록';}
+ async function chooseDirectory(){
+  if(!window.showDirectoryPicker){$('chooseFallback').click();return;}
+  invalidate('새 폴더를 선택하고 있습니다.');const token=state.token;
+  try{
+   const root=await window.showDirectoryPicker({mode:'read'});if(token!==state.token)return;
+   state.rootHandle=root;state.rootName=root.name;state.mode='live';state.overrides={};state.sources=[];renderSources();setBusy(true);setStatus('running','폴더를 읽고 있습니다','하위 폴더의 파일 목록을 수집합니다.','RUNNING');
+   const entries=await R.walkDirectory(root,n=>{if(token!==state.token)throw new Error('Cancelled');progress({phase:'inventory',detail:fmt(n)+'개 파일'});});
+   if(token!==state.token)return;state.entries=entries;setFolderInfo();await startRun(true);
+  }catch(e){if(token!==state.token)return;setBusy(false);if(e.name==='AbortError'){setStatus('stale','폴더 선택을 취소했습니다','폴더를 다시 선택하거나 이전 폴더를 다시 검사하세요.','CANCELLED');}else setStatus('incomplete','폴더를 읽지 못했습니다',e.message,'INCOMPLETE');}
+ }
+ $('chooseFolder').onclick=chooseDirectory;
+ $('chooseFallback').onclick=()=>{invalidate('호환 모드로 폴더를 선택하고 있습니다.');$('folderInput').value='';$('folderInput').click();};
+ $('folderInput').onchange=async event=>{
+  const files=Array.from(event.target.files||[]);if(!files.length)return;invalidate();state.rootHandle=null;state.mode='snapshot';state.overrides={};state.sources=[];
+  if(files.length>R.LIMITS.files){state.entries=[];setBusy(false);setStatus('incomplete','파일 수가 상한을 넘었습니다',`파일 ${fmt(R.LIMITS.files)}개 이하의 납품 단위로 나눠 주세요.`,'INCOMPLETE');return;}
+  const roots=new Set(files.map(f=>(f.webkitRelativePath||f.name).split('/')[0]));if(roots.size!==1){state.entries=[];setStatus('incomplete','루트 폴더를 확정하지 못했습니다','하나의 폴더를 선택하세요.','INCOMPLETE');return;}
+  state.rootName=[...roots][0];state.entries=files.map(f=>({path:(f.webkitRelativePath||f.name).split('/').slice(1).join('/'),file:f}));
+  if(state.entries.some(e=>!e.path)){state.entries=[];setStatus('incomplete','상대경로를 읽지 못했습니다','Chrome 또는 Edge의 폴더 선택을 사용하세요.','INCOMPLETE');return;}
+  setFolderInfo();renderSources();await startRun(true);
+ };
+ async function startRun(skipRefresh=false){
+  if(!state.entries.length){showToast('먼저 폴더를 선택하세요.');return;}
+  invalidate('새 검사를 시작합니다.');const token=state.token;setBusy(true);state.sources=[];renderSources();setStatus('running','검사를 시작합니다','파일은 읽기 전용으로 처리합니다.','RUNNING');
+  try{
+   if(state.rootHandle&&!skipRefresh){state.entries=await R.walkDirectory(state.rootHandle,n=>{if(token!==state.token)throw Error('Cancelled');progress({phase:'inventory',detail:fmt(n)+'개 파일'});});if(token!==state.token)return;setFolderInfo();}
+   const workerCode=$('engine').textContent+'\nself.onmessage = async function(event) { const {token,input}=event.data; try { const report=await Reconciler.runPackage(input, data=>self.postMessage({token,...data}));self.postMessage({token,type:"result",report});} catch(error) {self.postMessage({token,type:"fatal",message:error.message,code:error.code||"UNEXPECTED_ERROR"});} };';
+   state.workerURL=URL.createObjectURL(new Blob([workerCode],{type:'text/javascript'}));const worker=new Worker(state.workerURL);state.worker=worker;
+   worker.onmessage=event=>{const m=event.data;if(m.token!==state.token)return;
+    if(m.type==='progress')progress(m);
+    else if(m.type==='source'){state.sources.push(m.source);appendSource(m.source);$('sourceCount').textContent=state.sources.length;}
+    else if(m.type==='result'){stopWorker();setBusy(false);state.report=m.report;renderReport();}
+    else if(m.type==='fatal'){stopWorker();setBusy(false);clearResult();setStatus('incomplete','검사를 완료하지 못했습니다',m.code+': '+m.message,'INCOMPLETE');}
+   };
+   worker.onerror=e=>{if(token!==state.token)return;stopWorker();setBusy(false);clearResult();setStatus('incomplete','검사 작업이 중단됐습니다',e.message||'브라우저가 작업 스레드를 종료했습니다. 자료를 나눠 다시 검사하세요.','INCOMPLETE');};
+   worker.postMessage({token,input:{entries:state.entries,rootHandle:state.rootHandle,rootName:state.rootName,mode:state.mode,overrides:structuredClone(state.overrides),settings:{hashAll:$('hashAll').checked,multiPath:$('multiPath').checked},runID:new Date().toISOString()+'-'+token}});
+  }catch(e){if(token!==state.token)return;stopWorker();setBusy(false);clearResult();setStatus('incomplete','검사를 시작하지 못했습니다',e.message,'INCOMPLETE');}
+ }
+ $('rerun').onclick=()=>startRun();$('cancel').onclick=()=>{invalidate('사용자가 검사를 중지했습니다. 이전 결과는 재사용하지 않습니다.');setStatus('cancelled','검사가 중지됐습니다','결과를 얻으려면 처음부터 다시 검사하세요.','CANCELLED');};
+ for(const id of ['hashAll','multiPath'])$(id).onchange=()=>invalidate();
+ function fieldControl(label,control,parent,wide=false){const l=elem('label',label,wide?'spanall':'');l.append(control);parent.append(l);return control;}
+ function selectControl(options,value,handler){const s=elem('select');for(const [v,label]of options)s.add(new Option(label,v));s.value=value;s.onchange=()=>handler(s.value);return s;}
+ function updateOverride(source,key,value){
+  const o=state.overrides[source.path]||(state.overrides[source.path]={});o[key]=value;
+  if(key==='format'||key==='encoding'||key==='kind'){delete o.mapping;delete o.expectedHeaders;}
+  invalidate();if(['format','encoding','kind'].includes(key)){source.headers=[];source.mapping={};renderSources();}
+ }
+ function renderSources(){const list=$('sourcesList');list.replaceChildren();$('sourceCount').textContent=state.sources.length;if(!state.sources.length)list.append(elem('p',state.running?'로드 파일을 찾고 있습니다…':'폴더를 선택하면 로드 파일 후보가 나타납니다.','emptytext'));for(const s of state.sources)appendSource(s);}
+ function appendSource(s){
+  const list=$('sourcesList');if(list.querySelector('.emptytext'))list.replaceChildren();const o=state.overrides[s.path]||{},card=elem('details',undefined,'sourcecard'),summary=elem('summary'),name=elem('div');
+  name.append(elem('div',s.path,'sourcename'));name.append(elem('div',(s.encoding||'인코딩 확인 필요')+' · '+(s.kind==='opt'?'OPT · 7 fields':R.FORMATS[s.format]?.name||'형식 확인 필요')+' · '+bytes(s.size),'sourcehint'));summary.append(name,elem('span',s.error?'설정 필요':s.ignored?'제외됨':s.kind==='opt'?'OPT':'DAT / CSV','sourcebadge'+(s.error?' bad':'')));card.append(summary);if(s.error)card.open=true;
+  const options=elem('div',undefined,'sourceoptions'),grid=elem('div',undefined,'sourcegrid');
+  fieldControl('파일 역할',selectControl([['metadata','DAT / CSV 메타데이터'],['opt','OPT 이미지 로드'],['ignore','검사에서 제외']],o.kind||s.kind,v=>updateOverride(s,'kind',v)),grid);
+  fieldControl('인코딩',selectControl([['auto','자동 감지'],['utf-8','UTF-8'],['utf-16le','UTF-16 LE'],['utf-16be','UTF-16 BE'],['windows-1252','Windows-1252'],['euc-kr','Korean · EUC-KR / CP949'],['shift_jis','Japanese · Shift-JIS'],['gb18030','Chinese · GB18030'],['windows-1250','Windows-1250'],['windows-1251','Windows-1251']],o.encoding||'auto',v=>updateOverride(s,'encoding',v)),grid);
+  const format=selectControl([['auto','자동 감지'],...Object.entries(R.FORMATS).map(([k,v])=>[k,v.name])],o.format||'auto',v=>updateOverride(s,'format',v));format.disabled=(o.kind||s.kind)==='opt';fieldControl('구분자 / 한정자',format,grid);
+  const scope=elem('input');scope.value=o.scope||s.scope;scope.onchange=()=>updateOverride(s,'scope',scope.value);fieldControl('DAT ↔ OPT 그룹',scope,grid);
+  fieldControl('상대경로 기준',selectControl([['auto','자동 · 루트 + 로드 위치'],['root','선택한 패키지 루트'],['load','로드 파일이 있는 폴더']],o.base||'auto',v=>updateOverride(s,'base',v)),grid);
+  const prefix=elem('input');prefix.value=o.prefix||'';prefix.placeholder='예: X:\\Export001\\';prefix.onchange=()=>updateOverride(s,'prefix',prefix.value);fieldControl('제거할 경로 접두사',prefix,grid);
+  options.append(grid);if(s.error)options.append(elem('div',(issueDescriptions[s.error.code]||s.error.message)+' ['+s.error.code+']','callout warning'));
+  if(s.headers?.length){
+   const h=elem('div',undefined,'mappingheading');h.append(elem('b','필드 매핑'));const reset=elem('button','자동 감지로 초기화','textbtn');reset.onclick=()=>{const v=state.overrides[s.path]||(state.overrides[s.path]={});delete v.mapping;delete v.expectedHeaders;invalidate();renderSources();};h.append(reset);options.append(h);
+   const maps=elem('div',undefined,'mappinggrid');for(const [role,label]of Object.entries(R.ROLES)){
+    const detected=s.mapping[role]>=0?s.headers[s.mapping[role]]:'해당 열 없음';const choices=[['auto','자동: '+detected],['-1','검사 안 함 / 해당 없음'],...s.headers.map((x,i)=>[String(i),`${i+1}. ${x}`])];
+    fieldControl(label,selectControl(choices,String(o.mapping?.[role]??'auto'),v=>{const ov=state.overrides[s.path]||(state.overrides[s.path]={});ov.mapping={...(ov.mapping||{}),[role]:v};ov.expectedHeaders=[...s.headers];invalidate();}),maps);
+   }options.append(maps,elem('div',s.headers.map((x,i)=>`${i+1}: ${x}`).join('  |  '),'previewheaders'));
+  }card.append(options);list.append(card);
+ }
+ $('addSource').onclick=()=>{const path=$('manualPath').value.replace(/\\/g,'/');if(!state.entries.some(e=>e.path===path)){showToast('선택한 폴더의 정확한 상대경로를 입력하세요.');return;}state.overrides[path]={kind:path.toLowerCase().endsWith('.opt')?'opt':'metadata'};invalidate('로드 파일을 추가했습니다. 다시 검사해 주세요.');showToast('추가했습니다. 다시 검사를 누르세요.');};
+ function renderReport(){
+  const r=state.report;const titles={PASS:'선택 범위 검사를 통과했습니다',REVIEW:'확인이 필요한 항목이 있습니다',FAIL:'수정이 필요한 오류를 발견했습니다',INCOMPLETE:'일부 검사를 완료하지 못했습니다'};
+  const detail=`오류 ${fmt(r.issueCounts.ERROR)} · 확인 필요 ${fmt(r.issueCounts.WARNING)} · 검사 미완료 ${fmt(r.issueCounts.BLOCKED)}. `+(r.mode==='demo'?'합성 샘플의 결과입니다.':'아래 항목과 검사 범위를 확인하세요.');
+  setStatus(r.outcome.toLowerCase(),titles[r.outcome],detail,(r.mode==='demo'?'DEMO · ':'')+r.outcome);
+  const metrics={metricFiles:r.totals.files,metricDocs:r.totals.metadataRows,metricPages:r.totals.optPages,metricRefs:r.totals.references,metricMissing:r.totals.missingReferences,metricOrphan:r.totals.unreferenced};for(const [id,n]of Object.entries(metrics))$(id).textContent=fmt(n);
+  $('findingCount').textContent=fmt(r.totalIssues);$('resultStamp').hidden=false;$('resultStamp').textContent='완료 '+new Date(r.finishedAt).toLocaleString()+' · 실행 '+r.runID+' · '+(r.mode==='live'?'종료 시 폴더 재확인':'스냅샷 검사');
+  for(const id of ['exportCSV','exportJSON','exportManifest'])$(id).disabled=false;
+  for(const code of Object.keys(r.issueCodes).sort())$('codeFilter').add(new Option(code+' ('+fmt(r.issueCodes[code])+')',code));
+  $('truncatedNote').hidden=!r.issueDetailsTruncated;$('truncatedNote').textContent=`전체 ${fmt(r.totalIssues)}건 중 처음 ${fmt(r.issues.length)}건의 상세만 보관했습니다. 보고서의 집계는 전체를 포함합니다. 자료를 나눠 검사하세요.`;
+  renderFindings();renderCoverage();
+ }
+ function renderFindings(){
+  const report=state.report,empty=$('findingsEmpty');$('findingsRows').replaceChildren();
+  if(!report){empty.hidden=false;empty.querySelector('h3').textContent='검사 결과가 여기에 표시됩니다';empty.querySelector('p').textContent='폴더를 선택하거나 다시 검사를 실행하세요.';$('findingsTableWrap').hidden=true;$('pagination').hidden=true;return;}
+  const term=$('search').value.toLowerCase(),sev=$('severity').value,code=$('codeFilter').value;
+  const rows=report.issues.filter(i=>(sev==='ALL'||i.severity===sev)&&(code==='ALL'||i.code===code)&&(!term||JSON.stringify(i).toLowerCase().includes(term)||(issueDescriptions[i.code]||'').includes(term)));
+  const pages=Math.max(1,Math.ceil(rows.length/50));state.page=Math.min(state.page,pages-1);empty.hidden=rows.length>0;$('findingsTableWrap').hidden=!rows.length;$('pagination').hidden=!rows.length;
+  if(!rows.length){empty.querySelector('h3').textContent=report.totalIssues?'이 필터에 해당하는 항목이 없습니다':'보고할 오류·경고가 없습니다';empty.querySelector('p').textContent=report.totalIssues?'필터나 검색어를 바꿔 보세요.':'검사 범위 탭에서 실제 확인한 항목을 살펴보세요.';return;}
+  for(const item of rows.slice(state.page*50,state.page*50+50)){
+   const tr=elem('tr'),a=elem('td'),b=elem('td'),c=elem('td');a.append(elem('span',item.severity,'issuebadge '+item.severity),elem('span',item.code,'issuecode'));b.append(elem('div',item.file||'패키지 전체'));
+   const loc=[];if(item.record)loc.push('레코드 '+item.record);if(item.line)loc.push('물리 줄 '+item.line);if(item.docID!==undefined)loc.push('ID '+item.docID);if(item.field)loc.push('필드 '+item.field);b.append(elem('div',loc.join(' · '),'location'));
+   const korean=issueDescriptions[item.code];c.append(elem('div',korean||item.message));if(korean)c.append(elem('div',item.message,'location'));if(item.value!==undefined)c.append(elem('code',String(item.value),'issuevalue'));if(item.related?.length)c.append(elem('div','관련: '+item.related.join(' · '),'location'));tr.append(a,b,c);$('findingsRows').append(tr);
+  }
+  $('pageInfo').textContent=`${fmt(rows.length)}개 항목 · ${state.page+1} / ${pages} 페이지`;$('prevPage').disabled=state.page===0;$('nextPage').disabled=state.page>=pages-1;
+ }
+ for(const id of ['severity','codeFilter'])$(id).onchange=()=>{state.page=0;renderFindings();};let searchTimer;$('search').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{state.page=0;renderFindings();},160);};$('prevPage').onclick=()=>{state.page--;renderFindings();};$('nextPage').onclick=()=>{state.page++;renderFindings();};
+ function renderCoverage(){
+  const list=$('coverageList');list.replaceChildren();const c=state.report?.coverage;
+  const specs=[['inventory','폴더 목록 · 변경 확인',c?`${fmt(c.inventory.files)}개 파일`:null],['structure','로드 파일 전체 구조',c?`${c.structure.completed} / ${c.structure.selected}개 전체 읽기`:null],['documentIDs','문서 ID · 중복',c?`${fmt(c.documentIDs.unique)}개 고유 ID`:null],['paths','참조 경로 · 파일 실체',c?`${fmt(c.paths.matched)} / ${fmt(c.paths.references)}개 경로 일치`:null],['datOpt','DAT ↔ OPT 교차 검사',c?`${fmt(c.datOpt.joined)}개 문서 연결 · 페이지 수 비교 ${fmt(c.datOpt.pageComparisons)}건 · End Bates 비교 ${fmt(c.datOpt.endComparisons)}건`:null],['parents','Parent ID · 순환 참조',c?`${fmt(c.parents.nonempty)}개 부모 참조`:null],['loadFileHash','로드 파일 SHA-256 재검증',c?`${c.loadFileHash.verified} / ${c.loadFileHash.selected}개 두 번 읽기 완료`:null],['contentHashes','전체 파일 지문',c?'선택 옵션 · '+fmt(c.contentHashes.hashed)+'개 해시':null],['binaryContent','실제 PDF/TIFF 내부 페이지 · Native 내용','이 도구의 검사 범위에 포함되지 않습니다.']];
+  const labels={VERIFIED:'확인 완료',CHECKED:'검사함',COMPUTED:'계산함',NOT_CHECKED:'검사하지 않음',NOT_APPLICABLE:'해당 없음',NOT_REQUESTED:'선택 안 함',INCOMPLETE:'미완료',SNAPSHOT_ONLY:'선택 시점만',DEMO_SNAPSHOT:'데모 스냅샷',CHANGED:'변경 감지',FAILED:'실패'};
+  for(const [key,label,description]of specs){const row=elem('div',undefined,'coverageitem'),text=elem('div',label);if(description)text.append(elem('small',description));const status=c?.[key]?.status||'NOT_CHECKED';row.append(text,elem('span',labels[status]||status,'coverbadge'+(['CHECKED','VERIFIED','COMPUTED'].includes(status)?'':' muted')));list.append(row);}
+  $('auditText').textContent=state.report?JSON.stringify({version:state.report.version,runID:state.report.runID,mode:state.report.mode,startedAt:state.report.startedAt,finishedAt:state.report.finishedAt,complete:state.report.complete,outcome:state.report.outcome,fingerprint:state.report.fingerprint,inventorySHA256:state.report.inventorySHA256,configurationSHA256:state.report.configurationSHA256},null,2):'검사 후 표시됩니다.';
+ }
+ function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=elem('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+ function exportName(suffix){const r=state.report;return (r.rootName||'package').replace(/[^\p{L}\p{N}_.-]/gu,'_')+'_'+r.outcome+'_'+r.finishedAt.replace(/[:.]/g,'-')+'_'+suffix;}
+ $('exportCSV').onclick=()=>{if(!state.report)return;const r=state.report;const records=r.issues.map(i=>({outcome:r.outcome,runID:r.runID,root:r.rootName,...i}));download(R.toCSV(records,['outcome','runID','root','severity','code','file','record','line','docID','field','value','message','related']),exportName('issues.csv'),'text/csv;charset=utf-8');};
+ $('exportJSON').onclick=()=>{if(state.report)download(JSON.stringify(state.report,null,2),exportName('report.json'),'application/json');};
+ $('exportManifest').onclick=()=>{if(state.report)download(R.toCSV(state.report.manifest,['path','size','lastModified','role','references','referenceRoles','sha256']),exportName('manifest.csv'),'text/csv;charset=utf-8');};
+ function makeDemo(bad){
+  const fixed=Date.UTC(2026,0,1),file=(path,content)=>({path,file:new File([content],path.split('/').pop(),{lastModified:fixed})});
+  const header=['DOCID','BEGBATES','ENDBATES','PAGECOUNT','NATIVEPATH','TEXTPATH','IMAGEPATH','PARENTID'];
+  const rows=[header,['DOC001','DEMO0001','DEMO0002','2','Native/DOC001.eml','Text/DOC001.txt','Images/DEMO0001.tif',''],['DOC002','DEMO0003','DEMO0003','1','Native/DOC002.eml','Text/DOC002.txt','Images/DEMO0003.tif','DOC001']];
+  if(bad){rows[1][3]='3';rows[2][4]='Native/MISSING.eml';rows[2][5]='text/doc002.txt';rows[2][7]='UNKNOWN';rows.push(['DOC002','DEMO0004','DEMO0004','1','','Text/DOC002.txt','','']);}
+  const opt=['DEMO0001,VOL001,Images\\DEMO0001.tif,Y,,,2','DEMO0002,VOL001,Images\\DEMO0002.tif,,,,','DEMO0003,VOL001,Images\\DEMO0003.tif,Y,,,1'].join('\r\n')+'\r\n';
+  const entries=[file('LoadFiles/production.dat','\ufeff'+rows.map(r=>r.map(v=>'þ'+v.replace(/þ/g,'þþ')+'þ').join('\x14')).join('\r\n')+'\r\n'),file('LoadFiles/production.opt',opt),file('Native/DOC001.eml','From: demo@example.invalid\r\nSubject: Synthetic message\r\n\r\nSample only.\r\n'),file('Native/DOC002.eml','From: demo@example.invalid\r\nSubject: Synthetic attachment\r\n\r\nSample only.\r\n'),file('Text/DOC001.txt','Synthetic demo message.'),file('Text/DOC002.txt','Synthetic attachment text.')];
+  // Valid 8x8 bilevel TIFF; reconciliation checks paths, not pixels.
+  const tiff=new Uint8Array([73,73,42,0,8,0,0,0,8,0,0,1,4,0,1,0,0,0,8,0,0,0,1,1,4,0,1,0,0,0,8,0,0,0,3,1,3,0,1,0,0,0,1,0,0,0,6,1,3,0,1,0,0,0,1,0,0,0,17,1,4,0,1,0,0,0,110,0,0,0,22,1,4,0,1,0,0,0,8,0,0,0,23,1,4,0,1,0,0,0,8,0,0,0,28,1,3,0,1,0,0,0,1,0,0,0,0,0,0,0,255,255,255,255,255,255,255,255]);
+  for(let n=1;n<=3;n++)entries.push(file(`Images/DEMO000${n}.tif`,tiff));if(bad)entries.push(file('Text/ORPHAN.txt','No record references this file.'),file('Native/EMPTY.bin',''));
+  return entries;
+ }
+ async function demo(bad){invalidate();state.entries=makeDemo(bad);state.rootHandle=null;state.rootName=bad?'Demo_Package_With_Errors':'Demo_Package_Clean';state.mode='demo';state.overrides={};state.sources=[];$('hashAll').checked=false;$('multiPath').checked=false;setFolderInfo();selectTab('findings');await startRun(true);}
+ $('demoGood').onclick=()=>demo(false);$('demoBad').onclick=()=>demo(true);
+ if(!window.showDirectoryPicker){$('chooseFolder').textContent='폴더 선택 · 자동 검사';$('modeNote').textContent='이 브라우저에서는 호환 모드를 사용합니다.';}
+ window.addEventListener('beforeunload',()=>stopWorker());
+ renderCoverage();
+ // Only the UI state is exposed for reproducible offline smoke tests; no network APIs.
+ window.ReconcilerUI={getState:()=>({running:state.running,token:state.token,report:state.report,sources:state.sources}),makeDemo};
+})();
 
-/* ---------- SHA-256: same streaming pattern as the reference preflight ---------- */
-function sha256RotR(x,n){return((x>>>n)|(x<<(32-n)))>>>0;}
-function createSha256(){
- const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
- let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19,buflen=0,bytesTotal=0;const buf=new Uint8Array(128);
- function compress(chunk){const w=new Uint32Array(64);for(let i=0;i<16;i++){const o=i*4;w[i]=((chunk[o]<<24)|(chunk[o+1]<<16)|(chunk[o+2]<<8)|chunk[o+3])>>>0;}for(let i=16;i<64;i++){const s0=(sha256RotR(w[i-15],7)^sha256RotR(w[i-15],18)^(w[i-15]>>>3))>>>0,s1=(sha256RotR(w[i-2],17)^sha256RotR(w[i-2],19)^(w[i-2]>>>10))>>>0;w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0;}let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,hh=h7;for(let i=0;i<64;i++){const S1=(sha256RotR(e,6)^sha256RotR(e,11)^sha256RotR(e,25))>>>0,ch=((e&f)^((~e)&g))>>>0,t1=(hh+S1+ch+K[i]+w[i])>>>0,S0=(sha256RotR(a,2)^sha256RotR(a,13)^sha256RotR(a,22))>>>0,maj=((a&b)^(a&c)^(b&c))>>>0,t2=(S0+maj)>>>0;hh=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;}h0=(h0+a)>>>0;h1=(h1+b)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;h5=(h5+f)>>>0;h6=(h6+g)>>>0;h7=(h7+hh)>>>0;}
- return{update(u8){if(!u8||!u8.length)return this;bytesTotal+=u8.length;let p=0;if(buflen){const take=Math.min(128-buflen,u8.length);buf.set(u8.subarray(0,take),buflen);buflen+=take;p=take;if(buflen===128){compress(buf.subarray(0,64));compress(buf.subarray(64,128));buflen=0;}}while(p+128<=u8.length){compress(u8.subarray(p,p+64));compress(u8.subarray(p+64,p+128));p+=128;}if(p<u8.length){buf.set(u8.subarray(p));buflen=u8.length-p;}return this;},hexDigest(){const rem=buflen,bitHi=Math.floor(bytesTotal/0x20000000)>>>0,bitLo=((bytesTotal%0x20000000)*8)>>>0;let totalWanted=64;while(totalWanted<rem+9)totalWanted+=64;const fin=new Uint8Array(totalWanted);fin.set(buf.subarray(0,rem));fin[rem]=0x80;for(let i=0;i<4;i++){fin[fin.length-8+i]=(bitHi>>>(24-i*8))&255;fin[fin.length-4+i]=(bitLo>>>(24-i*8))&255;}for(let o=0;o<totalWanted;o+=64)compress(fin.subarray(o,o+64));return[h0,h1,h2,h3,h4,h5,h6,h7].map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');}};
-}
-function inventoryFingerprint(entries){const enc=new TextEncoder(),h=createSha256();for(const e of [...entries].sort(stablePathCompare))h.update(enc.encode(metadataLine(e)));return h.hexDigest();}
-
-/* ---------- Encoding + strict parsers ---------- */
-const ENCODINGS={'utf-8':{decoder:'utf-8',label:'UTF-8'},'utf-16le':{decoder:'utf-16le',label:'UTF-16 LE'},'utf-16be':{decoder:'utf-16be',label:'UTF-16 BE'},'cp1252':{decoder:'windows-1252',label:'Windows-1252'},'euc-kr':{decoder:'euc-kr',label:'Korean EUC-KR / Windows-949'},'shift_jis':{decoder:'shift_jis',label:'Japanese Shift_JIS'},'gbk':{decoder:'gbk',label:'Simplified Chinese GBK'},'big5':{decoder:'big5',label:'Traditional Chinese Big5'}};
-function decoderFor(kind){const e=ENCODINGS[kind];if(!e)throw new Error('Unsupported encoding: '+kind);try{return new TextDecoder(e.decoder,{fatal:true,ignoreBOM:true});}catch(err){throw new Error(`Browser does not support ${e.label}. Use current Chrome/Edge or convert through an approved workflow.`);}}
-async function sniffMeta(file,override='auto'){
- const n=Math.min(file.size,4*1024*1024);if(!n)throw new Error('Selected load file is empty.');const d=new Uint8Array(await file.slice(0,n).arrayBuffer());let kind=null,bomBytes=0;
- if(d.length>=4&&d[0]===0&&d[1]===0&&d[2]===0xFE&&d[3]===0xFF)throw new Error('UTF-32 BE is unsupported.');
- if(d.length>=4&&d[0]===0xFF&&d[1]===0xFE&&d[2]===0&&d[3]===0)throw new Error('UTF-32 LE is unsupported.');
- if(d.length>=3&&d[0]===0xEF&&d[1]===0xBB&&d[2]===0xBF){kind='utf-8';bomBytes=3;}else if(d.length>=2&&d[0]===0xFF&&d[1]===0xFE){kind='utf-16le';bomBytes=2;}else if(d.length>=2&&d[0]===0xFE&&d[1]===0xFF){kind='utf-16be';bomBytes=2;}
- if(override!=='auto'){if(kind&&kind!==override)throw new Error(`Encoding selection conflicts with BOM (${ENCODINGS[kind].label}).`);kind=override;}
- if(!kind){let even=0,odd=0;for(let i=0;i<d.length;i++)if(d[i]===0){if(i%2)odd++;else even++;}if(odd/d.length>.12&&even/d.length<.01)kind='utf-16le';else if(even/d.length>.12&&odd/d.length<.01)kind='utf-16be';}
- if(!kind){try{new TextDecoder('utf-8',{fatal:true}).decode(d,{stream:n<file.size});kind='utf-8';}catch(e){if(override==='auto')throw new Error('Encoding is not valid UTF-8 and has no BOM/strong UTF-16 signature. Select the source encoding explicitly.');}}
- const dec=decoderFor(kind);let sample;try{sample=dec.decode(d.subarray(bomBytes),{stream:n<file.size});}catch(e){throw new Error(`Cannot decode load-file sample losslessly as ${ENCODINGS[kind].label}: ${e.message||e}`);}return{kind,bomBytes,label:ENCODINGS[kind].label,sample};
-}
-function feSplit(rec){const s=String(rec);if(s.length<2||s[0]!==FE||s[s.length-1]!==FE)throw new Error('Malformed FE/DC4 record: record not enclosed by þ qualifiers.');if(countChar(s,DC4)+1>MAX_COLUMNS)tooManyColumns();const cols=s.includes(DC4)?s.split(DC4):[s],out=[];for(let i=0;i<cols.length;i++){const c=cols[i];if(c.length<2||c[0]!==FE||c[c.length-1]!==FE)throw new Error(`Malformed FE/DC4 record: column ${i+1} not enclosed by þ.`);const inner=c.slice(1,-1);if(inner.includes(FE)||inner.includes(DC4)||/[\r\n]/.test(inner))throw new Error(`Unsafe FE/DC4 content in column ${i+1}.`);out.push(inner);}return out;}
-function delimitedSplit(rec,delim){const out=[];let cur='',state='START';for(let i=0;i<rec.length;i++){const ch=rec[i];if(state==='QUOTED'){if(ch==='"'){if(rec[i+1]==='"'){cur+='"';i++;}else state='AFTER_QUOTE';}else cur+=ch;}else if(state==='AFTER_QUOTE'){if(ch===delim){out.push(cur);if(out.length>MAX_COLUMNS)tooManyColumns();cur='';state='START';}else throw new Error(`Malformed delimited record: unexpected character after closing quote at position ${i+1}.`);}else if(state==='START'){if(ch==='"')state='QUOTED';else if(ch===delim){out.push(cur);if(out.length>MAX_COLUMNS)tooManyColumns();cur='';}else{cur+=ch;state='UNQUOTED';}}else{if(ch==='"')throw new Error(`Malformed delimited record: quote inside unquoted field at position ${i+1}.`);if(ch===delim){out.push(cur);if(out.length>MAX_COLUMNS)tooManyColumns();cur='';state='START';}else cur+=ch;}}if(state==='QUOTED')throw new Error('Malformed delimited record: unclosed quoted field.');out.push(cur);if(out.length>MAX_COLUMNS)tooManyColumns();return out;}
-function csvSplit(rec){return delimitedSplit(rec,',');}
-function simpleSplit(rec,d){if(d==='|'||d==='\t'){let q;try{q=delimitedSplit(rec,d);}catch(e){}const p=String(rec).split(d);if(q&&(q.length!==p.length||q.some((v,i)=>v!==p[i])))throw new Error('Quoted fields are unsafe in plain pipe/tab mode.');}if(countChar(rec,d)+1>MAX_COLUMNS)tooManyColumns();return String(rec).split(d);}
-function optSplit(rec){const x=simpleSplit(rec,',');if(x.length!==7)throw new Error(`Malformed Opticon row: expected exactly 7 fields, found ${x.length}.`);return x;}
-const FORMATS={fe:{label:'Strict FE/DC4 DAT',split:feSplit,quoted:false},csv:{label:'CSV',split:csvSplit,quoted:true},tsv:{label:'Tab-delimited',split:r=>simpleSplit(r,'\t'),quoted:false},pipe:{label:'Pipe-delimited',split:r=>simpleSplit(r,'|'),quoted:false},opt:{label:'Opticon',split:optSplit,quoted:false}};
-function firstMeaningfulLine(text){for(const line of String(text||'').split(/\r\n|\n|\r/))if(line.trim()!=='')return line;return'';}
-function detectFormat(text,name=''){if(extOf(name)==='.opt')return'opt';const h=firstMeaningfulLine(text);try{if(h&&h[0]===FE&&feSplit(h).length>=1)return'fe';}catch(e){return'ambiguous';}const candidates=[];try{if(csvSplit(h).length>1)candidates.push('csv');}catch(e){if(h.includes('"'))return'ambiguous';}if(h.includes('\t'))candidates.push('tsv');if(h.includes('|'))candidates.push('pipe');const u=[...new Set(candidates)];return u.length===1?u[0]:u.length>1?'ambiguous':'unknown';}
-
-class RecordStreamer{
- constructor(fmt,onRecord){this.fmt=fmt;this.onRecord=onRecord;this.pending='';this.rec=0;this.csvState='START';this.suppressLF=false;this.pendingQuote=false;}
- async emit(r){if(r.length>MAX_RECORD_UNITS)throw new Error(`Record #${this.rec+1} exceeds safety limit.`);await this.onRecord(r,this.rec++);}
- async push(text){if(!text)return;if(this.suppressLF){if(text[0]==='\n')text=text.slice(1);this.suppressLF=false;if(!text)return;}if(this.fmt!=='csv')return this.pushPlain(text);return this.pushCsv(text);}
- async pushPlain(text){let b=this.pending+text,start=0;for(let i=this.pending.length;i<b.length;i++){const ch=b[i];if(ch==='\r'||ch==='\n'){await this.emit(b.slice(start,i));if(ch==='\r'){if(b[i+1]==='\n')i++;else if(i===b.length-1)this.suppressLF=true;}start=i+1;if(b.length-start>MAX_RECORD_UNITS)throw new Error(`Record #${this.rec+1} exceeds safety limit.`);}}this.pending=start===0?b:b.slice(start);if(this.pending.length>MAX_RECORD_UNITS)throw new Error(`Record #${this.rec+1} exceeds safety limit.`);}
- async pushCsv(text){let b=this.pending+text,state=this.csvState,start=0,i=this.pending.length;if(this.pendingQuote){if(i<b.length&&b[i]==='"'){i++;state='QUOTED';}else state='AFTER_QUOTE';this.pendingQuote=false;}for(;i<b.length;i++){const ch=b[i];if(state==='QUOTED'){if(ch==='"'){if(i+1<b.length&&b[i+1]==='"'){i++;continue;}if(i+1===b.length){this.pendingQuote=true;continue;}state='AFTER_QUOTE';}continue;}if(state==='AFTER_QUOTE'){if(ch===','){state='START';continue;}if(ch!=='\r'&&ch!=='\n')throw new Error(`Malformed CSV record #${this.rec+1}: character after closing quote.`);}else if(state==='START'){if(ch==='"'){state='QUOTED';continue;}if(ch===',')continue;if(ch!=='\r'&&ch!=='\n'){state='UNQUOTED';continue;}}else{if(ch==='"')throw new Error(`Malformed CSV record #${this.rec+1}: quote inside unquoted field.`);if(ch===','){state='START';continue;}if(ch!=='\r'&&ch!=='\n')continue;}await this.emit(b.slice(start,i));if(ch==='\r'){if(b[i+1]==='\n')i++;else if(i===b.length-1)this.suppressLF=true;}start=i+1;state='START';}this.pending=start===0?b:b.slice(start);this.csvState=state;if(this.pending.length>MAX_RECORD_UNITS)throw new Error(`CSV record #${this.rec+1} exceeds safety limit.`);}
- async flush(){if(this.fmt==='csv'&&this.pendingQuote){this.pendingQuote=false;this.csvState='AFTER_QUOTE';}if(this.fmt==='csv'&&this.csvState==='QUOTED')throw new Error(`Malformed CSV at EOF: record #${this.rec+1} has an unclosed quoted field.`);if(this.pending!=='')await this.emit(this.pending);this.pending='';}
-}
-
-async function getEntryFile(entry){if(entry.handle)return entry.handle.getFile();return entry.file;}
-async function scanLoadFile(entry,kind,config,onProgress,token){
- const file=await getEntryFile(entry),startMeta={size:file.size,lastModified:file.lastModified||0,name:file.name};const meta=await sniffMeta(file,config.encoding||'auto');let fmt=kind==='opt'?'opt':config.format;if(fmt==='auto'){fmt=detectFormat(meta.sample,file.name);if(fmt==='unknown'||fmt==='ambiguous')throw new Error(`Cannot safely auto-detect ${file.name} format (${fmt}). Select format explicitly.`);}if(!FORMATS[fmt])throw new Error('Unsupported load-file format.');
- const hasher=createSha256(),dec=decoderFor(meta.kind),stream=new RecordStreamer(fmt,async(rec,idx)=>onRecord(rec,idx));let offset=0,lastPct=-1,nonAscii=false;
- async function onRecord(rec,idx){checkToken(token);return config.onRecord(rec,idx,FORMATS[fmt].split);}
- while(offset<file.size){checkToken(token);const end=Math.min(file.size,offset+CHUNK_BYTES),raw=new Uint8Array(await file.slice(offset,end).arrayBuffer());if(raw.length!==end-offset)throw new Error('Incomplete source read.');hasher.update(raw);if(!nonAscii)nonAscii=raw.some(b=>b>=128);let feed=raw;if(offset===0&&meta.bomBytes)feed=raw.subarray(meta.bomBytes);let text;try{text=dec.decode(feed,{stream:end<file.size});}catch(e){throw new Error(`Decode error in ${file.name}: ${e.message||e}`);}await stream.push(text);offset=end;const p=Math.floor(offset*100/file.size);if(p!==lastPct){lastPct=p;if(onProgress)await onProgress(p);}}
- let tail='';try{tail=dec.decode();}catch(e){throw new Error(`Decode error at EOF in ${file.name}: ${e.message||e}`);}if(tail)await stream.push(tail);await stream.flush();const endFile=await getEntryFile(entry);if(endFile.size!==startMeta.size||(endFile.lastModified||0)!==startMeta.lastModified)throw new Error(`${file.name} changed while being parsed.`);meta.encodingUnconfirmed=(config.encoding||'auto')==='auto'&&!meta.bomBytes&&(meta.kind!=='utf-8'||nonAscii);return{file,meta,fmt,sha256:hasher.hexDigest()};
-}
-
-/* ---------- Folder inventory ---------- */
-async function enumerateHandle(root,token,onProgress){const out=[];let pathUnits=0,seen=0;async function walk(dir,prefix){for await(const [name,h] of dir.entries()){checkToken(token);const rel=prefix?prefix+'/'+name:name;if(h.kind==='directory'){await walk(h,rel);}else if(h.kind==='file'){const f=await h.getFile();out.push({path:rel.replace(/\\/g,'/'),name,size:f.size,lastModified:f.lastModified||0,type:f.type||'',handle:h,file:null});pathUnits+=rel.length;if(++seen>MAX_FILES)throw new Error(`Package exceeds safety limit of ${MAX_FILES.toLocaleString()} files.`);if(pathUnits>MAX_PATH_UNITS)throw new Error('Package path inventory exceeds memory safety limit.');if(onProgress&&seen%250===0)await onProgress(seen);}}}await walk(root,'');return out;}
-function enumerateFallback(fileList){const files=Array.from(fileList||[]);if(files.length>MAX_FILES)throw new Error(`Package exceeds safety limit of ${MAX_FILES.toLocaleString()} files.`);let rootName='',units=0;const out=[];for(const f of files){const wr=String(f.webkitRelativePath||f.name).replace(/\\/g,'/');const parts=wr.split('/');if(!rootName&&parts.length>1)rootName=parts[0];const rel=parts.length>1?parts.slice(1).join('/'):wr;units+=rel.length;if(units>MAX_PATH_UNITS)throw new Error('Package path inventory exceeds memory safety limit.');out.push({path:rel,name:f.name,size:f.size,lastModified:f.lastModified||0,type:f.type||'',handle:null,file:f});}return{entries:out,rootName:rootName||'Selected folder'};}
-function inventoryStats(entries){let bytes=0;for(const e of entries)bytes+=e.size;const cmap=new Map();for(const e of entries){const k=canonicalKey(e.path);if(!cmap.has(k))cmap.set(k,[]);cmap.get(k).push(e);}const collisions=[...cmap.entries()].filter(([,v])=>v.length>1);return{bytes,cmap,collisions,fingerprint:inventoryFingerprint(entries)};}
-function fileByPath(path){return inventory.find(x=>x.path===path)||null;}
-
-/* ---------- Header inspection + mapping ---------- */
-function normalizedHeader(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g,'');}
-const FIELD_HINTS={native:['nativepath','nativefile','nativefilepath','native','nativefiles'],text:['textpath','textfile','extractedtextpath','extractedtext','fulltextpath','textfilepath'],image:['imagepath','imagefile','imagefilepath','image','images']};
-function suggestField(headers,role){const keys=FIELD_HINTS[role];let best=-1,score=-1;headers.forEach((h,i)=>{const n=normalizedHeader(h);let s=0;if(keys.includes(n))s=100;else if(keys.some(k=>n.includes(k)))s=60;else if(role==='native'&&n.includes('native'))s=40;else if(role==='text'&&(n.includes('text')||n.includes('extract')))s=35;else if(role==='image'&&n.includes('image'))s=35;if(s>score){score=s;best=i;}});return score>=35?best:-1;}
-async function inspectHeader(){if(uiRunning||!inventory.length)return;const entry=fileByPath($('#metaFile').value);if(!entry)return toast('Select a metadata load file.');if(!$('#headerMode').value)return toast('Select Header mode first.');const token=++runToken;setRunning(true);setProgress(true,'Inspecting schema…',0);try{const file=await getEntryFile(entry),meta=await sniffMeta(file,$('#encoding').value),fmtSel=$('#format').value,fmt=fmtSel==='auto'?detectFormat(meta.sample,file.name):fmtSel;if(!FORMATS[fmt]||fmt==='opt'||fmt==='ambiguous'||fmt==='unknown')throw new Error('Metadata format could not be safely determined.');const text=meta.sample;let records=[];if(fmt==='csv'){const rs=new RecordStreamer('csv',async r=>{if(r.trim()!==''&&records.length<1)records.push(r);});await rs.push(text);try{await rs.flush();}catch(e){if(!records.length)throw e;}}else{records=String(text).split(/\r\n|\n|\r/).filter(x=>x.trim()!=='').slice(0,1);}if(!records.length)throw new Error('No schema/data record found in sample.');const first=FORMATS[fmt].split(records[0]);const hasHeader=$('#headerMode').value==='yes',headers=hasHeader?first.map(String):first.map((_,i)=>`Column ${i+1}`);if(!headers.length)throw new Error('Schema has zero columns.');currentSchema={headers,fmt,encoding:meta.kind,entryPath:entry.path,hasHeader};populateMapping(headers);$('#schemaNote').textContent=`${headers.length.toLocaleString()} columns · ${FORMATS[fmt].label} · ${meta.label} · ${hasHeader?'header present':'headerless (synthetic column labels)'}. Auto-mapping is a suggestion; confirm the three path fields before running.`;$('#mappingWrap').classList.remove('hidden');setProgress(false);toast('Schema inspected. Confirm path-field mapping.');}catch(e){currentSchema=null;$('#mappingWrap').classList.add('hidden');setProgress(false);toast('Header inspection stopped: '+(e.message||e));}finally{if(token===runToken)setRunning(false);}}
-function populateMapping(headers){for(const [id,role] of [['nativeField','native'],['textField','text'],['imageField','image']]){const s=$('#'+id);s.innerHTML='<option value="">— None —</option>'+headers.map((h,i)=>`<option value="${i}">#${i+1} · ${escHtml(h)}</option>`).join('');const pick=suggestField(headers,role);s.value=pick>=0?String(pick):'';}}
-
-/* ---------- Reference normalization + reconciliation ---------- */
-const INVISIBLE_RE=/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/;
-function normalizeReference(raw,rootName){const original=String(raw==null?'':raw);if(!original.trim())return{blank:true,raw:original};let s=original.trim(),warnings=[];if(s!==original)warnings.push('leading/trailing whitespace');if(INVISIBLE_RE.test(s)||/[\u0000-\u001F\u007F]/.test(s))return{raw:original,invalid:true,reason:'control/invisible character in path'};if(/^[a-z][a-z0-9+.-]*:\/\//i.test(s))return{raw:original,invalid:true,reason:'URL is not a package-relative path'};if(/^[A-Za-z]:[\\/]/.test(s))return{raw:original,invalid:true,reason:'drive-absolute path is not package-relative'};if(/^\\\\/.test(s)||/^\/\//.test(s))return{raw:original,invalid:true,reason:'UNC/network path is not package-relative'};if(/^[\\/]/.test(s))return{raw:original,invalid:true,reason:'root-absolute path is not package-relative'};if(s.includes('\\')&&s.includes('/'))warnings.push('mixed slash styles');s=s.replace(/\\/g,'/');if(/\/{2,}/.test(s))warnings.push('duplicate separator');const parts=s.split('/'),out=[];for(const part of parts){if(part===''||part==='.')continue;if(part==='..')return{raw:original,invalid:true,reason:'parent traversal (..) is blocked'};if(part.includes(':'))return{raw:original,invalid:true,reason:'colon in path segment is not portable/safe'};out.push(part);}if(!out.length)return{raw:original,invalid:true,reason:'path normalizes to empty'};const norm=out.join('/');if(rootName&&canonicalKey(out[0])===canonicalKey(rootName))return{raw:original,invalid:true,reason:`path includes selected root folder name “${rootName}”; references must be relative to that root`,normalized:norm};return{raw:original,normalized:norm,key:canonicalKey(norm),warnings};}
-function createRole(name,label,duplicateSeverity='FAIL'){return{name,label,duplicateSeverity,refs:[],nonblank:0,unique:0,resolved:0,missing:0,invalid:0,duplicates:0,caseMismatch:0,blank:0,orphans:[],roots:[],refProblems:[],resolvedKeys:new Set(),validKeys:new Set()};}
-function processRole(role,stats,rootName){const groups=new Map(),roots=new Set();for(const ref of role.refs){const n=normalizeReference(ref.raw,rootName);if(n.blank){role.blank++;continue;}role.nonblank++;if(n.invalid){role.invalid++;role.refProblems.push({severity:'FAIL',role:role.label,row:ref.row,issue:'Invalid relative path',path:ref.raw,note:n.reason+(n.normalized?` · ${n.normalized}`:'')});continue;}const parts=n.normalized.split('/');roots.add(parts.length>1?parts[0]:'');role.validKeys.add(n.key);if(!groups.has(n.key))groups.set(n.key,[]);groups.get(n.key).push({...ref,n});const actual=stats.cmap.get(n.key)||[];if(actual.length===1){if(actual[0].size===0)role.refProblems.push({severity:role.name==='text'?'WARN':'FAIL',role:role.label,row:ref.row,issue:'Empty referenced file',path:ref.raw,note:'Referenced file is 0 bytes.'});role.resolved++;role.resolvedKeys.add(n.key);if(actual[0].path!==n.normalized){role.caseMismatch++;role.refProblems.push({severity:'WARN',role:role.label,row:ref.row,issue:'Case / Unicode normalization mismatch',path:ref.raw,note:`Actual: ${actual[0].path}`});}if(n.warnings.length)role.refProblems.push({severity:'WARN',role:role.label,row:ref.row,issue:'Path hygiene',path:ref.raw,note:n.warnings.join('; ')});}else if(actual.length===0){role.missing++;const base=n.normalized.split('/').pop().toLowerCase();const cand=inventory.filter(x=>x.name.toLowerCase()===base).slice(0,3).map(x=>x.path);role.refProblems.push({severity:'FAIL',role:role.label,row:ref.row,issue:'Missing file',path:ref.raw,note:cand.length?'Same basename elsewhere (not auto-matched): '+cand.join(' | '):n.normalized});}else{role.invalid++;role.refProblems.push({severity:'FAIL',role:role.label,row:ref.row,issue:'Ambiguous actual path',path:ref.raw,note:`${actual.length} inventory entries collide case/Unicode-insensitively.`});}}
- role.unique=groups.size;for(const [k,v] of groups)if(v.length>1){role.duplicates+=v.length-1;for(const x of v.slice(1,6))role.refProblems.push({severity:role.duplicateSeverity,role:role.label,row:x.row,issue:'Duplicate reference',path:x.raw,note:`Same normalized path referenced ${v.length} times.`});}role.roots=[...roots].sort();}
-function roleScopeMatches(role,e){if(!role.roots.length)return false;const parts=e.path.split('/');const top=parts.length>1?parts[0]:'';if(!role.roots.some(r=>canonicalKey(r)===canonicalKey(top)))return false;/* When references establish a real subfolder (e.g. NATIVES/TEXT/IMAGES), every file inside that role root is orphan-eligible regardless of extension. Native originals can legitimately be .txt/.csv/.xml. At package root, classification is inherently ambiguous, so NativePath orphan detection fails conservative (not checked) while text/image use extension hints only. */if(top!=='')return true;const ex=extOf(e.path);if(role.name==='native')return false;if(role.name==='text')return TEXT_EXTS.has(ex);if(role.name==='imageMeta'||role.name==='imageOpt')return IMAGE_EXTS.has(ex);return false;}
-function findOrphans(role,allReferencedKeys){if(!role.refs.length||!role.roots.length)return;for(const e of inventory){if(!roleScopeMatches(role,e))continue;const k=canonicalKey(e.path);if(allReferencedKeys.has(k))continue;role.orphans.push(e);}}
-
-/* ---------- Main analysis ---------- */
-let rootHandle=null,rootName='',inventory=[],inventoryInfo=null,inventoryMode='none',currentSchema=null,lastResult=null,runToken=0,uiRunning=false;
-function invalidateResult(){lastResult=null;$('#results').classList.add('hidden');$('#reportPre').textContent='';}
-function setRunning(on){uiRunning=!!on;['btnFolder','btnFallback','btnInspect','btnRun'].forEach(id=>{const x=$('#'+id);if(x)x.disabled=on;});$('#btnCancel').disabled=!on;['metaFile','optFile','encoding','format','headerMode','nativeField','textField','imageField','strictCounts'].forEach(id=>{const x=$('#'+id);if(x)x.disabled=on;});}
-function selectedIndex(id){const v=$('#'+id).value;return v===''?null:Number(v);}
-function validateMappings(){const vals=[selectedIndex('nativeField'),selectedIndex('textField'),selectedIndex('imageField')].filter(x=>x!=null);if(new Set(vals).size!==vals.length)throw new Error('NativePath, TextPath and ImagePath must map to distinct columns.');if(!vals.length&&!$('#optFile').value)throw new Error('Select at least one metadata path field or an OPT image load file.');}
-async function runReconcile(){if(uiRunning||!currentSchema||!inventory.length)return;invalidateResult();let token=++runToken;setRunning(true);setProgress(true,'Starting reconciliation…',0);try{validateMappings();const metaEntry=fileByPath($('#metaFile').value);if(!metaEntry)throw new Error('Metadata load file is missing from current inventory.');const optEntry=$('#optFile').value?fileByPath($('#optFile').value):null;if(currentSchema.entryPath!==metaEntry.path)throw new Error('Metadata selection changed after schema inspection. Inspect Header again.');const roles={native:createRole('native','NativePath'),text:createRole('text','TextPath'),imageMeta:createRole('imageMeta','ImagePath (metadata)'),imageOpt:createRole('imageOpt','ImagePath (OPT)','WARN')};const indices={native:selectedIndex('nativeField'),text:selectedIndex('textField'),imageMeta:selectedIndex('imageField')};let dataRows=0,leadingBlank=0,headers=null,schemaSeen=false;
- const metaCfg={encoding:$('#encoding').value,format:$('#format').value,onRecord:async(rec,idx,split)=>{checkToken(token);if(rec.trim()===''){if(!schemaSeen){if($('#headerMode').value!=='yes')throw new Error('Leading blank data record in headerless metadata.');leadingBlank++;return;}throw new Error(`Blank logical record at metadata record #${idx+1}; reconciliation blocked to avoid row ambiguity.`);}const f=split(rec);if(!schemaSeen){schemaSeen=true;if($('#headerMode').value==='yes'){headers=f.map(String);if(JSON.stringify(headers)!==JSON.stringify(currentSchema.headers))throw new Error('Header differs from inspected schema. Re-inspect before running.');return;}headers=currentSchema.headers;if(f.length!==headers.length)throw new Error('Headerless first row width differs from inspected schema.');}
-   if(f.length!==headers.length)throw new Error(`Metadata row ${dataRows+1} has ${f.length} fields; expected ${headers.length}. Reconciliation blocked.`);dataRows++;for(const [rk,ci] of Object.entries(indices))if(ci!=null)roles[rk].refs.push({row:dataRows,raw:f[ci],source:'metadata'});},};
- const metaScan=await scanLoadFile(metaEntry,'metadata',metaCfg,p=>setProgress(true,`Parsing metadata · ${p}%`,Math.min(45,p*.45)),token);checkToken(token);
- if(!dataRows)throw new Error('Metadata contains no data rows.');if(leadingBlank)throw new Error('Leading blank metadata records must be reviewed.');let optEncodingUnconfirmed=false;let optRows=0,optDocs=0,optBlankPaths=0,optSha=null;if(optEntry){const optCfg={encoding:$('#encoding').value,format:'opt',onRecord:async(rec,idx,split)=>{checkToken(token);if(rec.trim()==='')throw new Error(`Blank OPT row at record #${idx+1}.`);const f=split(rec);optRows++;const marker=String(f[3]||'');if(optRows===1&&marker!=='Y')throw new Error('First OPT page must start a document with Y.');if(marker==='Y')optDocs++;else if(marker!=='')throw new Error(`OPT row ${optRows}: document break flag must be Y or blank.`);const p=String(f[2]||'');if(!p.trim())optBlankPaths++;roles.imageOpt.refs.push({row:optRows,raw:p,source:'opt'});}};const os=await scanLoadFile(optEntry,'opt',optCfg,p=>setProgress(true,`Parsing OPT · ${p}%`,45+Math.min(20,p*.2)),token);optSha=os.sha256;optEncodingUnconfirmed=os.meta.encodingUnconfirmed;}
- checkToken(token);setProgress(true,'Reconciling references against package inventory…',68);for(const r of Object.values(roles))processRole(r,inventoryInfo,rootName);const allReferencedKeys=new Set();for(const r of Object.values(roles))for(const k of r.validKeys)allReferencedKeys.add(k);for(const r of Object.values(roles))findOrphans(r,allReferencedKeys);
- const result={tool:'Load File Package Reconciler',version:APP_VERSION,generatedUtc:new Date().toISOString(),rootName,inventoryMode,packageFiles:inventory.length,packageBytes:inventoryInfo.bytes,inventoryFingerprint:inventoryInfo.fingerprint,inventoryReverified:false,metadata:{path:metaEntry.path,rows:dataRows,leadingBlank,columns:headers.length,format:metaScan.fmt,encoding:metaScan.meta.label,sha256:metaScan.sha256},opt:optEntry?{path:optEntry.path,rows:optRows,documents:optDocs,blankPaths:optBlankPaths,sha256:optSha}:null,roles,issues:[],refProblems:[],strictCounts:$('#strictCounts').checked,verdict:'FAIL',issueCounts:{FAIL:0,WARN:0,INFO:0}};
- if(metaScan.meta.encodingUnconfirmed||optEncodingUnconfirmed)addIssue(result,'WARN','ENCODING_UNCONFIRMED','Confirm source encoding','BOM-less non-ASCII or heuristic UTF-16 encoding requires explicit source encoding selection.');if(inventoryInfo.collisions.length)addIssue(result,'FAIL','INVENTORY_CANONICAL_COLLISION','Package contains case/Unicode-colliding paths',`${inventoryInfo.collisions.length.toLocaleString()} canonical path collision(s) make reference resolution ambiguous.`);
- for(const r of Object.values(roles)){result.refProblems.push(...r.refProblems);if(r.invalid)addIssue(result,'FAIL',r.name.toUpperCase()+'_INVALID_PATH','Invalid or ambiguous path references',`${r.invalid.toLocaleString()} ${r.label} reference(s) are unsafe or ambiguous.`);if(r.missing)addIssue(result,'FAIL',r.name.toUpperCase()+'_MISSING','Referenced files are missing',`${r.missing.toLocaleString()} non-blank ${r.label} reference(s) did not resolve inside the selected package root.`);if(r.duplicates)addIssue(result,r.duplicateSeverity,r.name.toUpperCase()+'_DUP_REF','Duplicate file references',`${r.duplicates.toLocaleString()} duplicate occurrence(s) in ${r.label}.`);if(r.caseMismatch)addIssue(result,'WARN',r.name.toUpperCase()+'_CASE','Reference casing/Unicode form differs from actual path',`${r.caseMismatch.toLocaleString()} resolved ${r.label} reference(s) differ from inventory spelling.`);if(r.blank&&r.refs.length)addIssue(result,'WARN',r.name.toUpperCase()+'_BLANK','Blank path values',`${r.blank.toLocaleString()} blank ${r.label} value(s). Matter rules may permit these.`);if(r.orphans.length)addIssue(result,'WARN',r.name.toUpperCase()+'_ORPHAN','Unreferenced files inside inferred role scope',`${r.orphans.length.toLocaleString()} file(s) in ${r.label} scope were not referenced by any selected load-file path.`);if(r.name==='native'&&r.roots.includes(''))addIssue(result,'INFO','NATIVE_ROOT_ORPHAN_SCOPE','Root-level NativePath orphan scan is intentionally conservative','NativePath references point directly at package root, where load/control files cannot be distinguished safely from native originals by extension. Missing references are still fully checked, but root-level native orphan discovery is not asserted.');}
- if(optBlankPaths)addIssue(result,'FAIL','OPT_BLANK_IMAGE_PATH','OPT rows with blank image path',`${optBlankPaths.toLocaleString()} OPT page row(s) have a blank image path.`);
- const sev=result.strictCounts?'FAIL':'WARN';function countIssue(code,title,detail){addIssue(result,sev,code,title,detail);}
- if(indices.native!=null&&roles.native.nonblank!==dataRows)countIssue('COUNT_NATIVE_DAT','DAT/CSV rows vs NativePath count differ',`${dataRows.toLocaleString()} metadata rows vs ${roles.native.nonblank.toLocaleString()} non-blank NativePath references.`);
- if(indices.text!=null&&roles.text.nonblank!==dataRows)countIssue('COUNT_TEXT_DAT','DAT/CSV rows vs TextPath count differ',`${dataRows.toLocaleString()} metadata rows vs ${roles.text.nonblank.toLocaleString()} non-blank TextPath references.`);
- if(optEntry&&optDocs!==dataRows)countIssue('COUNT_OPT_DOCS','Metadata rows vs OPT document count differ',`${dataRows.toLocaleString()} metadata rows vs ${optDocs.toLocaleString()} OPT document-start rows (Y).`);
- if(optEntry&&roles.imageOpt.nonblank!==optRows)countIssue('COUNT_OPT_PATHS','OPT page rows vs non-blank ImagePath count differ',`${optRows.toLocaleString()} OPT rows vs ${roles.imageOpt.nonblank.toLocaleString()} non-blank image paths.`);
- if(inventoryMode==='handle'){setProgress(true,'Re-verifying package inventory…',88);const second=await enumerateHandle(rootHandle,token,n=>{if(n%1000===0)setProgress(true,`Re-verifying package inventory · ${n.toLocaleString()} files`,92);});const secondInfo=inventoryStats(second);if(secondInfo.fingerprint!==inventoryInfo.fingerprint||second.length!==inventory.length)throw new Error('Package inventory changed during reconciliation. Previous results were discarded.');result.inventoryReverified=true;}else addIssue(result,'INFO','FALLBACK_SNAPSHOT','Folder fallback uses a browser file snapshot','End-of-run directory re-enumeration is unavailable in fallback mode; selected File objects remain read-only snapshots.');
- addIssue(result,'INFO','LOAD_HASH','Load-file SHA-256 computed',`Metadata SHA-256 ${metaScan.sha256}${optSha?' · OPT SHA-256 '+optSha:''}`);finalizeResult(result);lastResult=result;renderResult(result);setProgress(true,'Complete',100);toast(result.verdict==='PASS'?'✅ Package reconciliation PASS':result.verdict==='WARN'?'⚠️ Reconciliation completed with warnings':'⛔ Reconciliation FAIL — review findings');
- }catch(e){if(token===runToken){invalidateResult();setProgress(false);toast('Reconciliation stopped — previous results were discarded: '+(e.message||e));}}finally{if(token===runToken)setRunning(false);}}
-function finalizeResult(r){for(const severity of ['FAIL','WARN']){const n=r.refProblems.filter(x=>x.severity===severity).length;if(n&&!r.issues.some(x=>x.code==='REFERENCE_'+severity))addIssue(r,severity,'REFERENCE_'+severity,'Reference findings',`${n} ${severity} reference finding(s); see reference details.`);}r.issueCounts={FAIL:0,WARN:0,INFO:0};for(const x of r.issues)r.issueCounts[x.severity]=(r.issueCounts[x.severity]||0)+1;r.verdict=r.issueCounts.FAIL?'FAIL':r.issueCounts.WARN?'WARN':'PASS';return r;}
-
-/* ---------- Rendering + reports ---------- */
-function stat(k,v,cls=''){return`<div class="stat"><div class="k">${escHtml(k)}</div><div class="v ${cls}">${escHtml(v)}</div></div>`;}
-function renderResult(r){$('#results').classList.remove('hidden');$('#verdict').textContent=r.verdict;$('#verdict').className='verdict '+r.verdict;const missing=Object.values(r.roles).reduce((a,x)=>a+x.missing,0),orphans=Object.values(r.roles).reduce((a,x)=>a+x.orphans.length,0),dups=Object.values(r.roles).reduce((a,x)=>a+x.duplicates,0);$('#summaryGrid').innerHTML=stat('Verdict',r.verdict)+stat('Metadata rows',r.metadata.rows.toLocaleString())+stat('Package files',r.packageFiles.toLocaleString())+stat('Missing',missing.toLocaleString(),missing?'bad-txt':'')+stat('Orphans',orphans.toLocaleString(),orphans?'warn-txt':'')+stat('Duplicate refs',dups.toLocaleString(),dups?'warn-txt':'')+stat('OPT pages',r.opt?r.opt.rows.toLocaleString():'—')+stat('Inventory fp',r.inventoryFingerprint.slice(0,16)+'…','mono');renderIssues(r);renderRecon(r);renderMeta(r);renderRefProblems(r);renderOrphans(r);$('#reportPre').textContent=buildTextReport(r);}
-function renderIssues(r){$('#issueCounts').textContent=`FAIL ${r.issueCounts.FAIL} · WARN ${r.issueCounts.WARN} · INFO ${r.issueCounts.INFO}`;$('#issues').innerHTML=r.issues.length?r.issues.map(x=>`<div class="issue ${x.severity}"><div class="issue-title"><span class="sev ${x.severity}">${x.severity}</span>${escHtml(x.title)}<span class="issue-code">${escHtml(x.code)}</span></div><div class="issue-detail">${escHtml(x.detail)}</div></div>`).join(''):'<div class="small">No findings.</div>';}
-function renderRecon(r){const rows=Object.values(r.roles).filter(x=>x.refs.length||x.name==='native'||x.name==='text');$('#reconBody').innerHTML=rows.map(x=>`<tr><td><b>${escHtml(x.label)}</b></td><td>${x.nonblank.toLocaleString()}${x.blank?` <span class="warn-txt">(+${x.blank} blank)</span>`:''}</td><td>${x.unique.toLocaleString()}</td><td class="${x.missing?'':'ok-txt'}">${x.resolved.toLocaleString()}</td><td class="${x.missing?'bad-txt':''}">${x.missing.toLocaleString()}</td><td class="${x.invalid?'bad-txt':''}">${x.invalid.toLocaleString()}</td><td class="${x.duplicates?'warn-txt':''}">${x.duplicates.toLocaleString()}</td><td class="${x.caseMismatch?'warn-txt':''}">${x.caseMismatch.toLocaleString()}</td><td class="${x.orphans.length?'warn-txt':''}">${x.orphans.length.toLocaleString()}</td><td class="preview-cell" title="${escHtml(x.roots.join(', '))}">${escHtml(x.roots.map(v=>v||'(root)').join(', ')||'—')}</td></tr>`).join('');}
-function renderMeta(r){const items=[['Package root',r.rootName],['Inventory mode',r.inventoryMode==='handle'?'File System Access API':'Folder upload fallback'],['Package size',fmtBytes(r.packageBytes)],['Inventory reverified',r.inventoryReverified?'YES':'NO'],['Metadata load',r.metadata.path],['Metadata SHA-256',r.metadata.sha256],['Metadata format',FORMATS[r.metadata.format].label],['Encoding',r.metadata.encoding],['OPT load',r.opt?r.opt.path:'—'],['OPT SHA-256',r.opt?r.opt.sha256:'—']];$('#metaGrid').innerHTML=items.map(([k,v])=>`<div class="meta-item"><b>${escHtml(k)}</b><span class="${k.includes('SHA')?'mono':''}">${escHtml(v)}</span></div>`).join('');}
-function renderRefProblems(r){const q=$('#refFilter').value.trim().toLowerCase();const all=r.refProblems.filter(x=>!q||[x.severity,x.role,x.issue,x.path,x.note].join(' ').toLowerCase().includes(q)).slice(0,2000);$('#refBody').innerHTML=all.length?all.map(x=>`<tr><td><span class="sev ${x.severity}">${x.severity}</span></td><td>${escHtml(x.role)}</td><td>${escHtml(x.row)}</td><td>${escHtml(x.issue)}</td><td class="mono preview-cell" title="${escHtml(x.path)}">${escHtml(x.path)}</td><td class="preview-cell" title="${escHtml(x.note)}">${escHtml(x.note)}</td></tr>`).join(''):'<tr><td colspan="6" class="small">No matching reference problems.</td></tr>';}
-function renderOrphans(r){let all=[];for(const role of Object.values(r.roles))for(const e of role.orphans)all.push({role:role.label,...e});all.sort((a,b)=>a.path.localeCompare(b.path));$('#orphanBody').innerHTML=all.length?all.slice(0,3000).map(x=>`<tr><td>${escHtml(x.role)}</td><td class="mono preview-cell" title="${escHtml(x.path)}">${escHtml(x.path)}</td><td>${fmtBytes(x.size)}</td><td>${x.lastModified?new Date(x.lastModified).toISOString():'—'}</td></tr>`).join(''):'<tr><td colspan="4" class="small">No orphan candidates in inferred role scopes.</td></tr>';}
-function reportSafe(s){return String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));}
-function buildTextReport(r){const L=[],A=(s='')=>L.push(s);A('LOAD FILE PACKAGE RECONCILER');A('============================');A('Tool version        : '+r.version);A('Generated (UTC)     : '+r.generatedUtc);A('Verdict             : '+r.verdict+` (FAIL ${r.issueCounts.FAIL} / WARN ${r.issueCounts.WARN} / INFO ${r.issueCounts.INFO})`);A('');A('== Package ==');A('Root                : '+reportSafe(r.rootName));A('Inventory mode      : '+r.inventoryMode);A('Files               : '+r.packageFiles.toLocaleString());A('Bytes               : '+r.packageBytes.toLocaleString());A('Inventory fingerprint: '+r.inventoryFingerprint);A('Inventory reverified: '+(r.inventoryReverified?'YES':'NO'));A('');A('== Metadata load ==');A('Path                : '+reportSafe(r.metadata.path));A('Rows                : '+r.metadata.rows.toLocaleString());A('Columns             : '+r.metadata.columns.toLocaleString());A('Format              : '+FORMATS[r.metadata.format].label);A('Encoding            : '+r.metadata.encoding);A('SHA-256             : '+r.metadata.sha256);if(r.opt){A('');A('== OPT image load ==');A('Path                : '+reportSafe(r.opt.path));A('Page rows           : '+r.opt.rows.toLocaleString());A('Documents (Y)       : '+r.opt.documents.toLocaleString());A('Blank image paths   : '+r.opt.blankPaths.toLocaleString());A('SHA-256             : '+r.opt.sha256);}A('');A('== Reconciliation ==');for(const x of Object.values(r.roles)){if(!x.refs.length&&x.name!=='native'&&x.name!=='text')continue;A(`${x.label} | refs ${x.nonblank} | unique ${x.unique} | resolved ${x.resolved} | missing ${x.missing} | invalid ${x.invalid} | duplicates ${x.duplicates} | case mismatch ${x.caseMismatch} | blank ${x.blank} | orphans ${x.orphans.length} | scope ${x.roots.map(v=>v||'(root)').join(', ')||'—'}`);}A('');A('== Issues ==');for(const x of r.issues)A(`[${x.severity}] ${reportSafe(x.code)} — ${reportSafe(x.title)}\n  ${reportSafe(x.detail)}`);A('');A('== Reference problem samples ==');for(const x of r.refProblems.slice(0,5000))A(`[${x.severity}] ${reportSafe(x.role)} row ${x.row} · ${reportSafe(x.issue)} · ${reportSafe(x.path)} · ${reportSafe(x.note)}`);A('');A('== Orphan samples ==');let n=0;for(const role of Object.values(r.roles))for(const e of role.orphans){if(n++>=5000)break;A(`${reportSafe(role.label)} · ${reportSafe(e.path)} · ${e.size} bytes`);}A('');A('== Scope / limitations ==');A('• Source package is read-only; this utility does not modify selected files.');A('• CSP blocks network connections and external resources.');A('• Metadata/OPT load files are fully parsed and SHA-256 hashed; package assets are inventoried by path, size and modified time but are not content-hashed.');A('• References are never auto-resolved by basename. Same-basename files elsewhere are advisory candidates only.');A('• Orphan detection is intentionally limited to inferred role scopes to reduce false positives from logs/control files.');A('• Blank paths and count differences can be matter-valid. They are warnings unless Strict Counts is enabled; missing non-blank referenced files and unsafe paths are FAIL.');return L.join('\n');}
-function resultForJson(r){const copy=JSON.parse(JSON.stringify(r,(k,v)=>v instanceof Set?undefined:v));for(const [k,role] of Object.entries(copy.roles||{})){delete role.resolvedKeys;delete role.validKeys;if(role.orphans&&role.orphans.length>10000)role.orphans=role.orphans.slice(0,10000);}if(copy.refProblems&&copy.refProblems.length>10000)copy.refProblems=copy.refProblems.slice(0,10000);return copy;}
-function downloadBlob(name,blob){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
-
-/* ---------- UI ---------- */
-function populateLoadSelectors(){const metas=inventory.filter(e=>['.dat','.csv','.txt','.load'].includes(extOf(e.path))).sort(stablePathCompare),opts=inventory.filter(e=>extOf(e.path)==='.opt').sort(stablePathCompare);$('#metaFile').innerHTML=metas.length?metas.map(e=>`<option value="${escHtml(e.path)}">${escHtml(e.path)}</option>`).join(''):'<option value="">— No metadata load files found —</option>';$('#optFile').innerHTML='<option value="">— None —</option>'+opts.map(e=>`<option value="${escHtml(e.path)}">${escHtml(e.path)}</option>`).join('');if(metas.length===1)$('#metaFile').value=metas[0].path;if(opts.length===1)$('#optFile').value=opts[0].path;$('#inventoryTag').textContent=`${inventory.length.toLocaleString()} files · ${fmtBytes(inventoryInfo.bytes)} · ${metas.length} metadata candidate(s) · ${opts.length} OPT candidate(s)`;$('#configCard').classList.remove('hidden');currentSchema=null;$('#mappingWrap').classList.add('hidden');invalidateResult();}
-async function selectFolder(){if(uiRunning)return;const token=++runToken;invalidateResult();setRunning(true);setProgress(true,'Opening package folder…',0);try{if(!window.showDirectoryPicker)throw new Error('File System Access API is unavailable. Use Folder Upload Fallback in Chrome/Edge.');const h=await window.showDirectoryPicker({mode:'read'});const nextInventory=await enumerateHandle(h,token,n=>setProgress(true,`Inventorying package · ${n.toLocaleString()} files`,Math.min(85,5+Math.log10(n+1)*20)));checkToken(token);const nextInfo=inventoryStats(nextInventory);rootHandle=h;rootName=h.name;inventoryMode='handle';inventory=nextInventory;inventoryInfo=nextInfo;$('#folderTag').textContent=`${rootName} · ${inventory.length.toLocaleString()} files · ${fmtBytes(inventoryInfo.bytes)} · inventory ${inventoryInfo.fingerprint.slice(0,16)}…`;populateLoadSelectors();setProgress(false);toast('Package inventory complete. Select load files and inspect the header.');}catch(e){setProgress(false);if(e&&e.name==='AbortError')toast('Folder selection cancelled.');else toast('Folder inventory stopped: '+(e.message||e));}finally{if(token===runToken)setRunning(false);}}
-function selectFallbackFiles(files){if(uiRunning||!files||!files.length)return;try{runToken++;invalidateResult();const x=enumerateFallback(files);rootHandle=null;rootName=x.rootName;inventoryMode='fallback';inventory=x.entries;inventoryInfo=inventoryStats(inventory);$('#folderTag').textContent=`${rootName} · ${inventory.length.toLocaleString()} files · ${fmtBytes(inventoryInfo.bytes)} · fallback snapshot`;populateLoadSelectors();setProgress(false);toast('Fallback package snapshot loaded. Select load files and inspect the header.');}catch(e){toast('Folder snapshot blocked: '+(e.message||e));}}
-$('#btnFolder').addEventListener('click',selectFolder);$('#btnFallback').addEventListener('click',()=>{if(!uiRunning)$('#folderInput').click();});$('#folderInput').addEventListener('change',()=>selectFallbackFiles($('#folderInput').files));$('#btnInspect').addEventListener('click',inspectHeader);$('#btnRun').addEventListener('click',runReconcile);$('#btnCancel').addEventListener('click',()=>{runToken++;invalidateResult();setRunning(false);setProgress(false);toast('Operation cancelled — no prior result remains active.');});
-for(const id of ['metaFile','encoding','format','headerMode'])$('#'+id).addEventListener('change',()=>{if(currentSchema){currentSchema=null;$('#mappingWrap').classList.add('hidden');invalidateResult();toast('Load-file/schema setting changed — inspect the header again.');}});$('#optFile').addEventListener('change',invalidateResult);for(const id of ['nativeField','textField','imageField','strictCounts'])$('#'+id).addEventListener('change',invalidateResult);$('#refFilter').addEventListener('input',()=>lastResult&&renderRefProblems(lastResult));$('#btnTxt').addEventListener('click',()=>lastResult&&downloadBlob('load_file_package_reconciliation.txt',new Blob([buildTextReport(lastResult)],{type:'text/plain;charset=utf-8'})));$('#btnJson').addEventListener('click',()=>lastResult&&downloadBlob('load_file_package_reconciliation.json',new Blob([JSON.stringify(resultForJson(lastResult),null,2)],{type:'application/json;charset=utf-8'})));$('#btnCopy').addEventListener('click',async()=>{if(!lastResult)return;try{await navigator.clipboard.writeText(buildTextReport(lastResult));toast('Report copied.');}catch(e){toast('Clipboard copy was blocked by the browser.');}});
-
-/* ---------- Mandatory startup self-test ---------- */
-let SELF_TEST_OK=false,SELF_TEST_FAILURES=[];
-(function(){const fail=[];try{const enc=new TextEncoder();if(createSha256().update(enc.encode('abc')).hexDigest()!=='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')fail.push('SHA-256 KAT');const f=feSplit(FE+'A'+FE+DC4+FE+'B'+FE);if(f.length!==2||f[1]!=='B')fail.push('FE parser');const c=csvSplit('"a","b,b"');if(c.length!==2||c[1]!=='b,b')fail.push('CSV parser');if(detectFormat(FE+'ID'+FE+DC4+FE+'NativePath'+FE+'\r\n')!=='fe')fail.push('FE detect');if(detectFormat('ID,NativePath\r\n')!=='csv')fail.push('CSV detect');const p=normalizeReference('.\\NATIVES\\A.msg','ROOT');if(p.invalid||p.normalized!=='NATIVES/A.msg')fail.push('relative normalization');if(!normalizeReference('..\\outside.txt','ROOT').invalid)fail.push('traversal block');if(!normalizeReference('C:\\x.txt','ROOT').invalid)fail.push('absolute block');const a=[{path:'A/x.txt',size:1,lastModified:2},{path:'B/y.txt',size:3,lastModified:4}],b=[...a].reverse();if(inventoryFingerprint(a)!==inventoryFingerprint(b))fail.push('inventory fingerprint determinism');}catch(e){fail.push(e.message||String(e));}SELF_TEST_FAILURES=fail;SELF_TEST_OK=!fail.length;if(!SELF_TEST_OK){console.error('Reconciler self-test failed',fail);setTimeout(()=>{toast('⛔ Startup self-test failed. Reconciliation is disabled.');$('#btnFolder').disabled=true;$('#btnFallback').disabled=true;},0);}else console.info('Load File Package Reconciler v'+APP_VERSION+' self-test OK');})();
-window.__LPR={APP_VERSION,feSplit,csvSplit,optSplit,detectFormat,normalizeReference,inventoryFingerprint,createSha256,get selfTestOk(){return SELF_TEST_OK;},get selfTestFailures(){return SELF_TEST_FAILURES.slice();}};
 </script>
-</body></html>
+</body>
+</html>
