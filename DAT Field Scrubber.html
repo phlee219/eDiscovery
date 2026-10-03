@@ -31,15 +31,15 @@
 <label for="blankRule">Meaning of a blank rule cell</label><select id="blankRule"><option value="unknown">Needs review</option><option value="keep">Keep value</option><option value="clear">Scrub value</option></select>
 <p class="small muted">Keep retains the existing value. Scrub blanks the value while preserving the column.</p>
 </div></section>
-<section><div class="sectiontop"><h2><span class="step">2</span>Category targets and rules</h2><button id="addCategory" type="button">Add category</button></div><div class="categories" id="categories"></div><p class="small muted">Use comma-separated CSV files with headers. Bates strings must match exactly. Overlapping categories must have identical rules for every field.</p></section>
+<section><div class="sectiontop"><h2><span class="step">2</span>Category targets and rules</h2><button id="addCategory" type="button">Add category</button></div><div class="categories" id="categories"></div><p class="small muted">Target lists: CSV (comma-separated, with headers) or DAT (þ / DC4), detected from the file content. Bates strings must match exactly. Overlapping categories must have identical rules for every field.</p></section>
 <section class="panel verification"><h2><span class="step">3</span>Field-by-field rule review</h2><label for="previewCategory">Category</label><select id="previewCategory"></select><p class="small muted">Shown in final DAT field order. Review each original expression and its interpreted action.</p><div class="tablewrap"><table><thead><tr><th scope="col">#</th><th scope="col">DAT field name</th><th scope="col">Original expression</th><th scope="col">Action</th></tr></thead><tbody id="ruleRows"></tbody></table></div></section>
 </div></fieldset>
 <div class="progressline" id="progressLine" hidden><progress id="progress" max="100" value="0"></progress><span id="progressText" role="status"></span><button id="cancel" type="button" class="danger">Cancel operation</button></div>
 <div id="cleanupWarning" class="result error" role="alert" hidden></div>
 <div class="review"><section>
-<div id="status" class="result" role="status" aria-live="polite">Choose the DAT and category CSV files, then enter the rules.</div>
+<div id="status" class="result" role="status" aria-live="polite">Choose the DAT and category target lists (CSV or DAT), then enter the rules.</div>
 <div class="controls"><button id="preflight" type="button" class="primary" disabled>Check targets and rules</button></div>
-<div id="summary" hidden><div class="stats" id="stats"></div><div class="audit"><table><thead><tr><th>Category</th><th>CSV file</th><th>CSV documents</th><th>DAT matches</th><th>Fields to scrub</th></tr></thead><tbody id="categoryStats"></tbody></table></div><div class="samples"><table><caption class="small muted">Planned changes · existing values are shown up to 120 characters</caption><thead><tr><th>Bates</th><th>Field</th><th>Existing value</th><th>After scrubbing</th></tr></thead><tbody id="sampleRows"></tbody></table></div></div>
+<div id="summary" hidden><div class="stats" id="stats"></div><div class="audit"><table><thead><tr><th>Category</th><th>Target list</th><th>List documents</th><th>DAT matches</th><th>Fields to scrub</th></tr></thead><tbody id="categoryStats"></tbody></table></div><div class="samples"><table><caption class="small muted">Planned changes · existing values are shown up to 120 characters</caption><thead><tr><th>Bates</th><th>Field</th><th>Existing value</th><th>After scrubbing</th></tr></thead><tbody id="sampleRows"></tbody></table></div></div>
 </section><section class="panel savepanel"><h2><span class="step">4</span>Save and verify</h2>
 <label class="check"><input id="reviewed" type="checkbox" disabled><span>I reviewed the field rules and target document counts.</span></label>
 <label for="outputName">New DAT filename</label><input id="outputName" type="text" value="scrubbed.dat" autocomplete="off">
@@ -53,7 +53,7 @@
 <script id="scrubber-core">'use strict';
 // This entire factory is also run in a local Blob worker. No DOM or network APIs.
 function createScrubCore(options = {}) {
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const FE = '\u00fe', SEP = '\u0014';
   const CHUNK = options.chunkBytes || 1024 * 1024;
   const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
@@ -186,18 +186,26 @@ function createScrubCore(options = {}) {
     if(!headers.length)fail(label+' has no fields.');const seen=new Set();
     for(const h of headers){if(!h.trim())fail(label+' contains a blank field name.');if(seen.has(h))fail(label+' contains a duplicate field name: '+h);seen.add(h);}
   }
-  async function csvScan(file,onData) {
-    const r=await textReader(file);let headers=null,count=0;
-    const p=tableParser(',',row=>{
-      if(!headers){headers=row;checkHeaders(headers,'CSV');return;}
-      count++;if(count>MAX_IDS)fail('CSV exceeds the 1,000,000-document limit.');
-      if(row.length!==headers.length)fail('CSV row '+(count+1)+': column count differs from the CSV header.');
-      if(row.every(v=>v===''))fail('CSV row '+(count+1)+': blank CSV record.');
-      if(onData)onData(row,headers,count);
-    });
-    for await(const chunk of r.chunks())p.feed(chunk);p.finish();
-    if(!headers||!count)fail('CSV has no document records.');
-    return {headers,count,meta:r.meta,hash:r.digest};
+  async function listFormat(file) {
+    // A DAT list starts with þ in its own encoding; anything else is read as CSV. A wrong guess fails in either parser.
+    const meta=await metadata(file),b=new Uint8Array(await file.slice(meta.bom.length,meta.bom.length+4).arrayBuffer());
+    return new TextDecoder(meta.encoding,{ignoreBOM:true}).decode(b).startsWith(FE)?'DAT':'CSV';
+  }
+  async function listScan(file,onData) {
+    try {
+      const format=await listFormat(file);let headers=null,count=0,r;
+      const take=(row,line)=>{
+        if(!headers){headers=row;checkHeaders(headers,format);return;}
+        count++;if(count>MAX_IDS)fail(format+' exceeds the 1,000,000-document limit.');
+        if(row.length!==headers.length)fail(format+' row '+line+': column count differs from its header.');
+        if(row.every(v=>v===''))fail(format+' row '+line+': blank record.');
+        if(onData)onData(row,headers,line);
+      };
+      if(format==='DAT'){r=await datReader(file);for await(const rec of r.records())take(rec.values,rec.line);}
+      else{r=await textReader(file);const p=tableParser(',',row=>take(row,count+2));for await(const chunk of r.chunks())p.feed(chunk);p.finish();}
+      if(!headers||!count)fail(format+' has no document records.');
+      return {headers,count,format,meta:r.meta,hash:r.digest};
+    } catch(e) {fail((file&&file.name||'Target list')+': '+e.message);}
   }
   function identity(value,label) {
     if(!value||value!==value.trim()||/[\u0000-\u0020\u007f]/.test(value))fail(label+': Bates value is blank or contains whitespace/control characters.');
@@ -251,14 +259,15 @@ function createScrubCore(options = {}) {
     const index=new Map(),cats=[];
     for(let ci=0;ci<categories.length;ci++) {
       const cat=categories[ci];
-      if(!cat.file||!cat.name.trim())fail('Each category requires a name and a CSV file.');
+      if(!cat.file||!cat.name.trim())fail('Each category requires a name and a target list file.');
       if(categories.some((c,i)=>i<ci&&c.name===cat.name))fail('Duplicate category name: '+cat.name);
       if(!Array.isArray(cat.actions)||cat.actions.length!==info.headers.length||Array.from(cat.actions).some(a=>a!==1&&a!==2)||!Array.isArray(cat.raw)||cat.raw.length!==info.headers.length||Array.from(cat.raw).some(v=>typeof v!=='string'))fail(cat.name+': confirm a rule for every field.');
       if(cat.actions[ki]!==1)fail(cat.name+': the Bates identity field must be kept.');
+      if(cat.loadedHash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
       const own=new Set();
-      const csv=await csvScan(cat.file,(row,headers,n)=>{
-        const cki=headers.indexOf(cat.key);if(cki<0)fail(cat.name+': select the CSV Bates column.');
-        const id=identity(row[cki],cat.name+' CSV row '+(n+1)+'');if(own.has(id))fail(cat.name+': duplicate Bates value in CSV: '+id);own.add(id);
+      const list=await listScan(cat.file,(row,headers,line)=>{
+        const cki=headers.indexOf(cat.key);if(cki<0)fail(cat.name+': select the target-list Bates column.');
+        const id=identity(row[cki],cat.name+' row '+line);if(own.has(id))fail(cat.name+': duplicate Bates value in the target list: '+id);own.add(id);
         if(index.has(id)) {
           const existing=index.get(id),first=categories[existing.cats[0]];
           const conflict=cat.actions.findIndex((a,i)=>a!==first.actions[i]);
@@ -266,8 +275,9 @@ function createScrubCore(options = {}) {
           existing.cats.push(ci);
         } else {if(index.size>=MAX_IDS)fail('Target Bates values exceed the 1,000,000-ID limit.');index.set(id,{cats:[ci],found:false});}
       });
-      if(cat.loadedHash!==undefined&&cat.loadedHash!==csv.hash)fail(cat.name+': CSV changed since loading. Reload it before preflight.');
-      cats.push({name:cat.name,key:cat.key,actions:cat.actions.slice(),raw:cat.raw.slice(),file:fileInfo(cat.file),hash:csv.hash,csvRows:csv.count,matched:0});
+      if(cat.loadedHash!==undefined&&cat.loadedHash!==list.hash)fail(cat.name+': target list changed since loading. Reload it before preflight.');
+      if(list.hash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
+      cats.push({name:cat.name,key:cat.key,actions:cat.actions.slice(),raw:cat.raw.slice(),file:fileInfo(cat.file),hash:list.hash,listFormat:list.format,listRows:list.count,matched:0});
     }
     if(!cats.some(c=>c.actions.includes(2)))fail('No fields are set to Scrub.');
     const reader=await datReader(source),seen=new Set();let header=true,rows=0,matched=0,targetCells=0,changed=0,alreadyEmpty=0,overlap=0;const samples=[];
@@ -283,15 +293,15 @@ function createScrubCore(options = {}) {
     }
     if(reader.digest!==info.hash)fail('DAT changed during preflight. Reload and check again.');
     const missing=Array.from(index).filter(([,m])=>!m.found);
-    if(missing.length)fail('CSV contains '+missing.length+' Bates values not found in the DAT. Examples: '+missing.slice(0,6).map(([id])=>id).join(', '));
+    if(missing.length)fail('Target lists contain '+missing.length+' Bates values not found in the DAT. Examples: '+missing.slice(0,6).map(([id])=>id).join(', '));
     if(!matched)fail('No documents matched the DAT.');
     const summary={version:VERSION,source:fileInfo(source),sourceHash:info.hash,headers:info.headers,key,meta:info.meta,rows,matched,untouched:rows-matched,targetCells,changed,alreadyEmpty,overlap,categories:cats,samples};
     return {source,index,ki,cats,categoryFiles:categories.map(c=>c.file),summary};
   }
   async function checkCategoryFiles(plan) {
     for(let i=0;i<plan.categoryFiles.length;i++) {
-      const current=await csvScan(plan.categoryFiles[i]);
-      if(current.hash!==plan.cats[i].hash)fail(plan.cats[i].name+': CSV changed after preflight. Run preflight again.');
+      const current=await listScan(plan.categoryFiles[i]);
+      if(current.hash!==plan.cats[i].hash)fail(plan.cats[i].name+': target list changed after preflight. Run preflight again.');
     }
   }
   function encode(text,encoding) {
@@ -344,7 +354,7 @@ function createScrubCore(options = {}) {
     if(out.digest!==expected.hash||rows!==plan.summary.rows||cleared!==plan.summary.changed)fail('Full saved-file content verification failed.');
     return {version:VERSION,verifiedAt:new Date().toISOString(),output:fileInfo(output),outputHash:out.digest,bytes:output.size,rows,cleared};
   }
-  return {VERSION,hash,metadata,splitDAT,tableParser,inspectDAT,csvScan,parseRules,preflight,transform,verify,encode};
+  return {VERSION,hash,metadata,splitDAT,tableParser,inspectDAT,listScan,parseRules,preflight,transform,verify,encode};
 }
 if(typeof module !== 'undefined' && module.exports) module.exports=createScrubCore;
 </script>
@@ -364,7 +374,7 @@ function workerBoot(){
     try{
       let result;
       if(m.op==='inspectDAT')result=await core.inspectDAT(m.file);
-      else if(m.op==='inspectCSV')result=await core.csvScan(m.file);
+      else if(m.op==='inspectList')result=await core.listScan(m.file);
       else if(m.op==='preflight'){plan=null;expected=null;plan=await core.preflight(m.source,m.key,m.categories,m.loadedSourceHash);result=plan.summary;}
       else if(m.op==='transform'){
         if(!plan)throw new Error('Run preflight first.');expected=null;
@@ -442,17 +452,17 @@ function renderTable(){
 function addCategory(){
   if(busy)return;invalidate();const c={id:++catSerial,file:null,loaded:null,rules:null},card=node('article',undefined,'card'),top=node('div',undefined,'cardtop'),head=node('div',undefined,'cathead');
   c.name=node('input');c.name.type='text';c.name.value='Category '+c.id;c.name.setAttribute('aria-label','Category name');const remove=node('button','Remove','remove danger');remove.type='button';head.append(c.name,remove);top.append(head);
-  const fl=node('label','Saved Search CSV');fl.htmlFor='csv-'+c.id;top.append(fl);c.input=node('input');c.input.type='file';c.input.accept='.csv';c.input.id=fl.htmlFor;top.append(c.input);c.filelabel=node('p','Choose a CSV file.','filelabel muted');top.append(c.filelabel);
-  const kl=node('label','CSV Production Begin Bates column');kl.htmlFor='csvkey-'+c.id;c.key=node('select');c.key.id=kl.htmlFor;fillSelect(c.key,[]);top.append(kl,c.key);
+  const fl=node('label','Saved Search list · CSV or DAT');fl.htmlFor='csv-'+c.id;top.append(fl);c.input=node('input');c.input.type='file';c.input.accept='.csv,.dat,.txt';c.input.id=fl.htmlFor;top.append(c.input);c.filelabel=node('p','Choose a CSV or DAT file.','filelabel muted');top.append(c.filelabel);
+  const kl=node('label','List Production Begin Bates column');kl.htmlFor='csvkey-'+c.id;c.key=node('select');c.key.id=kl.htmlFor;fillSelect(c.key,[]);top.append(kl,c.key);
   const bottom=node('div',undefined,'cardbottom'),ml=node('label','Pasted rule layout');ml.htmlFor='mode-'+c.id;c.mode=node('select');c.mode.id=ml.htmlFor;option(c.mode,'ordered','Final DAT order · rules (optional SOW name column)');option(c.mode,'named','DAT field name + rule · two columns');bottom.append(ml,c.mode);
   const tl=node('label','SOW rule cells');tl.htmlFor='rules-'+c.id;c.text=node('textarea');c.text.id=tl.htmlFor;c.text.className='ruletext';c.text.spellcheck=false;c.text.placeholder='Populate\nPopulate\nScrub\n…';bottom.append(tl,c.text,node('p','Paste rule cells only, or SOW field names + rule cells (two columns) to check row alignment. Exclude titles, counts and search descriptions.','small muted'));
   c.orderLabel=node('label',undefined,'check');c.order=node('input');c.order.type='checkbox';c.orderText=node('span');c.orderLabel.append(c.order,c.orderText);bottom.append(c.orderLabel);c.state=node('div',undefined,'rule-state');bottom.append(c.state);card.append(top,bottom);$('categories').append(card);categories.push(c);
   remove.onclick=()=>{if(busy)return;categories.splice(categories.indexOf(c),1);card.remove();changed();};c.name.oninput=changed;c.key.onchange=changed;c.order.onchange=changed;c.mode.onchange=()=>{c.order.checked=false;changed();};c.text.oninput=()=>{c.order.checked=false;changed();};
   c.input.onchange=async()=>{
-    if(busy){c.file=null;c.loaded=null;fillSelect(c.key,[]);changed();c.filelabel.textContent='File changed during an operation. Select the CSV again.';return;}
-    const file=c.input.files[0];invalidate();c.file=file||null;c.loaded=null;c.order.checked=false;fillSelect(c.key,[]);if(!file){c.filelabel.textContent='Choose a CSV file.';renderRules();return;}
-    const r=beginRun('loadCSV');if(!r)return;status('Checking CSV structure.');
-    try{const result=await call(r,'inspectCSV',{file});c.loaded=result;c.filelabel.textContent=file.name+' · '+count(result.count)+' documents';fillSelect(c.key,result.headers,$('datKey').value);status('CSV loaded. Review the Bates column and rules.');}
+    if(busy){c.file=null;c.loaded=null;fillSelect(c.key,[]);changed();c.filelabel.textContent='File changed during an operation. Select the list again.';return;}
+    const file=c.input.files[0];invalidate();c.file=file||null;c.loaded=null;c.order.checked=false;fillSelect(c.key,[]);if(!file){c.filelabel.textContent='Choose a CSV or DAT file.';renderRules();return;}
+    const r=beginRun('loadList');if(!r)return;status('Checking target list structure.');
+    try{const result=await call(r,'inspectList',{file});c.loaded=result;c.filelabel.textContent=file.name+' · '+result.format+' · '+count(result.count)+' documents';fillSelect(c.key,result.headers,$('datKey').value);status(result.format+' target list loaded. Review the Bates column and rules.');}
     catch(e){if(live(r)){c.file=null;c.filelabel.textContent=file.name+' · read failed';status(e.message,'error');}}
     finally{if(live(r))renderRules();await finishRun(r);}
   };renderRules();
@@ -468,7 +478,7 @@ $('sourceFile').onchange=async()=>{
 $('datKey').onchange=changed;$('keepTerms').oninput=()=>{for(const c of categories)c.order.checked=false;changed();};$('clearTerms').oninput=$('keepTerms').oninput;$('blankRule').onchange=$('keepTerms').oninput;$('previewCategory').onchange=renderTable;$('addCategory').onclick=addCategory;$('reviewed').onchange=buttons;
 function showSummary(s){
   $('summary').hidden=false;$('stats').replaceChildren();for(const [label,value]of [['All documents',s.rows],['Target documents',s.matched],['Nonempty cells to scrub',s.changed],['Already blank target cells',s.alreadyEmpty]]){const d=node('div',label,'stat');d.append(node('strong',count(value)));$('stats').append(d);}
-  $('categoryStats').replaceChildren();for(const c of s.categories){const tr=node('tr');tr.append(node('td',c.name),node('td',c.file.name),node('td',String(c.csvRows)),node('td',String(c.matched)),node('td',s.headers.filter((_,i)=>c.actions[i]===2).join(', ')));$('categoryStats').append(tr);}
+  $('categoryStats').replaceChildren();for(const c of s.categories){const tr=node('tr');tr.append(node('td',c.name),node('td',c.file.name+' · '+c.listFormat),node('td',String(c.listRows)),node('td',String(c.matched)),node('td',s.headers.filter((_,i)=>c.actions[i]===2).join(', ')));$('categoryStats').append(tr);}
   $('sampleRows').replaceChildren();for(const x of s.samples){const tr=node('tr');tr.append(node('td',x.id),node('td',x.field),node('td',x.before),node('td','(blank)'));$('sampleRows').append(tr);}
 }
 $('preflight').onclick=async()=>{
@@ -476,7 +486,7 @@ $('preflight').onclick=async()=>{
   try{for(const c of categories)if(!c.rules||c.rules.problems.length||c.mode.value!=='named'&&!c.order.checked)throw new Error('Review the rules and field order for every category.');
     const payload=categories.map(c=>({name:c.name.value.trim(),file:c.file,key:c.key.value,actions:c.rules.actions,raw:c.rules.raw,loadedHash:c.loaded.hash}));
     const result=await call(r,'preflight',{source,key:$('datKey').value,categories:payload,loadedSourceHash:sourceInfo.hash});summary=result;showSummary(result);$('reviewed').disabled=false;
-    status('Preflight passed · '+count(result.matched)+' target documents / '+count(result.untouched)+' other documents kept unchanged.\n'+count(result.overlap)+' overlapping documents have matching rules. Review each field and the document counts.');
+    status('Preflight passed · '+count(result.matched)+' target documents / '+count(result.untouched)+' other documents kept unchanged.\n'+count(result.overlap)+' overlapping documents have matching rules. Review each field and the document counts.'+(result.untouched?'':'\nEvery document in the DAT is a target. Confirm that each target list is the intended saved search.'),result.untouched?'':'pending');
   }catch(e){if(live(r)){summary=null;status('Preflight failed · no file was saved.\n'+e.message,'error');}}finally{await finishRun(r);}
 };
 function download(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
