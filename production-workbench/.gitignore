@@ -1,0 +1,17 @@
+# Never commit business data, test downloads or release archives.
+node_modules/
+test-results/
+release/
+*.zip
+*.dat
+*.csv
+*.txt
+*.load
+*.opt
+*.lfp
+*.xlsx
+*.audit.json
+production-job*.json
+!samples/*.dat
+!samples/*.csv
+!samples/sample-job.json
