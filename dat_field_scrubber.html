@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; worker-src blob:; connect-src 'none'; img-src data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="description" content="Local DAT value scrubbing and full saved-file verification">
+<title>DAT Field Scrubber</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23102440'/%3E%3Cpath d='M8 9h16M8 16h8M8 23h16' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;--ink:#142238;--muted:#536277;--line:#d7e0ec;--blue:#164fe0;--navy:#102440;--bg:#edf2f8;--red:#a32230;--green:#08614c;--amber:#8b4900;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}button{cursor:pointer;font-weight:650;border:1px solid var(--line);border-radius:7px;background:white;color:var(--ink);padding:.65rem .9rem}button:hover:not(:disabled){background:#eaf0ff;border-color:#9bb6ef}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--blue);border-color:var(--blue);color:white}.primary:hover:not(:disabled){background:#1245c6}.danger{color:var(--red)}input[type=file]{max-width:100%;font-size:.875rem}input[type=text],select,textarea{width:100%;border:1px solid #a9b7ca;border-radius:6px;background:#fff;color:var(--ink);padding:.6rem}textarea{resize:vertical;line-height:1.5;font-size:.875rem;min-height:100px}input[type=checkbox]{width:17px;height:17px;accent-color:var(--blue);flex-shrink:0}label{font-size:.875rem;font-weight:600;display:block;margin:.7rem 0 .35rem}label.check{display:flex;align-items:flex-start;gap:.5rem;line-height:1.5;font-weight:500}fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled .card{opacity:.85}:focus-visible{outline:3px solid #85afff;outline-offset:2px}header{background:var(--navy);color:white;padding:1.1rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}h1{font-size:1.45rem;margin:0;letter-spacing:-.02em}h2{font-size:1.05rem;margin:0}h3{font-size:1rem;margin:0}.brandline{display:flex;align-items:center;gap:.8rem}.version,.local{font-size:.8rem;color:#c5d8f1}.local{padding:.35rem .6rem;border:1px solid #5b7596;border-radius:5px}main{padding:1.25rem 1.75rem;max-width:2100px;margin:auto}.notice{font-size:.875rem;color:var(--muted);margin:0 0 1rem;line-height:1.6}.workspace{display:grid;grid-template-columns:280px minmax(350px,1fr) 400px;gap:1rem;align-items:start}.panel,.card{background:white;border:1px solid var(--line);border-radius:9px;padding:1rem;min-width:0}.step{display:inline-grid;place-items:center;background:#e8efff;color:#214a9e;border-radius:4px;width:1.5rem;height:1.5rem;font-size:.8rem;margin-right:.45rem}.filebox{background:#f4f7fc;border:1px dashed #a7b8d2;border-radius:7px;padding:.9rem;margin-top:.9rem}.filelabel{font-size:.875rem;overflow-wrap:anywhere;line-height:1.5;margin:.6rem 0 0}.muted{color:var(--muted)}.small{font-size:.8rem;line-height:1.55}.source-details{border-top:1px solid var(--line);padding-top:.8rem;margin-top:1rem;font-size:.875rem;line-height:1.7}.terms{margin-top:1.15rem;border-top:1px solid var(--line);padding-top:1rem}.terms textarea{min-height:75px}.sectiontop{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.8rem}.categories{display:flex;gap:1rem;overflow-x:auto;padding-bottom:.6rem;align-items:stretch}.card{flex:0 0 335px;display:flex;flex-direction:column;padding:0}.cardtop{padding:1rem;border-bottom:1px solid var(--line);min-height:210px}.cardbottom{padding:1rem;flex:1}.cathead{display:flex;gap:.6rem;align-items:center}.cathead input{font-weight:650}.remove{padding:.5rem .6rem;font-size:.875rem}.ruletext{height:195px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}.rule-state{font-size:.8rem;line-height:1.5;margin-top:.7rem;overflow-wrap:anywhere;min-height:2.5rem}.error{color:var(--red)}.ok{color:var(--green)}.warn{color:var(--amber);font-weight:600}.tablewrap{overflow:auto;max-height:545px;margin-top:.8rem}table{border-collapse:collapse;width:100%;font-size:.875rem}th{text-align:left;position:sticky;top:0;background:#f0f4fa;z-index:1}th,td{padding:.6rem .5rem;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}td.symbol{white-space:pre-wrap;min-width:65px}td.num{color:var(--muted);width:30px}.tag{font-size:.8rem;font-weight:600;white-space:nowrap}.tag.clear{color:var(--red)}.tag.keep{color:var(--green)}.review{margin-top:1rem;display:grid;grid-template-columns:minmax(0,1fr) 335px;gap:1rem}.controls{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}.result{background:white;border:1px solid var(--line);border-left:4px solid #7b8ba3;border-radius:7px;padding:1rem;margin-bottom:1rem;white-space:pre-line;overflow-wrap:anywhere;line-height:1.6}.result.error{border-left-color:var(--red);color:var(--red)}.result.success{border-left-color:var(--green);color:var(--green)}.result.pending{border-left-color:#cd810e;color:var(--amber)}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin:.9rem 0}.stat{background:#f0f4fa;border-radius:6px;padding:.75rem;font-size:.8rem}.stat strong{display:block;font-size:1.3rem;margin-top:.3rem}.audit{overflow:auto;max-height:240px}.samples{overflow:auto;max-height:210px;margin-top:1rem}.samples td{max-width:250px}.savepanel{align-self:start}.savepanel label:first-of-type{margin-top:1rem}.progressline{display:flex;gap:.7rem;align-items:center;margin:1rem 0}.progressline progress{width:180px;height:10px}.progressline span{font-size:.8rem;color:var(--muted);flex:1;overflow-wrap:anywhere}[hidden]{display:none!important}footer{font-size:.8rem;color:var(--muted);margin-top:1rem;line-height:1.6}
+.remove{white-space:nowrap;flex-shrink:0}.cathead input{min-width:0}
+.verification th:last-child{white-space:nowrap}
+@media(min-width:1800px){.workspace{grid-template-columns:300px minmax(600px,1fr) 470px}.card{flex-basis:360px}}
+@media(max-width:1200px){.workspace{grid-template-columns:265px minmax(0,1fr)}.verification{grid-column:1/-1}.tablewrap{max-height:360px}.review{grid-template-columns:minmax(0,1fr) 300px}}
+@media(max-width:750px){header{padding:1rem;align-items:flex-start}.brandline{flex-wrap:wrap;gap:.4rem}.local{display:none}main{padding:1rem}.workspace,.review{grid-template-columns:1fr}.verification{grid-column:auto}.card{flex-basis:min(335px,100%)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{align-items:stretch}.controls button{flex:1}.progressline progress{width:90px}}
+header{position:relative;overflow:hidden}.creator-credit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11.5px;letter-spacing:.12em;color:#c5d8f1;opacity:.38;white-space:nowrap;pointer-events:none;user-select:none}
+@media(max-width:1000px){.creator-credit{left:auto;right:1rem;top:auto;bottom:2px;transform:none;font-size:10px}}
+</style>
+</head>
+<body>
+<header><span class="creator-credit" aria-hidden="true">이현수 · HYUNSOO LEE</span><div class="brandline"><h1>DAT Field Scrubber</h1><span class="version" id="version"></span></div><span class="local">100% local processing · No external transmission</span></header>
+<main>
+<p class="notice">Scrub selected values while preserving the final DAT header and record order. DAT: þ / DC4, UTF-8 or UTF-16 with BOM. Maximum 1 million documents. Rule expressions are case-sensitive; surrounding whitespace is trimmed.</p>
+<fieldset id="inputs"><div class="workspace">
+<section class="panel source"><h2><span class="step">1</span>Final ordered DAT</h2>
+<div class="filebox"><label for="sourceFile">Source file</label><input id="sourceFile" type="file" accept=".dat,.txt,.load"><p class="filelabel muted" id="sourceName">Choose a DAT file.</p></div>
+<label for="datKey">Production Begin Bates field</label><select id="datKey" disabled><option value="">Select the DAT first</option></select>
+<div id="sourceDetails" class="source-details muted">Final field names are read directly from the DAT.</div>
+<div class="terms"><h3>SOW expression meanings</h3>
+<label for="keepTerms">Keep expressions · one per line</label><textarea id="keepTerms" spellcheck="false">Populate</textarea>
+<label for="clearTerms">Scrub expressions · one per line</label><textarea id="clearTerms" spellcheck="false">Scrub</textarea>
+<label for="blankRule">Meaning of a blank rule cell</label><select id="blankRule"><option value="unknown">Needs review</option><option value="keep">Keep value</option><option value="clear">Scrub value</option></select>
+<p class="small muted">Keep retains the existing value. Scrub blanks the value while preserving the column.</p>
+</div></section>
+<section><div class="sectiontop"><h2><span class="step">2</span>Category targets and rules</h2><button id="addCategory" type="button">Add category</button></div><div class="categories" id="categories"></div><p class="small muted">Target lists: CSV (comma-separated, with headers) or DAT (þ / DC4), detected from the file content. Bates strings must match exactly. Overlapping categories must have identical rules for every field.</p></section>
+<section class="panel verification"><h2><span class="step">3</span>Field-by-field rule review</h2><label for="previewCategory">Category</label><select id="previewCategory"></select><p class="small muted">Shown in final DAT field order. Review each original expression and its interpreted action.</p><div class="tablewrap"><table><thead><tr><th scope="col">#</th><th scope="col">DAT field name</th><th scope="col">Original expression</th><th scope="col">Action</th></tr></thead><tbody id="ruleRows"></tbody></table></div></section>
+</div></fieldset>
+<div class="progressline" id="progressLine" hidden><progress id="progress" max="100" value="0"></progress><span id="progressText" role="status"></span><button id="cancel" type="button" class="danger">Cancel operation</button></div>
+<div id="cleanupWarning" class="result error" role="alert" hidden></div>
+<div class="review"><section>
+<div id="status" class="result" role="status" aria-live="polite">Choose the DAT and category target lists (CSV or DAT), then enter the rules.</div>
+<div class="controls"><button id="preflight" type="button" class="primary" disabled>Check targets and rules</button></div>
+<div id="summary" hidden><div class="stats" id="stats"></div><div class="audit"><table><thead><tr><th>Category</th><th>Target list</th><th>List documents</th><th>DAT matches</th><th>Fields to scrub</th></tr></thead><tbody id="categoryStats"></tbody></table></div><div class="samples"><table><caption class="small muted">Planned changes · existing values are shown up to 120 characters</caption><thead><tr><th>Bates</th><th>Field</th><th>Existing value</th><th>After scrubbing</th></tr></thead><tbody id="sampleRows"></tbody></table></div></div>
+</section><section class="panel savepanel"><h2><span class="step">4</span>Save and verify</h2>
+<label class="check"><input id="reviewed" type="checkbox" disabled><span>I reviewed the field rules and target document counts.</span></label>
+<label for="outputName">New DAT filename</label><input id="outputName" type="text" value="scrubbed.dat" autocomplete="off">
+<button id="save" type="button" class="primary" disabled style="width:100%;margin-top:.8rem">Save new DAT and verify</button>
+<p class="small muted">Chrome/Edge can automatically re-read the saved file. Always choose a new filename: if you confirm "Replace" in the save dialog, the browser may empty the existing file before this tool can check it.</p>
+<div id="manualVerification" hidden><label for="savedFile">Select downloaded DAT · final verification</label><input id="savedFile" type="file" accept=".dat,.txt,.load"><button id="verifySaved" type="button" disabled style="margin-top:.6rem">Verify saved file</button></div>
+<button id="report" type="button" disabled style="width:100%;margin-top:.8rem">Download verification report</button>
+</section></div>
+<footer>Only values inside the DAT are scrubbed. Final verification checks headers, record order, every field value, line endings, encoding and whole-file hashes. Changing inputs or rules resets previous verification.</footer>
+</main>
+<script id="scrubber-core">'use strict';
+// This entire factory is also run in a local Blob worker. No DOM or network APIs.
+function createScrubCore(options = {}) {
+  const VERSION = '1.2.1';
+  const FE = '\u00fe', SEP = '\u0014';
+  const CHUNK = options.chunkBytes || 1024 * 1024;
+  const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
+  const MAX_FIELDS = 2000, MAX_IDS = 1000000;
+  const progress = options.progress || (() => {});
+  function fail(message) { throw new Error(message); }
+  function hash() {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), buf = new Uint8Array(64);
+    let used = 0, total = 0, done = false;
+    const rr = (x,n) => (x >>> n) | (x << (32-n));
+    function compress(b) {
+      for(let i=0;i<16;i++) { const j=i*4; w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0; }
+      for(let i=16;i<64;i++) w[i]=(w[i-16]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-7]+(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10)))>>>0;
+      let [a,b0,c,d,e,f,g,z]=h;
+      for(let i=0;i<64;i++) {
+        const t1=(z+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+        const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b0)^(a&c)^(b0&c)))>>>0;
+        z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b0;b0=a;a=(t1+t2)>>>0;
+      }
+      [a,b0,c,d,e,f,g,z].forEach((v,i)=>{h[i]=(h[i]+v)>>>0;});
+    }
+    return {
+      update(bytes) {
+        if(done) fail('Hash already finalized.');
+        total+=bytes.length; let i=0;
+        if(used) {const take=Math.min(64-used,bytes.length);buf.set(bytes.subarray(0,take),used);used+=take;i=take;if(used===64){compress(buf);used=0;}}
+        while(i+64<=bytes.length){compress(bytes.subarray(i,i+64));i+=64;}
+        if(i<bytes.length){buf.set(bytes.subarray(i));used=bytes.length-i;}
+      },
+      hex() {
+        if(done) fail('Hash already finalized.'); done=true;
+        const tail=new Uint8Array(used<56?64:128);tail.set(buf.subarray(0,used));tail[used]=128;
+        const dv=new DataView(tail.buffer);dv.setUint32(tail.length-8,Math.floor(total/0x20000000));dv.setUint32(tail.length-4,(total%0x20000000)*8);
+        for(let i=0;i<tail.length;i+=64)compress(tail.subarray(i,i+64));
+        return Array.from(h,v=>v.toString(16).padStart(8,'0')).join('');
+      }
+    };
+  }
+  async function metadata(file) {
+    if(!file || !file.size) fail('Empty files cannot be used.');
+    const b=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    if(b[0]===0xff&&b[1]===0xfe&&b[2]===0&&b[3]===0 || b[0]===0&&b[1]===0&&b[2]===0xfe&&b[3]===0xff) fail('UTF-32 is not supported. Export UTF-8 or UTF-16 instead.');
+    let encoding='utf-8',bom=[];
+    if(b[0]===0xef&&b[1]===0xbb&&b[2]===0xbf) bom=[0xef,0xbb,0xbf];
+    else if(b[0]===0xff&&b[1]===0xfe){encoding='utf-16le';bom=[0xff,0xfe];}
+    else if(b[0]===0xfe&&b[1]===0xff){encoding='utf-16be';bom=[0xfe,0xff];}
+    if(encoding==='utf-8'&&b.includes(0)) fail('Unsupported encoding or UTF-16 without a BOM. Use UTF-8 or UTF-16 with a BOM.');
+    return {encoding,bom};
+  }
+  async function textReader(file) {
+    const meta=await metadata(file),hasher=hash(),reader={meta,digest:null};
+    reader.chunks=async function*() {
+      const dec=new TextDecoder(meta.encoding,{fatal:true,ignoreBOM:true});
+      try {
+        for(let offset=0;offset<file.size;offset+=CHUNK) {
+          const end=Math.min(offset+CHUNK,file.size),bytes=new Uint8Array(await file.slice(offset,end).arrayBuffer());
+          if(bytes.length!==end-offset)fail('Incomplete file read: '+file.name);
+          hasher.update(bytes);
+          const skip=Math.min(bytes.length,Math.max(0,meta.bom.length-offset));
+          const text=dec.decode(bytes.subarray(skip),{stream:true});
+          if(text)yield text;
+          progress(file.name||'File',end/file.size);
+        }
+        const end=dec.decode();if(end)yield end;reader.digest=hasher.hex();
+      } catch(e) {
+        if(e instanceof TypeError)fail('Invalid encoding or unreadable file: '+file.name+' (only UTF-8/UTF-16 are supported)');
+        throw e;
+      }
+    };
+    return reader;
+  }
+  function splitDAT(raw,line=0) {
+    if(raw.length>MAX_RECORD)fail('DAT row '+line+' exceeds the record size limit.');
+    if(!raw.startsWith(FE)||!raw.endsWith(FE)||raw.length<2)fail('DAT row '+line+': invalid enclosing þ qualifiers.');
+    let count=1;for(const c of raw)if(c===SEP&&++count>MAX_FIELDS)fail('DAT exceeds the 2,000-field limit.');
+    return raw.split(SEP).map((col,i)=>{
+      if(col.length<2||!col.startsWith(FE)||!col.endsWith(FE))fail('DAT row '+line+' / column '+(i+1)+': invalid field qualifiers.');
+      const value=col.slice(1,-1);
+      if(value.includes(FE)||/[\r\n\u0000]/.test(value))fail('DAT row '+line+' / column '+(i+1)+': unsupported literal þ, NUL or raw line break inside a field.');
+      return value;
+    });
+  }
+  async function datReader(file) {
+    const r=await textReader(file);
+    r.records=async function*() {
+      let pending='',line=0;
+      for await(const chunk of r.chunks()) {
+        pending+=chunk;let start=0;const re=/\r\n|\r|\n/g;let m;
+        while((m=re.exec(pending))) {
+          if(m[0]==='\r'&&m.index===pending.length-1)break;
+          const raw=pending.slice(start,m.index);start=m.index+m[0].length;
+          yield {raw,eol:m[0],values:splitDAT(raw,++line),line};
+        }
+        pending=pending.slice(start);if(pending.length>MAX_RECORD)fail('DAT row '+(line+1)+' exceeds the 32 Mi-character record size limit.');
+      }
+      if(pending) {
+        const eol=pending.endsWith('\r')?'\r':'';
+        const raw=eol?pending.slice(0,-1):pending;
+        yield {raw,eol,values:splitDAT(raw,++line),line};
+      }
+    };
+    return r;
+  }
+  function tableParser(delim,onRow) {
+    let row=[],cell='',quoted=false,afterQuote=false,atStart=true,active=false,skipLF=false,units=0;
+    function field(){row.push(cell);cell='';atStart=true;afterQuote=false;if(row.length>MAX_FIELDS)fail('Table exceeds the 2,000-column limit.');}
+    function record(){field();onRow(row);row=[];active=false;units=0;}
+    return {
+      feed(s) {
+        for(const c of s) {
+          if(skipLF){skipLF=false;if(c==='\n')continue;}
+          if(++units>MAX_RECORD)fail('A CSV/pasted-table record exceeds the size limit.');
+          if(quoted) {if(c==='"'){quoted=false;afterQuote=true;}else cell+=c;active=true;continue;}
+          if(afterQuote) {
+            if(c==='"'){cell+='"';quoted=true;afterQuote=false;continue;}
+            if(c!==delim&&c!=='\r'&&c!=='\n')fail('Unexpected character after a closing CSV/table quote.');
+          }
+          if(c===delim){field();active=true;continue;}
+          if(c==='\r'||c==='\n'){record();skipLF=c==='\r';continue;}
+          if(c==='"'){if(!atStart)fail('Unexpected quote inside an unquoted CSV/table cell.');quoted=true;atStart=false;active=true;continue;}
+          cell+=c;atStart=false;active=true;
+        }
+      },
+      finish(){if(quoted)fail('Unclosed final CSV/table quote.');if(active||row.length||cell||afterQuote)record();}
+    };
+  }
+  function checkHeaders(headers,label) {
+    if(!headers.length)fail(label+' has no fields.');const seen=new Set();
+    for(const h of headers){if(!h.trim())fail(label+' contains a blank field name.');if(seen.has(h))fail(label+' contains a duplicate field name: '+h);seen.add(h);}
+  }
+  async function listFormat(file) {
+    // A DAT list starts with þ in its own encoding; anything else is read as CSV. A wrong guess fails in either parser.
+    const meta=await metadata(file),b=new Uint8Array(await file.slice(meta.bom.length,meta.bom.length+4).arrayBuffer());
+    return new TextDecoder(meta.encoding,{ignoreBOM:true}).decode(b).startsWith(FE)?'DAT':'CSV';
+  }
+  async function listScan(file,onData) {
+    try {
+      const format=await listFormat(file);let headers=null,count=0,r;
+      const take=(row,line)=>{
+        if(!headers){headers=row;checkHeaders(headers,format);return;}
+        count++;if(count>MAX_IDS)fail(format+' exceeds the 1,000,000-document limit.');
+        if(row.length!==headers.length)fail(format+' row '+line+': column count differs from its header.');
+        if(row.every(v=>v===''))fail(format+' row '+line+': blank record.');
+        if(onData)onData(row,headers,line);
+      };
+      if(format==='DAT'){r=await datReader(file);for await(const rec of r.records())take(rec.values,rec.line);}
+      else{r=await textReader(file);const p=tableParser(',',row=>take(row,count+2));for await(const chunk of r.chunks())p.feed(chunk);p.finish();}
+      if(!headers||!count)fail(format+' has no document records.');
+      return {headers,count,format,meta:r.meta,hash:r.digest};
+    } catch(e) {fail((file&&file.name||'Target list')+': '+e.message);}
+  }
+  function identity(value,label) {
+    if(!value||value!==value.trim()||/[\u0000-\u0020\u007f]/.test(value))fail(label+': Bates value is blank or contains whitespace/control characters.');
+    if(value.length>512)fail(label+': Bates value exceeds 512 characters.');
+    if(/^[-+]?\d+(?:\.\d+)?[eE][-+]?\d+$/.test(value))fail(label+': scientific notation is not accepted. Export the original Bates string.');
+    return value;
+  }
+  async function inspectDAT(file) {
+    const r=await datReader(file);let headers=null,count=0;
+    for await(const rec of r.records()) {
+      if(!headers){headers=rec.values;checkHeaders(headers,'DAT');continue;}
+      if(rec.values.length!==headers.length)fail('DAT row '+rec.line+': field count differs from the DAT header.');
+      if(++count>MAX_IDS)fail('DAT exceeds the 1,000,000-document limit.');
+    }
+    if(!headers||!count)fail('DAT has no document records.');
+    return {headers,count,meta:r.meta,hash:r.digest};
+  }
+  function parseRules(text,headers,mode,keepText,clearText,blank) {
+    if(mode!=='named'&&mode!=='ordered')fail('Invalid rule layout. Select ordered or named rules.');
+    const terms=s=>new Set(s.split(/\r\n|\r|\n/).map(v=>v.trim()).filter(Boolean));
+    const keep=terms(keepText),clear=terms(clearText);
+    if(!keep.size||!clear.size)fail('Define both Keep and Scrub expressions.');
+    for(const v of keep)if(clear.has(v))fail('Expression is assigned to both Keep and Scrub: '+v);
+    if(text.length>2*1024*1024)fail('Pasted rules exceed the 2 Mi-character limit.');
+    const rows=[];const p=tableParser('\t',row=>rows.push(row));p.feed(text);p.finish();
+    const raw=new Array(headers.length),labels=new Array(headers.length).fill(null),present=new Set();
+    if(mode==='named') {
+      for(const row of rows){if(row.length!==2)fail('Field name + rule mode requires exactly two columns.');const i=headers.indexOf(row[0]);if(i<0)fail('Field name is not present in the DAT: '+row[0]);if(present.has(i))fail('Duplicate field name in rules: '+row[0]);present.add(i);raw[i]=row[1];}
+      if(present.size!==headers.length)fail('Every DAT field needs a rule. Missing: '+headers.filter((_,i)=>!present.has(i)).slice(0,6).join(', '));
+    } else {
+      const w=rows.length?rows[0].length:0;
+      if(rows.length===1&&w===headers.length)raw.splice(0,raw.length,...rows[0]);
+      else {
+        if((w!==1&&w!==2)||rows.some(row=>row.length!==w)||rows.length!==headers.length)fail('Rule count differs from the DAT field count ('+headers.length+'). Paste rule cells only, or SOW field names + rule cells, without titles or summaries.');
+        // Optional first column: SOW field names, compared with the DAT field in the same row to expose misalignment.
+        rows.forEach((row,i)=>{raw[i]=row[w-1];if(w===2){const l=row[0].trim();if(keep.has(l)||clear.has(l))fail('Rule row '+(i+1)+': the first column contains a rule expression ('+l+'). Two columns must be SOW field name + rule.');labels[i]=row[0];}});
+      }
+    }
+    const norm=s=>s.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+    const labelFlags=labels.map((l,i)=>l!==null&&norm(l)!==norm(headers[i]));
+    const problems=[];
+    const actions=raw.map((v,i)=>{const t=v.trim();if(t===''){if(blank==='keep')return 1;if(blank==='clear')return 2;problems.push(headers[i]+': define the meaning of a blank rule cell.');return 0;}if(keep.has(t))return 1;if(clear.has(t))return 2;problems.push(headers[i]+': undefined expression: '+t);return 0;});
+    return {actions,raw,labels,labelFlags,problems};
+  }
+  function fileInfo(file) {return {name:file.name,size:file.size,lastModified:file.lastModified};}
+  async function preflight(source,key,categories,loadedSourceHash) {
+    if(!categories.length)fail('Add at least one category.');
+    const info=await inspectDAT(source),ki=info.headers.indexOf(key);
+    if(loadedSourceHash!==undefined&&loadedSourceHash!==info.hash)fail('Source DAT changed since loading. Reload it before reviewing rules.');
+    if(ki<0)fail('Select the DAT Bates identity field.');
+    const index=new Map(),cats=[];
+    for(let ci=0;ci<categories.length;ci++) {
+      const cat=categories[ci];
+      if(!cat.file||!cat.name.trim())fail('Each category requires a name and a target list file.');
+      if(categories.some((c,i)=>i<ci&&c.name===cat.name))fail('Duplicate category name: '+cat.name);
+      if(!Array.isArray(cat.actions)||cat.actions.length!==info.headers.length||Array.from(cat.actions).some(a=>a!==1&&a!==2)||!Array.isArray(cat.raw)||cat.raw.length!==info.headers.length||Array.from(cat.raw).some(v=>typeof v!=='string'))fail(cat.name+': confirm a rule for every field.');
+      if(cat.actions[ki]!==1)fail(cat.name+': the Bates identity field must be kept.');
+      if(cat.loadedHash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
+      const own=new Set();
+      const list=await listScan(cat.file,(row,headers,line)=>{
+        const cki=headers.indexOf(cat.key);if(cki<0)fail(cat.name+': select the target-list Bates column.');
+        const id=identity(row[cki],cat.name+' row '+line);if(own.has(id))fail(cat.name+': duplicate Bates value in the target list: '+id);own.add(id);
+        if(index.has(id)) {
+          const existing=index.get(id),first=categories[existing.cats[0]];
+          const conflict=cat.actions.findIndex((a,i)=>a!==first.actions[i]);
+          if(conflict>=0)fail('Conflicting category rules: '+id+' / '+info.headers[conflict]+' / '+first.name+' ↔ '+cat.name);
+          existing.cats.push(ci);
+        } else {if(index.size>=MAX_IDS)fail('Target Bates values exceed the 1,000,000-ID limit.');index.set(id,{cats:[ci],found:false});}
+      });
+      if(cat.loadedHash!==undefined&&cat.loadedHash!==list.hash)fail(cat.name+': target list changed since loading. Reload it before preflight.');
+      if(list.hash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
+      cats.push({name:cat.name,key:cat.key,actions:cat.actions.slice(),raw:cat.raw.slice(),file:fileInfo(cat.file),hash:list.hash,listFormat:list.format,listRows:list.count,matched:0});
+    }
+    if(!cats.some(c=>c.actions.includes(2)))fail('No fields are set to Scrub.');
+    const reader=await datReader(source),seen=new Set();let header=true,rows=0,matched=0,targetCells=0,changed=0,alreadyEmpty=0,overlap=0;const samples=[];
+    for await(const rec of reader.records()) {
+      if(header){header=false;if(JSON.stringify(rec.values)!==JSON.stringify(info.headers))fail('DAT header changed while being read.');continue;}
+      if(rec.values.length!==info.headers.length)fail('DAT row '+rec.line+': field count changed.');
+      const id=identity(rec.values[ki],'DAT row '+rec.line+'');if(seen.has(id))fail('Duplicate Bates value in DAT: '+id);seen.add(id);rows++;
+      const member=index.get(id);if(!member)continue;
+      member.found=true;matched++;if(member.cats.length>1)overlap++;
+      member.cats.forEach(ci=>cats[ci].matched++);
+      const actions=cats[member.cats[0]].actions;
+      actions.forEach((a,i)=>{if(a===2){targetCells++;if(rec.values[i]==='')alreadyEmpty++;else{changed++;if(samples.length<6)samples.push({id,field:info.headers[i],category:member.cats.map(ci=>cats[ci].name).join(', '),before:rec.values[i].slice(0,120),after:''});}}});
+    }
+    if(reader.digest!==info.hash)fail('DAT changed during preflight. Reload and check again.');
+    const missing=Array.from(index).filter(([,m])=>!m.found);
+    if(missing.length)fail('Target lists contain '+missing.length+' Bates values not found in the DAT. Examples: '+missing.slice(0,6).map(([id])=>id).join(', '));
+    if(!matched)fail('No documents matched the DAT.');
+    const summary={version:VERSION,source:fileInfo(source),sourceHash:info.hash,headers:info.headers,key,meta:info.meta,rows,matched,untouched:rows-matched,targetCells,changed,alreadyEmpty,overlap,categories:cats,samples};
+    return {source,index,ki,cats,categoryFiles:categories.map(c=>c.file),summary};
+  }
+  async function checkCategoryFiles(plan) {
+    for(let i=0;i<plan.categoryFiles.length;i++) {
+      const current=await listScan(plan.categoryFiles[i]);
+      if(current.hash!==plan.cats[i].hash)fail(plan.cats[i].name+': target list changed after preflight. Run preflight again.');
+    }
+  }
+  function encode(text,encoding) {
+    if(encoding==='utf-8')return new TextEncoder().encode(text);
+    const bytes=new Uint8Array(text.length*2),view=new DataView(bytes.buffer),le=encoding==='utf-16le';
+    for(let i=0;i<text.length;i++)view.setUint16(i*2,text.charCodeAt(i),le);return bytes;
+  }
+  async function transform(plan,emit) {
+    await checkCategoryFiles(plan);
+    const reader=await datReader(plan.source),outHash=hash();let bytes=0,rows=0,changed=0;
+    let pieces=[],pieceBytes=0;
+    async function flush(){if(!pieceBytes)return;const merged=new Uint8Array(pieceBytes);let at=0;for(const p of pieces){merged.set(p,at);at+=p.length;}pieces=[];pieceBytes=0;await emit(merged);}
+    async function write(b){outHash.update(b);bytes+=b.length;pieces.push(b);pieceBytes+=b.length;if(pieceBytes>=CHUNK)await flush();}
+    await write(new Uint8Array(plan.summary.meta.bom));
+    for await(const rec of reader.records()) {
+      let raw=rec.raw;
+      if(rec.line===1) {if(JSON.stringify(rec.values)!==JSON.stringify(plan.summary.headers))fail('Source header changed.');}
+      else {
+        rows++;if(rec.values.length!==plan.summary.headers.length)fail('Source field count changed.');
+        const m=plan.index.get(rec.values[plan.ki]);
+        if(m) {const actions=plan.cats[m.cats[0]].actions;const cols=raw.split(SEP);for(let i=0;i<cols.length;i++)if(actions[i]===2){if(rec.values[i]!=='')changed++;cols[i]=FE+FE;}raw=cols.join(SEP);}
+      }
+      await write(encode(raw+rec.eol,reader.meta.encoding));
+    }
+    if(reader.digest!==plan.summary.sourceHash||rows!==plan.summary.rows||changed!==plan.summary.changed)fail('Source changed after preflight. Save cancelled.');
+    await flush();return {hash:outHash.hex(),bytes,rows,changed};
+  }
+  async function verify(plan,output,expected) {
+    await checkCategoryFiles(plan);
+    const source=await datReader(plan.source),out=await datReader(output);
+    if(JSON.stringify(out.meta)!==JSON.stringify(plan.summary.meta))fail('Saved-file encoding or BOM differs from the source.');
+    if(output.size!==expected.bytes)fail('Saved-file size differs from the expected size.');
+    const si=source.records()[Symbol.asyncIterator](),oi=out.records()[Symbol.asyncIterator]();let rows=0,cleared=0;
+    for(;;) {
+      const [a,b]=await Promise.all([si.next(),oi.next()]);
+      if(a.done&&b.done)break;if(a.done||b.done)fail('Saved-file record count differs from the source.');
+      const s=a.value,o=b.value;
+      if(s.eol!==o.eol)fail('Saved-file row '+s.line+': line ending changed.');
+      if(s.line===1){if(s.raw!==o.raw||JSON.stringify(s.values)!==JSON.stringify(plan.summary.headers))fail('Saved-file header or field order changed.');continue;}
+      rows++;if(s.values.length!==plan.summary.headers.length||o.values.length!==s.values.length)fail('Saved-file row '+s.line+': field count differs.');
+      if(s.values[plan.ki]!==o.values[plan.ki])fail('Saved-file identity or record order changed.');
+      const member=plan.index.get(s.values[plan.ki]),actions=member?plan.cats[member.cats[0]].actions:null;
+      for(let i=0;i<s.values.length;i++) {
+        const mustClear=actions&&actions[i]===2;
+        if(mustClear){if(o.values[i]!=='')fail('Value required to be scrubbed is not blank: '+s.values[plan.ki]+' / '+plan.summary.headers[i]);if(s.values[i]!=='')cleared++;}
+        else if(s.values[i]!==o.values[i])fail('Value required to be kept has changed: '+s.values[plan.ki]+' / '+plan.summary.headers[i]);
+      }
+    }
+    if(source.digest!==plan.summary.sourceHash)fail('Source DAT changed during verification.');
+    if(out.digest!==expected.hash||rows!==plan.summary.rows||cleared!==plan.summary.changed)fail('Full saved-file content verification failed.');
+    return {version:VERSION,verifiedAt:new Date().toISOString(),output:fileInfo(output),outputHash:out.digest,bytes:output.size,rows,cleared};
+  }
+  return {VERSION,hash,metadata,splitDAT,tableParser,inspectDAT,listScan,parseRules,preflight,transform,verify,encode};
+}
+if(typeof module !== 'undefined' && module.exports) module.exports=createScrubCore;
+</script>
+<script>'use strict';
+const core=createScrubCore(), $=id=>document.getElementById(id);
+$('version').textContent='v'+core.VERSION;
+function node(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
+function option(select,value,text){const e=node('option',text);e.value=value;select.append(e);}
+const count=n=>n.toLocaleString('en-US');
+function workerBoot(){
+  const core=createScrubCore({progress:(name,p)=>self.postMessage({type:'progress',name,p})});
+  let plan=null,expected=null,busy=false,token=0;const acks=new Map();
+  self.onmessage=async({data:m})=>{
+    if(m.type==='ack'){const p=acks.get(m.token);if(p){acks.delete(m.token);m.error?p.reject(new Error(m.error)):p.resolve();}return;}
+    if(busy){self.postMessage({type:'error',id:m.id,error:'Another operation is running.'});return;}
+    busy=true;
+    try{
+      let result;
+      if(m.op==='inspectDAT')result=await core.inspectDAT(m.file);
+      else if(m.op==='inspectList')result=await core.listScan(m.file);
+      else if(m.op==='preflight'){plan=null;expected=null;plan=await core.preflight(m.source,m.key,m.categories,m.loadedSourceHash);result=plan.summary;}
+      else if(m.op==='transform'){
+        if(!plan)throw new Error('Run preflight first.');expected=null;
+        expected=await core.transform(plan,bytes=>new Promise((resolve,reject)=>{const t=++token;acks.set(t,{resolve,reject});self.postMessage({type:'chunk',id:m.id,token:t,buffer:bytes.buffer},[bytes.buffer]);}));result=expected;
+      }else if(m.op==='verify'){if(!plan||!expected)throw new Error('No generated output is available to verify.');result=await core.verify(plan,m.file,expected);}
+      else throw new Error('Unknown operation.');
+      self.postMessage({type:'result',id:m.id,result});
+    }catch(e){self.postMessage({type:'error',id:m.id,error:e.message||String(e)});}finally{busy=false;}
+  };
+}
+let worker=null,serial=0,catSerial=0,runSerial=0,revision=0,busy=false,cancelling=false,activeRun=null;
+let source=null,sourceInfo=null,summary=null,expected=null,verified=null,checkedSignature=null;
+const pending=new Map(),categories=[];
+function stopWorker(message){const instance=worker;worker=null;if(instance)instance.terminate();for(const p of pending.values())p.reject(new Error(message));pending.clear();}
+function makeWorker(){
+  const url=URL.createObjectURL(new Blob(['const createScrubCore='+createScrubCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
+  const instance=new Worker(url);worker=instance;URL.revokeObjectURL(url);
+  instance.onmessage=async({data:m})=>{
+    if(worker!==instance)return;
+    if(m.type==='progress'){$('progress').value=Math.round(m.p*100);$('progressText').textContent=m.name+' · '+Math.round(m.p*100)+'%';return;}
+    const job=pending.get(m.id);if(!job)return;
+    if(m.type==='chunk'){try{await job.emit(new Uint8Array(m.buffer));if(worker===instance)instance.postMessage({type:'ack',token:m.token});}catch(e){if(worker===instance)instance.postMessage({type:'ack',token:m.token,error:e.message||String(e)});}return;}
+    pending.delete(m.id);if(m.type==='result')job.resolve(m.result);else job.reject(new Error(m.error));
+  };
+  instance.onerror=()=>{if(worker===instance)recoverWorker();};
+}
+function request(op,payload={},emit){return new Promise((resolve,reject)=>{const id=++serial;if(!worker){reject(new Error('Local worker unavailable. Reload this page.'));return;}pending.set(id,{resolve,reject,emit});try{worker.postMessage({id,op,...payload});}catch(e){pending.delete(id);reject(e);}});}
+function status(text,kind=''){const e=$('status');e.className='result'+(kind?' '+kind:'');e.textContent=text;}
+function lock(on){if(cancelling&&!on)return;busy=on;$('inputs').disabled=on;$('reviewed').disabled=on||!summary;$('outputName').disabled=on;$('savedFile').disabled=on;$('progressLine').hidden=!on;$('cancel').disabled=!on||activeRun&&activeRun.phase==='commit';buttons();}
+function invalidate(){revision++;checkedSignature=null;summary=null;expected=null;verified=null;$('reviewed').checked=false;$('reviewed').disabled=true;$('summary').hidden=true;$('manualVerification').hidden=true;$('savedFile').value='';buttons();}
+function changed(){invalidate();renderRules();status('Inputs changed. Run preflight again before saving.');}
+function beginRun(kind){if(busy||activeRun)return null;if(!worker){status('Local worker unavailable. Reload this page.','error');return null;}const r={id:++runSerial,revision,kind,phase:'processing',cancelled:false,writer:null,committed:false,commitAttempted:false,outputName:''};activeRun=r;lock(true);return r;}
+function live(r){return activeRun===r&&!r.cancelled&&r.revision===revision;}
+function configurationSignature(){return JSON.stringify([sourceInfo&&sourceInfo.hash,$('datKey').value,$('keepTerms').value,$('clearTerms').value,$('blankRule').value,categories.map(c=>[c.id,c.name.value,c.loaded&&c.loaded.hash,c.key.value,c.mode.value,c.text.value,c.order.checked])]);}
+function requireChecked(){if(summary&&checkedSignature===configurationSignature())return true;invalidate();status('Inputs changed. Run preflight again before saving or verifying.','error');return false;}
+function guard(r){if(r.signature&&r.signature!==configurationSignature()){invalidate();status('Inputs changed during processing. Run preflight again. No output is verified.','error');}if(!live(r)){const e=new Error('Operation no longer owns this session.');e.name='StaleOperation';throw e;}}
+async function owned(r,promise){guard(r);const value=await promise;guard(r);return value;}
+async function call(r,op,payload={},emit){guard(r);return owned(r,request(op,payload,emit));}
+async function cleanupWriter(r){
+  if(!r)return '';const notes=[];
+  if(r.writer){const w=r.writer;r.writer=null;try{await w.abort();}catch(e){notes.push('Temporary-write cleanup failed'+(r.outputName?' for '+r.outputName:'')+': '+e.message+'. Check that output; it is not verified.');}}
+  // Do not reopen a committed destination: another application may have changed it.
+  if(r.handle&&r.commitAttempted&&!r.verified){r.handle=null;notes.push('Saved output '+r.outputName+' did not pass verification. Do not deliver it. Review or delete it manually, then save under a new name.');}
+  return notes.join('\n');
+}
+function cleanupWarning(text){if(text){$('cleanupWarning').hidden=false;$('cleanupWarning').textContent=text;}}
+async function finishRun(r){cleanupWarning(await cleanupWriter(r));if(activeRun===r&&!cancelling){activeRun=null;lock(false);}}
+async function recoverWorker(){
+  const r=activeRun;if(r)r.cancelled=true;cancelling=true;stopWorker('Local worker failed.');
+  cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;invalidate();
+  if(r){try{makeWorker();}catch(e){worker=null;}}
+  status('Local processing failed. No output has passed verification.'+(r&&r.commitAttempted?' The output may exist; do not deliver it.':'')+' Reload or run preflight again.','error');cancelling=false;lock(false);
+}
+function buttons(){
+  const ready=worker&&sourceInfo&&$('datKey').value&&categories.length&&categories.every(c=>c.file&&c.loaded&&c.key.value&&c.rules&&!c.rules.problems.length&&(c.mode.value==='named'||c.order.checked));
+  $('preflight').disabled=busy||!ready;$('save').disabled=busy||!worker||!summary||!$('reviewed').checked;
+  $('report').disabled=busy||!verified;$('verifySaved').disabled=busy||!worker||!expected||!$('savedFile').files.length;
+}
+function fillSelect(select,headers,current=''){select.replaceChildren();option(select,'','Select a field');for(const h of headers)option(select,h,h);select.value=headers.includes(current)?current:'';select.disabled=!headers.length;}
+function renderRules(){
+  for(const c of categories){c.rules=null;c.state.className='rule-state muted';c.orderLabel.hidden=c.mode.value==='named';c.orderText.textContent='This rule column follows the final DAT field order.';
+    if(!sourceInfo){c.state.textContent='Select the DAT first.';continue;}
+    try{c.rules=core.parseRules(c.text.value,sourceInfo.headers,c.mode.value,$('keepTerms').value,$('clearTerms').value,$('blankRule').value);
+      if(c.rules.problems.length){c.state.className='rule-state error';c.state.textContent=c.rules.problems.slice(0,3).join('\n');}
+      else{const n=c.rules.labelFlags.filter(Boolean).length,labelled=c.rules.labels.some(l=>l!==null);c.state.className='rule-state '+(n?'warn':'ok');c.state.textContent='Keep '+c.rules.actions.filter(a=>a===1).length+' / Scrub '+c.rules.actions.filter(a=>a===2).length+(n?'\n'+n+' SOW field names differ from the DAT field in the same row. Check the highlighted rows in step 3.':labelled?'\nSOW field names match the DAT order.':'');
+        if(n)c.orderText.textContent='Rows follow the final DAT field order. I checked the '+n+' highlighted name differences.';}
+    }catch(e){c.state.className='rule-state error';c.state.textContent=e.message;}
+  }
+  renderTable();buttons();
+}
+function renderTable(){
+  const select=$('previewCategory'),selected=select.value;select.replaceChildren();for(const c of categories)option(select,String(c.id),c.name.value||'Category');if(categories.some(c=>String(c.id)===selected))select.value=selected;
+  const cat=categories.find(c=>String(c.id)===select.value),body=$('ruleRows');body.replaceChildren();
+  if(!sourceInfo){const tr=node('tr'),td=node('td','Final DAT fields appear here.','muted');td.colSpan=4;tr.append(td);body.append(tr);return;}
+  sourceInfo.headers.forEach((h,i)=>{const tr=node('tr'),name=node('td',h);if(cat&&cat.rules&&cat.rules.labelFlags[i]){name.className='warn';name.append(node('div','≠ SOW: '+cat.rules.labels[i],'small'));}tr.append(node('td',String(i+1),'num'),name);const raw=cat&&cat.rules?cat.rules.raw[i]:undefined,a=cat&&cat.rules?cat.rules.actions[i]:0;tr.append(node('td',raw===undefined?'—':raw===''?'(blank cell)':raw,'symbol'),node('td',a===1?'Keep':a===2?'Scrub':'Needs review','tag '+(a===1?'keep':a===2?'clear':'error')));body.append(tr);});
+}
+function addCategory(){
+  if(busy)return;invalidate();const c={id:++catSerial,file:null,loaded:null,rules:null},card=node('article',undefined,'card'),top=node('div',undefined,'cardtop'),head=node('div',undefined,'cathead');
+  c.name=node('input');c.name.type='text';c.name.value='Category '+c.id;c.name.setAttribute('aria-label','Category name');const remove=node('button','Remove','remove danger');remove.type='button';head.append(c.name,remove);top.append(head);
+  const fl=node('label','Saved Search list · CSV or DAT');fl.htmlFor='csv-'+c.id;top.append(fl);c.input=node('input');c.input.type='file';c.input.accept='.csv,.dat,.txt';c.input.id=fl.htmlFor;top.append(c.input);c.filelabel=node('p','Choose a CSV or DAT file.','filelabel muted');top.append(c.filelabel);
+  const kl=node('label','List Production Begin Bates column');kl.htmlFor='csvkey-'+c.id;c.key=node('select');c.key.id=kl.htmlFor;fillSelect(c.key,[]);top.append(kl,c.key);
+  const bottom=node('div',undefined,'cardbottom'),ml=node('label','Pasted rule layout');ml.htmlFor='mode-'+c.id;c.mode=node('select');c.mode.id=ml.htmlFor;option(c.mode,'ordered','Final DAT order · rules (optional SOW name column)');option(c.mode,'named','DAT field name + rule · two columns');bottom.append(ml,c.mode);
+  const tl=node('label','SOW rule cells');tl.htmlFor='rules-'+c.id;c.text=node('textarea');c.text.id=tl.htmlFor;c.text.className='ruletext';c.text.spellcheck=false;c.text.placeholder='Populate\nPopulate\nScrub\n…';bottom.append(tl,c.text,node('p','Paste rule cells only, or SOW field names + rule cells (two columns) to check row alignment. Exclude titles, counts and search descriptions.','small muted'));
+  c.orderLabel=node('label',undefined,'check');c.order=node('input');c.order.type='checkbox';c.orderText=node('span');c.orderLabel.append(c.order,c.orderText);bottom.append(c.orderLabel);c.state=node('div',undefined,'rule-state');bottom.append(c.state);card.append(top,bottom);$('categories').append(card);categories.push(c);
+  remove.onclick=()=>{if(busy)return;categories.splice(categories.indexOf(c),1);card.remove();changed();};c.name.oninput=changed;c.key.onchange=changed;c.order.onchange=changed;c.mode.onchange=()=>{c.order.checked=false;changed();};c.text.oninput=()=>{c.order.checked=false;changed();};
+  c.input.onchange=async()=>{
+    if(busy){c.file=null;c.loaded=null;fillSelect(c.key,[]);changed();c.filelabel.textContent='File changed during an operation. Select the list again.';return;}
+    const file=c.input.files[0];invalidate();c.file=file||null;c.loaded=null;c.order.checked=false;fillSelect(c.key,[]);if(!file){c.filelabel.textContent='Choose a CSV or DAT file.';renderRules();return;}
+    const r=beginRun('loadList');if(!r)return;status('Checking target list structure.');
+    try{const result=await call(r,'inspectList',{file});c.loaded=result;c.filelabel.textContent=file.name+' · '+result.format+' · '+count(result.count)+' documents';fillSelect(c.key,result.headers,$('datKey').value);status(result.format+' target list loaded. Review the Bates column and rules.');}
+    catch(e){if(live(r)){c.file=null;c.filelabel.textContent=file.name+' · read failed';status(e.message,'error');}}
+    finally{if(live(r))renderRules();await finishRun(r);}
+  };renderRules();
+}
+$('sourceFile').onchange=async()=>{
+  if(busy){source=null;sourceInfo=null;changed();$('sourceDetails').textContent='File changed during an operation. Select the DAT again.';return;}
+  invalidate();source=$('sourceFile').files[0]||null;sourceInfo=null;for(const c of categories)c.order.checked=false;fillSelect($('datKey'),[]);renderRules();$('sourceDetails').textContent='Reading final DAT fields.';
+  if(!source){$('sourceName').textContent='Choose a DAT file.';return;}const file=source,r=beginRun('loadDAT');if(!r)return;status('Checking all DAT records and encoding.');
+  try{const info=await call(r,'inspectDAT',{file});sourceInfo=info;$('sourceName').textContent=file.name;$('sourceDetails').textContent=info.headers.length+' fields · '+count(info.count)+' documents · '+info.meta.encoding.toUpperCase();fillSelect($('datKey'),info.headers,info.headers.includes('Production Number Begin')?'Production Number Begin':'');for(const c of categories)if(c.loaded&&!c.key.value&&c.loaded.headers.includes($('datKey').value))c.key.value=$('datKey').value;status('DAT loaded. Add category targets and rules.');}
+  catch(e){if(live(r)){sourceInfo=null;$('sourceName').textContent=file.name+' · read failed';$('sourceDetails').textContent='Select the DAT again.';status(e.message,'error');}}
+  finally{if(live(r))renderRules();await finishRun(r);}
+};
+$('datKey').onchange=changed;$('keepTerms').oninput=()=>{for(const c of categories)c.order.checked=false;changed();};$('clearTerms').oninput=$('keepTerms').oninput;$('blankRule').onchange=$('keepTerms').oninput;$('previewCategory').onchange=renderTable;$('addCategory').onclick=addCategory;$('reviewed').onchange=()=>{if(!$('reviewed').checked){verified=null;status('Review approval withdrawn. Review and verify again.','pending');}buttons();};
+$('outputName').oninput=()=>{if(busy){invalidate();return;}verified=null;expected=null;$('manualVerification').hidden=true;$('savedFile').value='';status('Output filename changed. Save and verify the new output.','pending');buttons();};
+function showSummary(s){
+  $('summary').hidden=false;$('stats').replaceChildren();for(const [label,value]of [['All documents',s.rows],['Target documents',s.matched],['Nonempty cells to scrub',s.changed],['Already blank target cells',s.alreadyEmpty]]){const d=node('div',label,'stat');d.append(node('strong',count(value)));$('stats').append(d);}
+  $('categoryStats').replaceChildren();for(const c of s.categories){const tr=node('tr');tr.append(node('td',c.name),node('td',c.file.name+' · '+c.listFormat),node('td',String(c.listRows)),node('td',String(c.matched)),node('td',s.headers.filter((_,i)=>c.actions[i]===2).join(', ')));$('categoryStats').append(tr);}
+  $('sampleRows').replaceChildren();for(const x of s.samples){const tr=node('tr');tr.append(node('td',x.id),node('td',x.field),node('td',x.before),node('td','(blank)'));$('sampleRows').append(tr);}
+}
+$('preflight').onclick=async()=>{
+  if(busy)return;invalidate();renderRules();const r=beginRun('preflight');if(!r)return;status('Checking Bates matches, duplicates, category conflicts and scope.');
+  try{for(const c of categories)if(!c.rules||c.rules.problems.length||c.mode.value!=='named'&&!c.order.checked)throw new Error('Review the rules and field order for every category.');
+    const payload=categories.map(c=>({name:c.name.value.trim(),file:c.file,key:c.key.value,actions:c.rules.actions,raw:c.rules.raw,loadedHash:c.loaded.hash}));
+    r.signature=configurationSignature();const result=await call(r,'preflight',{source,key:$('datKey').value,categories:payload,loadedSourceHash:sourceInfo.hash});summary=result;checkedSignature=r.signature;showSummary(result);$('reviewed').disabled=false;
+    status('Preflight passed · '+count(result.matched)+' target documents / '+count(result.untouched)+' other documents kept unchanged.\n'+count(result.overlap)+' overlapping documents have matching rules. Review each field and the document counts.'+(result.untouched?'':'\nEvery document in the DAT is a target. Confirm that each target list is the intended saved search.'),result.untouched?'':'pending');
+  }catch(e){if(live(r)){summary=null;status('Preflight failed · no file was saved.\n'+e.message,'error');}}finally{await finishRun(r);}
+};
+function download(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function validOutputName(name){if([source,...categories.map(c=>c.file)].some(f=>f&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('Choose a new filename different from every input file.');if(!/^[^\\/\u0000-\u001f<>:"|?*]+\.dat$/i.test(name)||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])\./i.test(name))throw new Error('Enter a valid new .dat filename without a path.');}
+function verifiedStatus(r,result){guard(r);verified=result;r.verified=true;status('Final verification passed · the entire saved file was re-read.\nHeaders, record order and kept values are unchanged. Exactly '+count(result.cleared)+' nonempty values were scrubbed.','success');buttons();}
+$('save').onclick=async()=>{
+  if(busy||!summary||!$('reviewed').checked||!requireChecked())return;
+  const name=$('outputName').value,r=beginRun('save');if(!r)return;r.signature=checkedSignature;verified=null;expected=null;$('manualVerification').hidden=true;$('savedFile').value='';
+  try{
+    validOutputName(name);
+    if(typeof window.showSaveFilePicker==='function'){
+      const handle=await owned(r,window.showSaveFilePicker({suggestedName:name,types:[{description:'DAT load file',accept:{'application/octet-stream':['.dat']}}]}));r.handle=handle;
+      let f=await owned(r,handle.getFile());validOutputName(f.name);r.outputName=f.name;if(f.size)throw new Error('Existing files cannot be overwritten. Choose a new filename.');
+      // A writer returned after cancellation still belongs to this old run and must be aborted.
+      r.writer=await handle.createWritable({keepExistingData:true,mode:'exclusive'});guard(r);const writer=r.writer;
+      f=await owned(r,handle.getFile());if(f.size||f.name!==r.outputName)throw new Error('Destination changed. Choose another new filename.');
+      status('Writing scrubbed values to a new file. Final verification is still pending.');
+      const result=await call(r,'transform',{},async bytes=>{guard(r);await writer.write(bytes);guard(r);});expected=result;
+      f=await owned(r,handle.getFile());if(f.size||f.name!==r.outputName)throw new Error('Destination changed during writing. Save cancelled; existing data was preserved.');
+      guard(r);r.phase='commit';r.commitAttempted=true;$('cancel').disabled=true;status('Finishing the save. Cancellation is temporarily unavailable. Final verification follows.');await writer.close();r.writer=null;r.committed=true;guard(r);
+      r.phase='verification';$('cancel').disabled=false;status('Re-reading the saved file and comparing every field with the source.');
+      const actual=await owned(r,handle.getFile());verifiedStatus(r,await call(r,'verify',{file:actual}));
+    }else{
+      const limit=256*1024*1024;if(source.size>limit)throw new Error('For files above 256 MiB, use current Chrome/Edge with streaming file save.');
+      const chunks=[];let size=0;status('Generating and checking the DAT download.');
+      expected=await call(r,'transform',{},bytes=>{guard(r);size+=bytes.length;if(size>limit)throw new Error('Download memory limit exceeded. Use Chrome/Edge streaming save.');chunks.push(bytes);});
+      const blob=new Blob(chunks,{type:'application/octet-stream'});await call(r,'verify',{file:new File([blob],name)});guard(r);download(blob,name);$('manualVerification').hidden=false;
+      status('Generated content passed verification · download requested.\nThe file on disk is not yet verified. Select the downloaded DAT below for final verification.','pending');
+    }
+  }catch(e){if(live(r)){expected=null;verified=null;status((e.name==='AbortError'?'Save cancelled.':r.commitAttempted?'Saved output is not verified · do not deliver it.\n'+e.message:'Save failed · no verified output.\n'+e.message),'error');}}
+  finally{await finishRun(r);}
+};
+$('savedFile').onchange=()=>{if(busy)revision++;verified=null;status('The selected file is not yet verified. Run saved-file verification.','pending');buttons();};
+$('verifySaved').onclick=async()=>{
+  const file=$('savedFile').files[0];if(busy||!file||!expected||!$('reviewed').checked||!requireChecked())return;const r=beginRun('verify');if(!r)return;r.signature=checkedSignature;verified=null;status('Re-reading the entire selected file.');
+  try{verifiedStatus(r,await call(r,'verify',{file}));}catch(e){if(live(r))status('Final verification failed · do not deliver the selected file.\n'+e.message,'error');}finally{await finishRun(r);}
+};
+$('report').onclick=()=>{if(busy||!verified||!summary||!$('reviewed').checked||!requireChecked())return;const {samples,...safe}=summary;const report={tool:'DAT Field Scrubber',version:core.VERSION,status:'PASS',scope:'Saved-file re-read; full cell, schema, record order, encoding, EOL and SHA-256 verification',input:safe,output:verified};download(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),verified.output.name.replace(/\.dat$/i,'')+'.audit.json');};
+$('cancel').onclick=async()=>{
+  const r=activeRun;if(!r||cancelling||r.phase==='commit')return;
+  r.cancelled=true;cancelling=true;$('cancel').disabled=true;stopWorker('Operation cancelled.');cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;
+  try{makeWorker();}catch(e){worker=null;}invalidate();status(r.committed?'Operation cancelled after saving. The output is not verified; do not deliver it.':'Operation cancelled. No output has passed final verification.','error');cancelling=false;lock(false);
+};
+addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
+try{makeWorker();addCategory();}catch(e){status('Could not start local processing. Use current Chrome/Edge.\n'+e.message,'error');}
+</script>
+</body></html>
