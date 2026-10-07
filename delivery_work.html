@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; worker-src blob:; connect-src 'none'; img-src data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="description" content="Production ticket Delivery Work for þ/DC4 DAT files, processed locally with full saved-file verification">
+<title>Delivery Work</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23102440'/%3E%3Cpath d='M8 10h16M8 16h10M8 22h6' stroke='%2385afff' stroke-width='3'/%3E%3Cpath d='M19 22l3 3 5-7' stroke='%23fff' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;--ink:#142238;--muted:#536277;--line:#d7e0ec;--blue:#164fe0;--navy:#102440;--bg:#edf2f8;--red:#a32230;--green:#08614c;--amber:#8b4900;font-family:system-ui,-apple-system,'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}
+button{cursor:pointer;font-weight:650;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:.6rem .85rem}button:hover:not(:disabled){background:#eaf0ff;border-color:#9bb6ef}button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:var(--blue);border-color:var(--blue);color:#fff}.primary:hover:not(:disabled){background:#1245c6}.danger{color:var(--red)}.ghost{border-color:transparent;background:transparent}
+input[type=text],select,textarea{width:100%;border:1px solid #a9b7ca;border-radius:6px;background:#fff;color:var(--ink);padding:.5rem .55rem;min-width:0}textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:.85rem}
+input[type=checkbox],input[type=radio]{width:16px;height:16px;accent-color:var(--blue);flex-shrink:0}
+label{font-size:.82rem;font-weight:600;display:block;margin:.65rem 0 .3rem}label.check{display:flex;align-items:center;gap:.45rem;font-weight:500;margin:.35rem 0}
+fieldset{border:0;padding:0;margin:0;min-width:0}:focus-visible{outline:3px solid #85afff;outline-offset:2px}
+header{background:var(--navy);color:#fff;padding:1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;position:relative;overflow:hidden;flex-wrap:wrap}
+.creator-credit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11.5px;opacity:.34;letter-spacing:.08em;white-space:nowrap;pointer-events:none;color:#fff;font-weight:600;z-index:0}
+.brand,.header-tools{position:relative;z-index:1;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}h1{font-size:1.4rem;margin:0;letter-spacing:-.02em}
+.version,.local{font-size:.78rem;color:#c5d8f1}.local{padding:.3rem .55rem;border:1px solid #5b7596;border-radius:5px}
+.header-tools button{background:transparent;color:#fff;border-color:#5b7596;padding:.4rem .7rem;font-size:.82rem}.header-tools button:hover:not(:disabled){background:#1d3a63}
+main{padding:1.1rem 1.6rem;max-width:2000px;margin:auto}
+.workspace{display:grid;grid-template-columns:290px minmax(0,1fr) 390px;gap:1rem;align-items:start}
+.panel{background:#fff;border:1px solid var(--line);border-radius:9px;padding:1rem;min-width:0}
+h2{font-size:1.05rem;margin:0 0 .3rem;display:flex;align-items:center;gap:.45rem}h3{font-size:.95rem;margin:0}
+.step{display:inline-grid;place-items:center;background:#e8efff;color:#214a9e;border-radius:4px;width:1.45rem;height:1.45rem;font-size:.8rem}
+.muted{color:var(--muted)}.small{font-size:.8rem;line-height:1.55}.error{color:var(--red)}.ok{color:var(--green)}.warn{color:var(--amber)}
+.drop{display:block;background:#f4f7fc;border:2px dashed #a7b8d2;border-radius:8px;padding:1.1rem .9rem;margin:.8rem 0;text-align:center;cursor:pointer;font-weight:500}
+.drop.over{background:#e6eeff;border-color:var(--blue)}.drop strong{display:block;font-size:.95rem;margin-bottom:.25rem}.drop input{display:none}
+.facts{font-size:.82rem;line-height:1.65;overflow-wrap:anywhere;white-space:pre-line}
+.addbar{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;margin:.8rem 0 1rem}
+.addbar button{text-align:left;padding:.55rem .7rem;font-size:.85rem;line-height:1.3}.addbar button small{display:block;font-weight:500;color:var(--muted);font-size:.74rem}
+.empty{border:2px dashed var(--line);border-radius:9px;padding:2rem 1rem;text-align:center;color:var(--muted);font-size:.9rem;line-height:1.7}
+.card{background:#fff;border:1px solid var(--line);border-left:4px solid #9aabc3;border-radius:9px;margin-bottom:.8rem;min-width:0}.card.ready{border-left-color:var(--green)}.card.todo{border-left-color:#d08a1d}
+.cardhead{display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;border-bottom:1px solid var(--line)}.cardhead h3{flex:1;min-width:0}.cardhead .note{font-weight:400;color:var(--muted);font-size:.8rem;margin-left:.3rem}
+.pill{font-size:.74rem;font-weight:700;border-radius:20px;padding:.18rem .55rem;white-space:nowrap}.pill.ready{background:#e1f4ec;color:var(--green)}.pill.todo{background:#fff1dc;color:var(--amber)}
+.cardbody{padding:.2rem .9rem .9rem}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 .9rem}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 .9rem}
+.problems{margin:.6rem 0 0;padding:.5rem .7rem;background:#fff6ea;border-radius:6px;font-size:.8rem;color:var(--amber);line-height:1.55;white-space:pre-line}
+.preview{margin-top:.6rem;font-size:.8rem;background:#f4f7fc;border-radius:6px;padding:.5rem .7rem;line-height:1.6;overflow-wrap:anywhere}.preview b{font-weight:650}.preview .arrow{color:var(--muted);margin:0 .3rem}
+.maptable{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:.4rem}.maptable td,.maptable th{padding:.3rem .35rem;border-bottom:1px solid #edf1f6;vertical-align:middle;text-align:left}.maptable th{font-size:.74rem;color:var(--muted);font-weight:600}
+.maptable td.src{overflow-wrap:anywhere;max-width:240px}.maptable td.count{color:var(--muted);text-align:right;width:56px;font-size:.76rem}.maptable td.out{width:45%}.maptable tr.unset td.out input,.maptable tr.unset td.out select{border-color:#d08a1d;background:#fffaf2}
+.mapwrap{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-top:.4rem}
+.rowtools{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.5rem}.rowtools button{font-size:.8rem;padding:.4rem .6rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem}.chips label{margin:0;border:1px solid var(--line);border-radius:20px;padding:.25rem .6rem;display:flex;gap:.35rem;align-items:center;font-weight:500;font-size:.82rem}
+.dateentry{border:1px solid var(--line);border-radius:7px;padding:.1rem .7rem .6rem;margin-top:.6rem}.dateentry .hdr{display:flex;justify-content:space-between;align-items:center;margin-top:.4rem}
+.status{background:#fff;border:1px solid var(--line);border-left:4px solid #7b8ba3;border-radius:7px;padding:.8rem .9rem;margin:.6rem 0;white-space:pre-line;overflow-wrap:anywhere;line-height:1.55;font-size:.88rem}
+.status.error{border-left-color:var(--red);color:var(--red)}.status.success{border-left-color:var(--green);color:var(--green)}.status.pending{border-left-color:#cd810e;color:var(--amber)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.6rem 0}.stat{background:#f0f4fa;border-radius:6px;padding:.6rem;font-size:.75rem;color:var(--muted)}.stat strong{display:block;font-size:1.25rem;color:var(--ink);margin-top:.15rem}
+.tablewrap{overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:6px;margin:.5rem 0}table.list{border-collapse:collapse;width:100%;font-size:.8rem}table.list th{white-space:nowrap;text-align:left;position:sticky;top:0;background:#f0f4fa;z-index:1;font-size:.74rem}table.list th,table.list td{padding:.4rem .45rem;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.progressline{display:flex;gap:.7rem;align-items:center;margin:0 0 .8rem;background:#fff;border:1px solid var(--line);border-radius:8px;padding:.5rem .8rem}.progressline progress{width:180px;height:10px}.progressline span{font-size:.8rem;color:var(--muted);flex:1;overflow-wrap:anywhere}
+.full{width:100%}.mt{margin-top:.7rem}details summary{cursor:pointer;font-size:.82rem;font-weight:600;margin-top:.7rem}
+footer{font-size:.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}[hidden]{display:none!important}
+.runpanel{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto}
+@media(max-width:1250px){.workspace{grid-template-columns:270px minmax(0,1fr)}.runpanel{grid-column:1/-1;position:static;max-height:none}}
+@media(max-width:780px){header{padding:.9rem 1rem}.creator-credit{font-size:10px;opacity:.28}.local{display:none}main{padding:.8rem}.workspace{grid-template-columns:minmax(0,1fr)}.runpanel{grid-column:auto}.grid2,.grid3{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.progressline progress{width:80px}}
+</style>
+</head>
+<body>
+<header>
+<span class="creator-credit" aria-hidden="true">이현수 · HYUNSOO LEE</span>
+<div class="brand"><h1>Delivery Work</h1><span class="version" id="version"></span><span class="local">이 PC에서만 처리 · 업로드 없음</span></div>
+<div class="header-tools"><button id="saveSettings" type="button">설정 저장</button><button id="loadSettingsButton" type="button">설정 불러오기</button><input id="loadSettings" type="file" accept=".json" hidden></div>
+</header>
+<main>
+<div class="progressline" id="progressLine" hidden><progress id="progress" max="100" value="0"></progress><span id="progressText" role="status"></span><button id="cancel" type="button" class="danger">취소</button></div>
+<div id="cleanupWarning" class="status error" role="alert" hidden></div>
+<div class="workspace">
+<fieldset id="inputs" class="inputs-left">
+<section class="panel"><h2><span class="step">1</span>DAT 파일</h2>
+<label class="drop" id="drop" tabindex="0" for="sourceFile"><strong>DAT 파일 선택</strong><span class="small muted">끌어다 놓거나 클릭 · þ / DC4 · UTF-8 / UTF-16</span><input id="sourceFile" type="file" accept=".dat,.txt,.load"></label>
+<div id="sourceFacts" class="facts muted">아직 파일이 없습니다.</div>
+<label for="idColumn">문서 ID 열</label><select id="idColumn" disabled><option value="">DAT를 먼저 여세요</option></select>
+<p class="small muted">첨부 수 계산과 예외 목록에 씁니다.</p>
+<details id="sampleBox" hidden><summary>처음 5건 보기</summary><div class="tablewrap"><table class="list" id="sampleTable"></table></div></details>
+</section>
+</fieldset>
+<fieldset id="taskInputs">
+<section class="panel"><h2><span class="step">2</span>Delivery Work</h2>
+<p class="small muted" style="margin:0">티켓 Notes에 있는 항목만 추가하세요. 순서는 상관없고, 모든 작업은 원본 값을 기준으로 계산합니다.</p>
+<div class="addbar" id="addbar"></div>
+<div id="cards"></div>
+<div class="empty" id="emptyCards">DAT를 열고 위 버튼으로 필요한 작업을 추가하세요.<br>예: Notes에 Confidentiality가 없으면 고정값은 추가하지 않습니다.</div>
+</section>
+</fieldset>
+<section class="panel runpanel"><h2><span class="step">3</span>검사 · 저장</h2>
+<div id="status" class="status" role="status" aria-live="polite">DAT를 열고 작업을 추가하세요.</div>
+<button id="runCheck" type="button" class="primary full" disabled>전체 검사</button>
+<div id="results" hidden>
+<div class="stats" id="stats"></div>
+<div class="tablewrap"><table class="list" id="taskStats"></table></div>
+<div id="exceptionBox" hidden><p class="small error" id="exceptionText"></p><div class="tablewrap"><table class="list" id="exceptionTable"></table></div><button id="exceptionCsv" type="button" class="full">예외 목록 저장 (CSV)</button></div>
+</div>
+<label for="outputName">새 파일 이름</label><input id="outputName" type="text" value="delivery.dat" autocomplete="off">
+<button id="save" type="button" class="primary full mt" disabled>새 파일로 저장 + 검증</button>
+<p class="small muted">항상 새 이름으로 저장하세요. 저장창에서 "바꾸기"를 누르면 브라우저가 기존 파일을 먼저 비울 수 있습니다.</p>
+<div id="manualVerification" hidden><label for="savedFile">다운로드된 파일 선택 · 최종 검증</label><input id="savedFile" type="file" accept=".dat,.txt,.load"><button id="verifySaved" type="button" class="full mt" disabled>저장된 파일 검증</button></div>
+<div id="verification" class="status">저장된 파일 검증 전입니다.</div>
+<button id="report" type="button" class="full" disabled>검증 보고서 저장</button>
+</section>
+</div>
+<footer>모든 작업은 원본 열 값만 읽어 계산합니다. 작업이 없는 열은 원본 그대로 저장됩니다. 예외가 하나라도 있으면 저장할 수 없고, 저장 후에는 파일 전체를 다시 읽어 확인합니다. 시간대 변환, 빈 값 자동 채우기, Bates로 관계 추정은 하지 않습니다.</footer>
+</main>
+<script id="delivery-core">'use strict';
+// Runs on the page (instant previews) and inside a local Blob worker (full-file work). No DOM or network APIs.
+function createDeliveryCore(options = {}) {
+  const VERSION = '1.0.0-rc.1';
+  const FE = 'þ', SEP = '\u0014';
+  const CHUNK = options.chunkBytes || 1024 * 1024;
+  const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
+  const MAX_FIELDS = 2000, MAX_IDS = 1000000, SAMPLE_ROWS = 200, DISTINCT_CAP = 1000, EXCEPTION_CAP = 10000;
+  const progress = options.progress || (() => {});
+  function fail(message) { throw new Error(message); }
+  const show = v => v === '' ? '(빈 값)' : JSON.stringify(v.length > 120 ? v.slice(0, 120) + '…' : v);
+  // Incremental SHA-256 (from DAT Field Scrubber): files are never buffered whole.
+  function hash() {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), buf = new Uint8Array(64);
+    let used = 0, total = 0, done = false;
+    const rr = (x,n) => (x >>> n) | (x << (32-n));
+    function compress(b) {
+      for(let i=0;i<16;i++) { const j=i*4; w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0; }
+      for(let i=16;i<64;i++) w[i]=(w[i-16]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-7]+(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10)))>>>0;
+      let [a,b0,c,d,e,f,g,z]=h;
+      for(let i=0;i<64;i++) {
+        const t1=(z+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+        const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b0)^(a&c)^(b0&c)))>>>0;
+        z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b0;b0=a;a=(t1+t2)>>>0;
+      }
+      [a,b0,c,d,e,f,g,z].forEach((v,i)=>{h[i]=(h[i]+v)>>>0;});
+    }
+    return {
+      update(bytes) {
+        if(done) fail('Hash already finalized.');
+        total+=bytes.length; let i=0;
+        if(used) {const take=Math.min(64-used,bytes.length);buf.set(bytes.subarray(0,take),used);used+=take;i=take;if(used===64){compress(buf);used=0;}}
+        while(i+64<=bytes.length){compress(bytes.subarray(i,i+64));i+=64;}
+        if(i<bytes.length){buf.set(bytes.subarray(i));used=bytes.length-i;}
+      },
+      hex() {
+        if(done) fail('Hash already finalized.'); done=true;
+        const tail=new Uint8Array(used<56?64:128);tail.set(buf.subarray(0,used));tail[used]=128;
+        const dv=new DataView(tail.buffer);dv.setUint32(tail.length-8,Math.floor(total/0x20000000));dv.setUint32(tail.length-4,(total%0x20000000)*8);
+        for(let i=0;i<tail.length;i+=64)compress(tail.subarray(i,i+64));
+        return Array.from(h,v=>v.toString(16).padStart(8,'0')).join('');
+      }
+    };
+  }
+  async function metadata(file) {
+    if(!file || !file.size) fail('빈 파일은 사용할 수 없습니다.');
+    const b=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    if(b[0]===0xff&&b[1]===0xfe&&b[2]===0&&b[3]===0 || b[0]===0&&b[1]===0&&b[2]===0xfe&&b[3]===0xff) fail('UTF-32는 지원하지 않습니다. UTF-8 또는 UTF-16으로 내보내 주세요.');
+    let encoding='utf-8',bom=[];
+    if(b[0]===0xef&&b[1]===0xbb&&b[2]===0xbf) bom=[0xef,0xbb,0xbf];
+    else if(b[0]===0xff&&b[1]===0xfe){encoding='utf-16le';bom=[0xff,0xfe];}
+    else if(b[0]===0xfe&&b[1]===0xff){encoding='utf-16be';bom=[0xfe,0xff];}
+    if(encoding==='utf-8'&&b.includes(0)) fail('BOM 없는 UTF-16이거나 지원하지 않는 인코딩입니다. UTF-8 또는 BOM 있는 UTF-16을 사용하세요.');
+    return {encoding,bom};
+  }
+  async function textReader(file) {
+    const meta=await metadata(file),hasher=hash(),reader={meta,digest:null};
+    reader.chunks=async function*() {
+      const dec=new TextDecoder(meta.encoding,{fatal:true,ignoreBOM:true});
+      try {
+        for(let offset=0;offset<file.size;offset+=CHUNK) {
+          const end=Math.min(offset+CHUNK,file.size),bytes=new Uint8Array(await file.slice(offset,end).arrayBuffer());
+          if(bytes.length!==end-offset)fail('파일을 끝까지 읽지 못했습니다: '+file.name);
+          hasher.update(bytes);
+          const skip=Math.min(bytes.length,Math.max(0,meta.bom.length-offset));
+          const text=dec.decode(bytes.subarray(skip),{stream:true});
+          if(text)yield text;
+          progress(file.name||'파일',end/file.size);
+        }
+        const end=dec.decode();if(end)yield end;reader.digest=hasher.hex();
+      } catch(e) {
+        if(e instanceof TypeError)fail('인코딩이 잘못되었거나 읽을 수 없는 파일입니다: '+file.name+' (UTF-8/UTF-16만 지원)');
+        throw e;
+      }
+    };
+    return reader;
+  }
+  function splitDAT(raw,line=0) {
+    if(raw.length>MAX_RECORD)fail(line+'번째 줄이 레코드 크기 제한(32 Mi 문자)을 넘습니다.');
+    if(raw==='')fail(line===1?'첫 줄이 비어 있습니다. 헤더가 파일의 첫 줄이어야 합니다.':line+'번째 줄이 비어 있습니다.');
+    if(!raw.startsWith(FE)||!raw.endsWith(FE)||raw.length<2)fail(line+'번째 줄: þ로 감싼 DAT 형식이 아닙니다.');
+    let count=1;for(const c of raw)if(c===SEP&&++count>MAX_FIELDS)fail('열이 2,000개를 넘습니다.');
+    if(count===1&&raw.split(FE).length>3)fail(line+'번째 줄: DC4(U+0014) 구분자가 없는 구형 þ 형식입니다. þ/DC4 DAT로 다시 내보내 주세요.');
+    return raw.split(SEP).map((col,i)=>{
+      if(col.length<2||!col.startsWith(FE)||!col.endsWith(FE))fail(line+'번째 줄 '+(i+1)+'번째 열: þ 구분자가 맞지 않습니다.');
+      const value=col.slice(1,-1);
+      if(value.includes(FE)||/[\r\n]/.test(value))fail(line+'번째 줄 '+(i+1)+'번째 열: 값 안에 þ 또는 줄바꿈이 있습니다.');
+      return value;
+    });
+  }
+  async function datReader(file) {
+    const r=await textReader(file);
+    r.records=async function*() {
+      // Resume the line-break search where the previous chunk stopped so giant records are not rescanned.
+      let pending='',line=0,scanned=0;
+      for await(const chunk of r.chunks()) {
+        pending+=chunk;let start=0;const re=/\r\n|\r|\n/g;re.lastIndex=Math.max(0,scanned-1);let m;
+        while((m=re.exec(pending))) {
+          if(m[0]==='\r'&&m.index===pending.length-1)break;
+          const raw=pending.slice(start,m.index);start=m.index+m[0].length;
+          yield {raw,eol:m[0],values:splitDAT(raw,++line),line};
+        }
+        pending=pending.slice(start);scanned=pending.length;
+        if(pending.length>MAX_RECORD)fail((line+1)+'번째 줄이 레코드 크기 제한(32 Mi 문자)을 넘습니다.');
+      }
+      if(pending) {
+        const eol=pending.endsWith('\r')?'\r':'';
+        const raw=eol?pending.slice(0,-1):pending;
+        yield {raw,eol,values:splitDAT(raw,++line),line};
+      }
+    };
+    return r;
+  }
+  function checkHeaders(headers) {
+    const seen=new Set();
+    for(const h of headers){if(!h.trim())fail('헤더에 이름이 빈 열이 있습니다.');if(seen.has(h))fail('헤더에 같은 이름의 열이 두 번 있습니다: '+h);seen.add(h);}
+  }
+  function safeValue(v) {
+    if(typeof v!=='string')fail('값이 문자열이 아닙니다.');
+    if(/[þ\u0014\r\n\u0000]/.test(v))fail('값에 þ, DC4, 줄바꿈 또는 NUL을 넣을 수 없습니다.');
+    for(let i=0;i<v.length;i++){const c=v.charCodeAt(i);if(c>=0xd800&&c<=0xdbff){const d=v.charCodeAt(++i);if(!(d>=0xdc00&&d<=0xdfff))fail('짝이 맞지 않는 유니코드 문자가 있습니다.');}else if(c>=0xdc00&&c<=0xdfff)fail('짝이 맞지 않는 유니코드 문자가 있습니다.');}
+    return v;
+  }
+  const compose=values=>values.map(v=>FE+safeValue(v)+FE).join(SEP);
+  function encode(text,encoding) {
+    if(encoding==='utf-8')return new TextEncoder().encode(text);
+    const bytes=new Uint8Array(text.length*2),view=new DataView(bytes.buffer),le=encoding==='utf-16le';
+    for(let i=0;i<text.length;i++)view.setUint16(i*2,text.charCodeAt(i),le);return bytes;
+  }
+  const fileInfo=f=>({name:f.name,size:f.size,lastModified:f.lastModified});
+  // Header matching tiers from Field Mapper: T1 exact, T2 folded (lowercase, & -> and, letters/digits/Hangul only).
+  const fold=s=>String(s==null?'':s).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9가-힣]+/g,'');
+  function findColumn(headers,names) {
+    for(const n of names){const i=headers.indexOf(n);if(i>=0)return {index:i,tier:1};}
+    for(const n of names){const f=fold(n),hits=headers.map((h,i)=>fold(h)===f?i:-1).filter(i=>i>=0);if(hits.length===1)return {index:hits[0],tier:2};}
+    return null;
+  }
+
+  async function inspect(file) {
+    const r=await datReader(file);let headers=null,count=0,eol=null;const samples=[];
+    for await(const rec of r.records()) {
+      if(!headers){headers=rec.values;checkHeaders(headers);}
+      else {
+        if(rec.values.length!==headers.length)fail(rec.line+'번째 줄: 열 개수('+rec.values.length+')가 헤더('+headers.length+')와 다릅니다.');
+        if(++count>MAX_IDS)fail('문서가 1,000,000건을 넘습니다.');
+        if(samples.length<SAMPLE_ROWS)samples.push(rec.values);
+      }
+      if(rec.eol){if(eol!==null&&eol!==rec.eol)fail('줄바꿈 형식(CRLF/LF/CR)이 섞여 있습니다. 한 가지로 통일된 파일을 사용하세요.');eol=rec.eol;}
+    }
+    if(!headers||!count)fail('문서 레코드가 없습니다.');
+    return {headers,count,meta:r.meta,hash:r.digest,eol,samples,file:fileInfo(file)};
+  }
+  // One pass over selected columns: distinct values with counts (capped), optionally split by a delimiter.
+  async function profile(file,columns,delimiter,loadedHash) {
+    const r=await datReader(file),values=new Map();let rows=0,blank=0,capped=false;
+    for await(const rec of r.records()) {
+      if(rec.line===1)continue;rows++;
+      const tuple=columns.map(i=>rec.values[i]);if(tuple.every(v=>v===''))blank++;
+      const items=delimiter&&columns.length===1?(tuple[0]===''?[]:tuple[0].split(delimiter).map(p=>[p])):[tuple];
+      for(const it of items){const k=JSON.stringify(it),c=values.get(k);if(c!==undefined)values.set(k,c+1);else if(values.size<DISTINCT_CAP)values.set(k,1);else capped=true;}
+    }
+    if(loadedHash&&r.digest!==loadedHash)fail('파일이 처음 열었을 때와 달라졌습니다. 다시 열어 주세요.');
+    return {rows,blank,capped,values:Array.from(values,([k,c])=>[JSON.parse(k),c]).sort((a,b)=>b[1]-a[1])};
+  }
+
+  // Dates: exact layouts only. Letters: YYYY, MM/M month, DD/D day, HH/H 24h, hh/h 12h, mm, ss, A = AM/PM.
+  const DATE_PARTS=['MM/DD/YYYY','M/D/YYYY','YYYY-MM-DD','YYYY/MM/DD','DD/MM/YYYY','D/M/YYYY'];
+  const TIME_PARTS=['HH:mm:ss','HH:mm','H:mm:ss','H:mm','hh:mm:ss A','hh:mm A','h:mm:ss A','h:mm A'];
+  const DATE_FORMATS=[...DATE_PARTS.flatMap(d=>TIME_PARTS.map(t=>d+' '+t)),'YYYY-MM-DDTHH:mm:ss','YYYY-MM-DDTHH:mm',...DATE_PARTS];
+  const OUTPUT_FORMATS=['MM/DD/YYYY HH:mm','MM/DD/YYYY HH:mm:ss','MM/DD/YYYY'];
+  const formatCache=new Map();
+  function compileFormat(fmt) {
+    let c=formatCache.get(fmt);if(c)return c;
+    const map={YYYY:'(\\d{4})',MM:'(\\d{2})',M:'(\\d{1,2})',DD:'(\\d{2})',D:'(\\d{1,2})',HH:'(\\d{2})',H:'(\\d{1,2})',hh:'(\\d{2})',h:'(\\d{1,2})',mm:'(\\d{2})',ss:'(\\d{2})',A:'(AM|PM|am|pm)'};
+    const tok=/YYYY|MM|M|DD|D|HH|H|hh|h|mm|ss|A/g,esc=s=>s.replace(/[.*+?^${}()|[\]\\/]/g,'\\$&'),parts=[];let re='^',last=0,m;
+    while((m=tok.exec(fmt))){re+=esc(fmt.slice(last,m.index))+map[m[0]];parts.push(m[0]);last=m.index+m[0].length;}
+    re+=esc(fmt.slice(last))+'$';
+    c={re:new RegExp(re),parts,date:parts.includes('YYYY'),time:parts.some(p=>/^[Hh]/.test(p)),seconds:parts.includes('ss')};formatCache.set(fmt,c);return c;
+  }
+  function parseParts(value,fmt) {
+    const c=compileFormat(fmt),m=c.re.exec(value);if(!m)return null;const p={};c.parts.forEach((t,i)=>{p[t]=m[i+1];});const out={};
+    if(c.date){out.y=+p.YYYY;out.mo=+(p.MM??p.M);out.d=+(p.DD??p.D);const leap=out.y%4===0&&(out.y%100!==0||out.y%400===0),days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];if(out.y<1||out.mo<1||out.mo>12||out.d<1||out.d>days[out.mo-1])return {error:'존재하지 않는 날짜입니다: '+value};}
+    if(c.time){
+      if(p.A!==undefined){const h=+(p.hh??p.h);if(h<1||h>12)return {error:'12시간제 시각이 잘못되었습니다: '+value};out.h=h%12+(p.A.toUpperCase()==='PM'?12:0);}else out.h=+(p.HH??p.H);
+      out.mi=+p.mm;out.s=c.seconds?+p.ss:null;if(out.h>23||out.mi>59||(out.s!==null&&out.s>59))return {error:'존재하지 않는 시각입니다: '+value};
+    }
+    return out;
+  }
+  function renderDate(v,output) {
+    const pad=n=>String(n).padStart(2,'0');let s=pad(v.mo)+'/'+pad(v.d)+'/'+String(v.y).padStart(4,'0');
+    if(output!=='MM/DD/YYYY')s+=' '+pad(v.h)+':'+pad(v.mi);if(output==='MM/DD/YYYY HH:mm:ss')s+=':'+pad(v.s);return s;
+  }
+  // A layout is only ambiguous when two matching layouts read the same values differently (e.g. MM/DD vs DD/MM).
+  function detectFormat(values,list=DATE_FORMATS) {
+    const vals=values.filter(v=>v!=='');if(!vals.length)return {status:'empty',candidates:[]};
+    const groups=new Map();
+    for(const fmt of list){const sig=[];let ok=true;for(const v of vals){const p=parseParts(v,fmt);if(!p||p.error){ok=false;break;}sig.push(JSON.stringify(p));}if(ok){const k=sig.join('\n');if(!groups.has(k))groups.set(k,fmt);}}
+    if(!groups.size)return {status:'none',candidates:[],examples:vals.filter(v=>!list.some(f=>{const p=parseParts(v,f);return p&&!p.error;})).slice(0,3)};
+    const candidates=[...groups.values()];return {status:candidates.length===1?'ok':'ambiguous',candidates};
+  }
+
+  const TYPES={children:'첨부 수',name:'커스터디언',allCust:'전체 커스터디언',pages:'페이지 수',itemType:'문서 유형',dates:'날짜 형식',constant:'고정값',yn:'Y/N 변환',map:'값 대응표'};
+  // Compiles user tasks into column writers. Every writer reads original source values only.
+  function compileTasks(tasks,headers,idName) {
+    const col=n=>typeof n==='string'&&n!==''?headers.indexOf(n):-1;
+    const problems=tasks.map(()=>[]),writers=[],outHeaders=headers.slice(),owner=new Map(),relationColumns=new Set(),keyIndex=col(idName);
+    function claim(i,ti){if(owner.has(i)){problems[ti].push('"'+outHeaders[i]+'" 열은 '+(owner.get(i)+1)+'번 작업이 이미 씁니다.');return -1;}owner.set(i,ti);return i;}
+    function need(name,label,ti){const i=col(name);if(i<0)problems[ti].push(label+' 열을 선택하세요.');return i;}
+    function target(t,ti){
+      const tg=t.target&&typeof t.target==='object'?t.target:{};
+      if(tg.mode==='existing'){const i=col(tg.name);if(i<0){problems[ti].push('결과를 쓸 열을 선택하세요.');return -1;}return claim(i,ti);}
+      if(tg.mode==='new'){
+        const name=typeof tg.name==='string'?tg.name:'';
+        if(!name.trim()){problems[ti].push('새 열 이름을 입력하세요.');return -1;}
+        if(/[þ\u0014\r\n\u0000]/.test(name)){problems[ti].push('열 이름에 þ, DC4, 줄바꿈을 넣을 수 없습니다.');return -1;}
+        if(outHeaders.includes(name)){problems[ti].push('"'+name+'" 열이 이미 있습니다. 기존 열을 고르거나 다른 이름을 쓰세요.');return -1;}
+        outHeaders.push(name);return claim(outHeaders.length-1,ti);
+      }
+      problems[ti].push('결과를 쓸 열을 선택하세요.');return -1;
+    }
+    function pairs(t,ti,yn){
+      const m=new Map();let unset=0;
+      for(const r of Array.isArray(t.rows)?t.rows:[]){
+        if(!r||typeof r.in!=='string')continue;
+        if(m.has(r.in)){problems[ti].push('같은 원본 값이 두 번 있습니다: '+show(r.in));continue;}
+        const out=typeof r.out==='string'?r.out:'';
+        if(yn){if(out==='Y'||out==='N')m.set(r.in,out);else unset++;}
+        else if(out!==''||(r.in===''&&r.keep===true)){try{m.set(r.in,safeValue(out));}catch(e){problems[ti].push(show(r.in)+': '+e.message);}}
+        else unset++;
+      }
+      if(unset)problems[ti].push('결과를 정하지 않은 값이 '+unset+'개 있습니다.');
+      else if(!m.size)problems[ti].push('"원본 값 불러오기"로 대응표를 채우세요.');
+      return m;
+    }
+    tasks.forEach((t,ti)=>{
+      if(!t||typeof t!=='object'||!TYPES[t.type]){problems[ti].push('알 수 없는 작업입니다.');return;}
+      const label=TYPES[t.type],add=(out,compute,input=()=>'')=>{if(out>=0)writers.push({out,ti,label,compute,input});};
+      if(t.type==='constant'){const out=target(t,ti),v=typeof t.value==='string'?t.value:'';if(v==='')problems[ti].push('넣을 값을 입력하세요.');else{try{safeValue(v);}catch(e){problems[ti].push(e.message);}}add(out,()=>v);}
+      else if(t.type==='map'||t.type==='itemType'||t.type==='yn'){
+        const s=need(t.source,'원본',ti),out=target(t,ti),m=pairs(t,ti,t.type==='yn');
+        add(out,row=>{const v=row[s];if(m.has(v))return m.get(v);fail('대응표에 없는 값: '+show(v));},row=>row[s]);
+      }
+      else if(t.type==='name'){
+        const out=target(t,ti);
+        if(t.how==='map'){const s=need(t.source,'원본',ti),m=pairs(t,ti,false);add(out,row=>{const v=row[s];if(m.has(v))return m.get(v);fail('대응표에 없는 이름: '+show(v));},row=>row[s]);}
+        else{const l=need(t.last,'성(Last Name)',ti),f=need(t.first,'이름(First Name)',ti);if(l>=0&&l===f)problems[ti].push('성과 이름에 같은 열을 골랐습니다.');
+          add(out,row=>{const a=row[l],b=row[f];if(a===''&&b==='')return '';if(a===''||b==='')fail('성 또는 이름 하나만 비어 있습니다.');return a+', '+b;},row=>row[l]+' / '+row[f]);}
+      }
+      else if(t.type==='allCust'){
+        const s=need(t.source,'원본',ti),out=target(t,ti),d=typeof t.delimiter==='string'?t.delimiter:'',j=t.joiner==='; '?'; ':';';
+        if(!d)problems[ti].push('원본에서 이름을 나누는 구분자를 선택하세요.');else if(d.includes(','))problems[ti].push('쉼표는 구분자로 쓸 수 없습니다(Last, First와 구분되지 않음).');
+        const m=pairs(t,ti,false);
+        add(out,row=>{const v=row[s];if(v==='')return '';return v.split(d).map(p=>{if(m.has(p))return m.get(p);fail('대응표에 없는 이름: '+show(p));}).join(j);},row=>row[s]);
+      }
+      else if(t.type==='pages'){
+        const s=need(t.source,'페이지 수',ti),f=need(t.flag,'placeholder 표시',ti),out=target(t,ti),ph=Array.isArray(t.placeholder)?t.placeholder.filter(v=>typeof v==='string'):[];
+        if(!ph.length)problems[ti].push('placeholder를 뜻하는 값을 하나 이상 체크하세요.');if(ph.includes(''))problems[ti].push('빈 값은 placeholder 표시로 쓸 수 없습니다.');
+        add(out,(row,ctx)=>{if(ph.includes(row[f])){ctx.note='placeholder';return '1';}const v=row[s];if(v==='')fail('페이지 수가 비어 있습니다(placeholder 아님).');if(!/^[1-9]\d*$/.test(v)||!Number.isSafeInteger(+v))fail('페이지 수가 양의 정수가 아닙니다: '+show(v));return v;},row=>row[s]);
+      }
+      else if(t.type==='children'){
+        const p=need(t.parent,'부모 ID',ti),out=target(t,ti),all=t.count==='all',roots=t.writeTo==='roots';
+        if(keyIndex<0)problems[ti].push('왼쪽에서 문서 ID 열을 선택하세요.');else if(p>=0&&p===keyIndex)problems[ti].push('부모 ID 열과 문서 ID 열이 같습니다.');
+        if(p>=0)relationColumns.add(p);
+        add(out,(row,ctx)=>{const rel=ctx.relations&&ctx.relations.get(p);if(!rel)fail('첨부 수는 전체 검사에서 계산됩니다.');const id=row[keyIndex];if(rel.bad.has(id))fail(rel.bad.get(id));if(roots&&row[p]!=='')return '';return String((all?rel.all:rel.direct).get(id)||0);},row=>row[p]);
+      }
+      else if(t.type==='dates'){
+        const output=OUTPUT_FORMATS.includes(t.output)?t.output:null;if(!output)problems[ti].push('출력 형식을 선택하세요.');
+        const entries=Array.isArray(t.entries)?t.entries:[];if(!entries.length)problems[ti].push('변환할 날짜 열을 추가하세요.');
+        entries.forEach((e,k)=>{
+          e=e&&typeof e==='object'?e:{};const name=e.column,i=need(name,(k+1)+'번째 날짜',ti),fmt=e.format,c=DATE_FORMATS.includes(fmt)?compileFormat(fmt):null;
+          if(i>=0&&!c)problems[ti].push(name+': 원본 형식을 선택하세요.');
+          let tIdx=-1,tc=null;
+          if(e.timeColumn){tIdx=need(e.timeColumn,name+' 시간',ti);tc=TIME_PARTS.includes(e.timeFormat)?compileFormat(e.timeFormat):null;if(tIdx>=0&&!tc)problems[ti].push(name+': 시간 열의 형식을 선택하세요.');if(c&&c.time)problems[ti].push(name+': 원본 값에 이미 시간이 있어 시간 열을 함께 쓸 수 없습니다.');}
+          if(c&&output){if(output!=='MM/DD/YYYY'&&!c.time&&!tc)problems[ti].push(name+': 원본에 시간이 없습니다. 시간 열을 지정하거나 날짜만 출력을 고르세요(시간을 만들어 넣지 않음).');if(output==='MM/DD/YYYY HH:mm:ss'&&!c.seconds&&!(tc&&tc.seconds))problems[ti].push(name+': 원본에 초가 없어 초 단위 출력을 쓸 수 없습니다.');}
+          const out=i>=0?claim(i,ti):-1;
+          add(out,(row,ctx)=>{
+            const v=row[i],tv=tIdx>=0?row[tIdx]:null;
+            if(tv===null?v==='':(v===''&&tv===''))return '';
+            if(tv!==null&&(v===''||tv===''))fail('날짜와 시간 중 하나만 비어 있습니다.');
+            const p=parseParts(v,fmt);if(!p)fail('형식('+fmt+')과 맞지 않는 값: '+show(v));if(p.error)fail(p.error);
+            let full=p;if(tv!==null){const q=parseParts(tv,e.timeFormat);if(!q)fail('시간 형식('+e.timeFormat+')과 맞지 않는 값: '+show(tv));if(q.error)fail(q.error);full={...p,...q};}
+            if(output==='MM/DD/YYYY'&&full.h!==undefined)ctx.note='time';else if(output!=='MM/DD/YYYY HH:mm:ss'&&full.s)ctx.note='seconds';
+            return renderDate(full,output);
+          },row=>tv0(row,i,tIdx));
+        });
+      }
+    });
+    return {outHeaders,writers,problems,keyIndex,srcCount:headers.length,relationColumns:[...relationColumns],valid:tasks.length>0&&problems.every(p=>!p.length)};
+  }
+  const tv0=(row,i,t)=>t>=0?row[i]+' '+row[t]:row[i];
+  // Parent/child links from an explicit parent-ID column. Bad links become per-document exceptions.
+  async function buildRelations(file,compiled,loadedHash) {
+    const rels=new Map();if(!compiled.relationColumns.length)return rels;
+    const r=await datReader(file),cols=compiled.relationColumns,parentOf=cols.map(()=>new Map());
+    for await(const rec of r.records()) {
+      if(rec.line===1)continue;const id=rec.values[compiled.keyIndex];
+      if(id===''||id!==id.trim())fail(rec.line+'번째 줄: 문서 ID가 비어 있거나 앞뒤에 공백이 있습니다.');
+      if(parentOf[0].has(id))fail('문서 ID가 중복됩니다: '+id+'. 왼쪽의 문서 ID 열이 맞는지 확인하세요.');
+      cols.forEach((c,k)=>parentOf[k].set(id,rec.values[c]));
+    }
+    if(loadedHash&&r.digest!==loadedHash)fail('파일이 처음 열었을 때와 달라졌습니다. 다시 열어 주세요.');
+    cols.forEach((c,k)=>{
+      const parents=parentOf[k],direct=new Map(),all=new Map(),bad=new Map();
+      for(const [id,p] of parents){if(p==='')continue;if(p===id){bad.set(id,'자기 자신을 부모로 가리킵니다.');continue;}if(!parents.has(p)){bad.set(id,'부모 ID가 이 DAT에 없습니다: '+p);continue;}direct.set(p,(direct.get(p)||0)+1);}
+      const pending=new Map(),queue=[];for(const id of parents.keys()){const n=direct.get(id)||0;pending.set(id,n);all.set(id,0);if(!n)queue.push(id);}
+      for(let at=0;at<queue.length;at++){const id=queue[at],p=parents.get(id);if(p&&!bad.has(id)){all.set(p,all.get(p)+1+all.get(id));pending.set(p,pending.get(p)-1);if(pending.get(p)===0)queue.push(p);}}
+      for(const [id,n] of pending)if(n>0)bad.set(id,'부모-자식 관계가 순환합니다.');
+      rels.set(c,{direct,all,bad});
+    });
+    return rels;
+  }
+  function rowValues(compiled,values,ctx) {const out=new Map();for(const w of compiled.writers){ctx.note=null;out.set(w.out,safeValue(w.compute(values,ctx)));}return out;}
+  // Instant preview on the first rows; full-file results come from preflight.
+  function preview(compiled,samples,ti,limit=3) {
+    const ws=compiled.writers.filter(w=>w.ti===ti),shown=[],seen=new Set();let errors=0,firstError=null;
+    for(const row of samples){for(const w of ws){let after;try{after=safeValue(w.compute(row,{note:null}));}catch(e){errors++;if(!firstError)firstError={id:compiled.keyIndex>=0?row[compiled.keyIndex]:'',column:compiled.outHeaders[w.out],input:w.input(row),message:e.message};continue;}
+      const before=w.out<compiled.srcCount?row[w.out]:null,k=w.out+'\u0000'+w.input(row);if(shown.length<limit&&!seen.has(k)&&(before!==after||!shown.length)){seen.add(k);shown.push({id:compiled.keyIndex>=0?row[compiled.keyIndex]:'',column:compiled.outHeaders[w.out],before,input:w.input(row),after});}}}
+    return {shown,errors,firstError,rows:samples.length};
+  }
+  async function preflight(file,tasks,idName,headers,loadedHash) {
+    const compiled=compileTasks(tasks,headers,idName);if(!compiled.valid)fail('주황색으로 표시된 작업 설정을 먼저 완성하세요.');
+    const relations=await buildRelations(file,compiled,loadedHash),ctx={relations,note:null};
+    const reader=await datReader(file),exceptions=[];let rows=0,exceptionCount=0;
+    const stats=tasks.map((t,ti)=>({label:TYPES[t.type],columns:[...new Set(compiled.writers.filter(w=>w.ti===ti).map(w=>compiled.outHeaders[w.out]))],changed:0,blank:0,exceptions:0,seconds:0,time:0,placeholder:0}));
+    for await(const rec of reader.records()) {
+      if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(headers))fail('헤더가 처음 열었을 때와 다릅니다. 다시 열어 주세요.');continue;}
+      rows++;const v=rec.values,id=compiled.keyIndex>=0?v[compiled.keyIndex]:'';
+      for(const w of compiled.writers){
+        ctx.note=null;let after;
+        try{after=safeValue(w.compute(v,ctx));}
+        catch(e){exceptionCount++;stats[w.ti].exceptions++;if(exceptions.length<EXCEPTION_CAP)exceptions.push({row:rec.line,id,task:w.label,column:compiled.outHeaders[w.out],value:String(w.input(v)).slice(0,200),message:e.message});continue;}
+        const before=w.out<compiled.srcCount?v[w.out]:null,s=stats[w.ti];
+        if(before===null?after!=='':before!==after)s.changed++;if(after==='')s.blank++;if(ctx.note)s[ctx.note]++;
+      }
+    }
+    if(reader.digest!==loadedHash)fail('파일이 처음 열었을 때와 달라졌습니다. 다시 열어 주세요.');
+    const report={version:VERSION,valid:exceptionCount===0,file:fileInfo(file),sourceHash:reader.digest,meta:reader.meta,rows,headers:compiled.outHeaders,newColumns:compiled.outHeaders.slice(compiled.srcCount),stats,exceptionCount,exceptions,omittedExceptions:Math.max(0,exceptionCount-exceptions.length)};
+    return {report,plan:report.valid?{file,compiled,relations,headers,hash:reader.digest,meta:reader.meta,rows}:null};
+  }
+  async function transform(plan,emit) {
+    if(!plan)fail('먼저 전체 검사를 통과해야 합니다.');
+    const {compiled}=plan,reader=await datReader(plan.file),outHash=hash(),ctx={relations:plan.relations,note:null},newNames=compiled.outHeaders.slice(compiled.srcCount);
+    let bytes=0,rows=0,pieces=[],size=0;
+    async function flush(){if(!size)return;const merged=new Uint8Array(size);let at=0;for(const p of pieces){merged.set(p,at);at+=p.length;}pieces=[];size=0;await emit(merged);}
+    async function write(b){outHash.update(b);bytes+=b.length;pieces.push(b);size+=b.length;if(size>=CHUNK)await flush();}
+    await write(new Uint8Array(plan.meta.bom));
+    for await(const rec of reader.records()) {
+      let raw=rec.raw;
+      if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(plan.headers))fail('원본 헤더가 바뀌었습니다.');if(newNames.length)raw+=SEP+compose(newNames);}
+      else {
+        rows++;const vals=rowValues(compiled,rec.values,ctx);
+        // Columns without a task keep their original text exactly; only written columns are rebuilt.
+        if(vals.size){const cols=raw.split(SEP),extra=new Array(newNames.length);for(const [i,v] of vals){if(i<compiled.srcCount)cols[i]=FE+v+FE;else extra[i-compiled.srcCount]=FE+v+FE;}raw=cols.concat(extra).join(SEP);}
+      }
+      await write(encode(raw+rec.eol,reader.meta.encoding));
+    }
+    if(reader.digest!==plan.hash||rows!==plan.rows)fail('작업 중 원본 파일이 바뀌었습니다. 저장을 취소합니다.');
+    await flush();return {hash:outHash.hex(),bytes,rows};
+  }
+  async function verify(plan,output,expected) {
+    if(!plan||!expected)fail('검증할 결과가 없습니다.');
+    const {compiled}=plan,src=await datReader(plan.file),out=await datReader(output),ctx={relations:plan.relations,note:null},targets=new Set(compiled.writers.map(w=>w.out));
+    if(JSON.stringify(out.meta)!==JSON.stringify(plan.meta))fail('저장된 파일의 인코딩 또는 BOM이 원본과 다릅니다.');
+    if(output.size!==expected.bytes)fail('저장된 파일 크기가 예상과 다릅니다.');
+    const si=src.records()[Symbol.asyncIterator](),oi=out.records()[Symbol.asyncIterator]();let rows=0,written=0;
+    for(;;) {
+      const [a,b]=await Promise.all([si.next(),oi.next()]);
+      if(a.done&&b.done)break;if(a.done||b.done)fail('저장된 파일의 문서 수가 원본과 다릅니다.');
+      const s=a.value,o=b.value;
+      if(s.eol!==o.eol)fail('저장된 파일 '+s.line+'번째 줄의 줄바꿈이 원본과 다릅니다.');
+      if(s.line===1){if(JSON.stringify(o.values)!==JSON.stringify(compiled.outHeaders))fail('저장된 파일의 헤더가 예상과 다릅니다.');continue;}
+      rows++;if(o.values.length!==compiled.outHeaders.length)fail('저장된 파일 '+s.line+'번째 줄의 열 개수가 다릅니다.');
+      for(let i=0;i<compiled.srcCount;i++)if(!targets.has(i)&&s.values[i]!==o.values[i])fail('작업하지 않은 열이 바뀌었습니다: '+s.line+'번째 줄 / '+compiled.outHeaders[i]);
+      for(const [i,v] of rowValues(compiled,s.values,ctx)){if(o.values[i]!==v)fail('계산 결과와 다른 값: '+s.line+'번째 줄 / '+compiled.outHeaders[i]);written++;}
+    }
+    if(src.digest!==plan.hash)fail('검증 중 원본 파일이 바뀌었습니다.');
+    if(out.digest!==expected.hash||rows!==plan.rows)fail('저장된 파일 전체 해시 또는 문서 수가 예상과 다릅니다.');
+    return {version:VERSION,status:'PASS',verifiedAt:new Date().toISOString(),output:fileInfo(output),outputHash:out.digest,sourceHash:src.digest,bytes:output.size,rows,cellsChecked:written};
+  }
+  function selfTest() {
+    const h=hash();h.update(new TextEncoder().encode('abc'));
+    const checks=[h.hex()==='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',renderDate(parseParts('3/2/2026 9:15:30 PM','M/D/YYYY h:mm:ss A'),'MM/DD/YYYY HH:mm')==='03/02/2026 21:15',parseParts('2026-02-29 10:00:00','YYYY-MM-DD HH:mm:ss').error!==undefined,JSON.stringify(splitDAT(compose(['a','김','']),1))==='["a","김",""]',detectFormat(['01/02/2026 10:00']).status==='ambiguous'];
+    return {ok:checks.every(Boolean),checks};
+  }
+  return {VERSION,TYPES,DATE_FORMATS,TIME_PARTS,OUTPUT_FORMATS,hash,inspect,profile,preflight,transform,verify,compileTasks,preview,detectFormat,parseParts,renderDate,compose,splitDAT,safeValue,encode,fold,findColumn,selfTest};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports=createDeliveryCore;
+</script>
+<script>'use strict';
+const core=createDeliveryCore(),$=id=>document.getElementById(id);
+$('version').textContent='v'+core.VERSION;
+function node(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
+function option(select,value,text){const e=node('option',text);e.value=value;select.append(e);return e;}
+const count=n=>Number(n).toLocaleString('en-US');
+const show=v=>v===''?'(빈 값)':v;
+
+// ---- Local worker and run ownership (pattern from DAT Field Scrubber) ----
+function workerBoot(){
+  const core=createDeliveryCore({progress:(name,p)=>self.postMessage({type:'progress',name,p})});
+  let plan=null,expected=null,busy=false,token=0;const acks=new Map();
+  self.onmessage=async({data:m})=>{
+    if(m.type==='ack'){const p=acks.get(m.token);if(p){acks.delete(m.token);m.error?p.reject(new Error(m.error)):p.resolve();}return;}
+    if(busy){self.postMessage({type:'error',id:m.id,error:'다른 작업이 진행 중입니다.'});return;}
+    busy=true;
+    try{
+      let result;
+      if(m.op==='inspect'){plan=null;expected=null;result=await core.inspect(m.file);}
+      else if(m.op==='profile')result=await core.profile(m.file,m.columns,m.delimiter,m.hash);
+      else if(m.op==='preflight'){plan=null;expected=null;const r=await core.preflight(m.file,m.tasks,m.idName,m.headers,m.hash);plan=r.plan;result=r.report;}
+      else if(m.op==='transform'){if(!plan)throw new Error('먼저 전체 검사를 통과해야 합니다.');expected=null;expected=await core.transform(plan,bytes=>new Promise((resolve,reject)=>{const t=++token;acks.set(t,{resolve,reject});self.postMessage({type:'chunk',id:m.id,token:t,buffer:bytes.buffer},[bytes.buffer]);}));result=expected;}
+      else if(m.op==='verify'){if(!plan||!expected)throw new Error('검증할 결과가 없습니다.');result=await core.verify(plan,m.file,expected);}
+      else throw new Error('알 수 없는 작업입니다.');
+      self.postMessage({type:'result',id:m.id,result});
+    }catch(e){self.postMessage({type:'error',id:m.id,error:e.message||String(e)});}finally{busy=false;}
+  };
+}
+let worker=null,serial=0,runSerial=0,revision=0,busy=false,cancelling=false,activeRun=null,taskSerial=0,selfTestOk=false;
+let source=null,info=null,report=null,expected=null,verified=null;
+const pending=new Map(),profiles=new Map(),tasks=[],profileQueue=[];
+function stopWorker(message){const instance=worker;worker=null;if(instance)instance.terminate();for(const p of pending.values())p.reject(new Error(message));pending.clear();}
+function makeWorker(){
+  const url=URL.createObjectURL(new Blob(['const createDeliveryCore='+createDeliveryCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
+  const instance=new Worker(url);worker=instance;URL.revokeObjectURL(url);
+  instance.onmessage=async({data:m})=>{
+    if(worker!==instance)return;
+    if(m.type==='progress'){$('progress').value=Math.round(m.p*100);$('progressText').textContent=m.name+' · '+Math.round(m.p*100)+'%';return;}
+    const job=pending.get(m.id);if(!job)return;
+    if(m.type==='chunk'){try{await job.emit(new Uint8Array(m.buffer));if(worker===instance)instance.postMessage({type:'ack',token:m.token});}catch(e){if(worker===instance)instance.postMessage({type:'ack',token:m.token,error:e.message||String(e)});}return;}
+    pending.delete(m.id);if(m.type==='result')job.resolve(m.result);else job.reject(new Error(m.error));
+  };
+  instance.onerror=()=>{if(worker===instance)recoverWorker();};
+}
+function request(op,payload={},emit){return new Promise((resolve,reject)=>{const id=++serial;if(!worker){reject(new Error('로컬 처리기를 쓸 수 없습니다. 페이지를 새로고침하세요.'));return;}pending.set(id,{resolve,reject,emit});try{worker.postMessage({id,op,...payload});}catch(e){pending.delete(id);reject(e);}});}
+function status(text,kind=''){const e=$('status');e.className='status'+(kind?' '+kind:'');e.textContent=text;}
+function lock(on){if(cancelling&&!on)return;busy=on;$('inputs').disabled=on;$('taskInputs').disabled=on;$('outputName').disabled=on;$('savedFile').disabled=on;$('saveSettings').disabled=on;$('loadSettingsButton').disabled=on;$('progressLine').hidden=!on;$('cancel').disabled=!on||!!(activeRun&&activeRun.phase==='commit');buttons();}
+function clearVerification(text='저장된 파일 검증 전입니다.'){verified=null;$('verification').className='status';$('verification').textContent=text;}
+function invalidate(){revision++;report=null;expected=null;clearVerification();$('results').hidden=true;$('manualVerification').hidden=true;$('savedFile').value='';buttons();}
+function beginRun(kind){if(busy||activeRun)return null;if(!worker){status('로컬 처리기를 쓸 수 없습니다. 페이지를 새로고침하세요.','error');return null;}const r={id:++runSerial,revision,kind,phase:'processing',cancelled:false,writer:null,committed:false,commitAttempted:false,outputName:''};activeRun=r;lock(true);$('progress').value=0;$('progressText').textContent='';return r;}
+function live(r){return activeRun===r&&!r.cancelled&&r.revision===revision;}
+function guard(r){if(!live(r)){const e=new Error('작업이 취소되었거나 설정이 바뀌었습니다.');e.name='StaleOperation';throw e;}}
+async function owned(r,promise){guard(r);const value=await promise;guard(r);return value;}
+async function call(r,op,payload={},emit){guard(r);return owned(r,request(op,payload,emit));}
+async function cleanupWriter(r){
+  if(!r)return '';const notes=[];
+  if(r.writer){const w=r.writer;r.writer=null;try{await w.abort();}catch(e){notes.push('임시 쓰기를 정리하지 못했습니다'+(r.outputName?' ('+r.outputName+')':'')+': '+e.message+'. 그 파일은 검증되지 않았습니다.');}}
+  // A saved file that did not pass final verification is emptied so it cannot be mistaken for a deliverable.
+  if(r.handle&&r.commitAttempted&&!r.verified){const h=r.handle;r.handle=null;try{const w=await h.createWritable();await w.close();notes.push('검증되지 않은 결과 '+r.outputName+'을(를) 0바이트로 비웠습니다. 삭제하고 다시 저장하세요.');}catch(e){notes.push('검증되지 않은 결과 '+r.outputName+'을(를) 비우지 못했습니다: '+e.message+'. 직접 삭제하고 납품하지 마세요.');}}
+  return notes.join('\n');
+}
+function cleanupWarning(text){if(text){$('cleanupWarning').hidden=false;$('cleanupWarning').textContent=text;}}
+async function finishRun(r){cleanupWarning(await cleanupWriter(r));if(activeRun===r&&!cancelling){activeRun=null;lock(false);nextProfile();}}
+async function recoverWorker(){
+  const r=activeRun;if(r)r.cancelled=true;cancelling=true;stopWorker('로컬 처리기가 중단되었습니다.');
+  cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;invalidate();
+  try{makeWorker();}catch(e){worker=null;}
+  status('로컬 처리 중 오류가 났습니다. 검증된 결과가 없습니다.'+(r&&r.commitAttempted?' 저장된 파일이 있으면 납품하지 마세요.':'')+' 다시 시도하세요.','error');cancelling=false;lock(false);
+}
+
+// ---- Task model ----
+const ALIASES={
+  id:['BegBates','Beg Bates','BegDoc','Bates Begin','Begin Bates','Production Number Begin','Prod Beg Bates','ProdBegBates','Control Number','DocID','Document ID'],
+  children:['Attachment Count','Attach Count','AttachmentCount','Number of Attachments','Num Attachments'],
+  parent:['ParentBates','Parent Bates','ParentID','Parent ID','ParentDocID','Parent Doc ID','Parent BegBates','Parent Document ID'],
+  custodian:['Custodian','Custodian Name'],last:['CustodianLast','Custodian Last','Custodian Last Name','Last Name','LastName'],first:['CustodianFirst','Custodian First','Custodian First Name','First Name','FirstName'],
+  allCust:['All Custodians','AllCustodians','All Custodian','Custodians All','Duplicate Custodians','Other Custodians','DupeCustodians'],
+  pages:['Page Count','PageCount','Pages','Image Page Count','ImagePageCount','Pg Count','Number of Pages'],flag:['Placeholder','PlaceholderImage','Placeholder Image','Is Placeholder','Slip Sheet','SlipSheet','Placeholder Flag'],
+  itemTarget:['Item Type','ItemType'],itemSource:['Item Type','ItemType','DocType','Doc Type','Document Type','Record Type','File Type'],
+  confidentiality:['Confidentiality','Confidentiality Designation','Confidential Designation','Designation'],
+  redTarget:['Redacted','Is Redacted'],redSource:['Redacted','Is Redacted','RedactionStatus','Redaction Status','Redaction','Has Redactions','Redactions'],
+  dates:[['Date Sent','DateSent','Sent Date','SentDate','Email Date Sent'],['Date Received','DateReceived','Received Date','ReceivedDate','DateRcvd','Email Date Received'],['Date Created','DateCreated','Created Date','CreatedDate','Create Date','File Created'],['Date Last Modified','DateLastModified','Last Modified','LastModified','Date Modified','DateModified','Modified Date','File Last Modified']]
+};
+const TEMPLATES=[
+  ['children','첨부 수','Number of child documents'],['name','커스터디언','Last Name, First Name'],['allCust','전체 커스터디언','Last, First; 세미콜론'],['pages','페이지 수','이미지 페이지 · placeholder=1'],
+  ['itemType','문서 유형','Email, Chat, Contact …'],['dates','날짜 형식','MM/DD/YYYY HH:MM'],['constant','고정값','예: CONFIDENTIAL'],['yn','Y/N 변환','예: Redacted'],['map','값 대응표','기타 값 바꾸기']];
+const ITEM_TYPES=['Email','Chat','Contact','Calendar Item','Note','Task','E-Doc','Attachment'];
+const found=names=>info?core.findColumn(info.headers,names):null;
+const nameAt=hit=>hit?info.headers[hit.index]:'';
+function targetFor(names,fallback){const hit=found(names);return hit?{mode:'existing',name:info.headers[hit.index]}:{mode:'new',name:fallback};}
+function newTask(type){
+  const t={uid:++taskSerial,type,note:''};
+  if(type==='children')Object.assign(t,{target:targetFor(ALIASES.children,'Attachment Count'),parent:nameAt(found(ALIASES.parent)),count:'direct',writeTo:'every'});
+  if(type==='name'){const l=found(ALIASES.last),f=found(ALIASES.first);Object.assign(t,{target:targetFor(ALIASES.custodian,'Custodian'),how:l&&f?'columns':'map',last:nameAt(l),first:nameAt(f),source:nameAt(found(ALIASES.custodian)),rows:[]});}
+  if(type==='allCust'){const s=nameAt(found(ALIASES.allCust));Object.assign(t,{target:targetFor(ALIASES.allCust,'All Custodians'),source:s,delimiter:'',joiner:';',rows:[]});}
+  if(type==='pages')Object.assign(t,{target:targetFor(ALIASES.pages,'Page Count'),source:nameAt(found(ALIASES.pages)),flag:nameAt(found(ALIASES.flag)),placeholder:[]});
+  if(type==='itemType')Object.assign(t,{target:targetFor(ALIASES.itemTarget,'Item Type'),source:nameAt(found(ALIASES.itemSource)),rows:[]});
+  if(type==='constant')Object.assign(t,{target:targetFor(ALIASES.confidentiality,'Confidentiality'),value:'CONFIDENTIAL'});
+  if(type==='yn')Object.assign(t,{target:targetFor(ALIASES.redTarget,'Redacted'),source:nameAt(found(ALIASES.redSource)),rows:[]});
+  if(type==='map')Object.assign(t,{target:{mode:'new',name:''},source:'',rows:[]});
+  if(type==='dates'){t.output='MM/DD/YYYY HH:mm';t.entries=[];if(info)for(const names of ALIASES.dates){const hit=found(names);if(hit)t.entries.push(dateEntry(info.headers[hit.index]));}}
+  return t;
+}
+function dateEntry(column){
+  const e={column,format:'',timeColumn:'',timeFormat:''};
+  // A matching time column (DateSent -> TimeSent) is suggested when the DAT stores the time separately.
+  const twin=info&&column?core.findColumn(info.headers,[column.replace(/date/i,m=>m[0]==='D'?'Time':'time')]):null;
+  if(twin&&info.headers[twin.index]!==column)e.timeColumn=info.headers[twin.index];
+  return e;
+}
+let compiled=null;
+function recompute(){compiled=info?core.compileTasks(tasks,info.headers,$('idColumn').value):null;}
+function taskProblems(i){if(!info)return ['DAT를 먼저 여세요.'];return compiled.problems[i]||[];}
+
+// ---- Profiles (distinct values from the whole file, run in the worker) ----
+const profileKey=(cols,delim)=>JSON.stringify([cols,delim||'']);
+function wantProfile(cols,delim,then){
+  if(!info||cols.some(c=>c==null||c<0))return null;const k=profileKey(cols,delim);
+  if(profiles.has(k))return profiles.get(k);
+  if(!profileQueue.some(q=>q.k===k))profileQueue.push({k,cols,delim,then});nextProfile();return null;
+}
+async function nextProfile(){
+  if(busy||activeRun||!profileQueue.length)return;const q=profileQueue.shift();if(profiles.has(q.k)){q.then&&q.then();nextProfile();return;}
+  const r=beginRun('profile');if(!r)return;status('원본 값을 모으는 중: '+q.cols.map(i=>info.headers[i]).join(' + '));
+  try{const result=await call(r,'profile',{file:source,columns:q.cols,delimiter:q.delim||'',hash:info.hash});profiles.set(q.k,result);status('작업을 설정하고 전체 검사를 실행하세요.');}
+  catch(e){if(live(r))status(e.message,'error');}
+  finally{await finishRun(r);if(profiles.has(q.k)&&q.then)q.then();}
+}
+const colIndex=name=>info?info.headers.indexOf(name):-1;
+
+// ---- Rendering ----
+function renderAddbar(){const bar=$('addbar');bar.replaceChildren();for(const [type,title,hint] of TEMPLATES){const b=node('button');b.type='button';b.dataset.type=type;b.append(node('span','+ '+title),node('small',hint));b.disabled=!info;b.onclick=()=>addTask(type);bar.append(b);}}
+function addTask(type){if(busy||!info)return;const t=newTask(type);tasks.push(t);changed();renderCards();const card=document.querySelector('[data-uid="'+t.uid+'"]');if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});}
+function changed(){recompute();invalidate();refreshCards();status(tasks.length?'설정이 바뀌었습니다. 전체 검사를 다시 실행하세요.':'DAT를 열고 작업을 추가하세요.');}
+function colSelect(value,onChange,placeholder='열 선택'){const s=node('select');option(s,'',placeholder);(info?info.headers:[]).forEach(h=>option(s,h,h));s.value=info&&info.headers.includes(value)?value:'';s.onchange=()=>onChange(s.value);return s;}
+function field(parent,label,control,hint){const wrap=node('div'),id='f'+(++serial);const l=node('label',label);control.id=control.id||id;l.htmlFor=control.id;wrap.append(l,control);if(hint)wrap.append(node('div',hint,'small muted'));parent.append(wrap);return control;}
+function targetPicker(t,parent,label='결과를 쓸 열'){
+  const wrap=node('div'),s=node('select'),name=node('input');name.type='text';name.placeholder='새 열 이름';
+  option(s,'__new__','＋ 새 열을 끝에 추가');(info?info.headers:[]).forEach(h=>option(s,h,h));
+  s.value=t.target.mode==='existing'&&info.headers.includes(t.target.name)?t.target.name:'__new__';name.value=t.target.mode==='new'?t.target.name:'';name.hidden=s.value!=='__new__';
+  s.onchange=()=>{t.target=s.value==='__new__'?{mode:'new',name:name.value}:{mode:'existing',name:s.value};name.hidden=s.value!=='__new__';changed();};
+  name.oninput=()=>{t.target={mode:'new',name:name.value};changed();};
+  field(wrap,label,s,'기존 열에 덮어쓰거나, 새 열로 추가합니다.');wrap.append(name);name.setAttribute('aria-label','새 열 이름');name.style.marginTop='.35rem';parent.append(wrap);
+}
+function mapTable(t,body,{yn=false,suggestions=null,profileCols,delim=null,fillFromCustodian=false}={}){
+  const box=node('div'),tools=node('div',undefined,'rowtools'),load=node('button','원본 값 불러오기'),pasteBtn=node('button','붙여넣기'),area=node('textarea'),wrap=node('div',undefined,'mapwrap');
+  load.type=pasteBtn.type='button';area.rows=4;area.hidden=true;area.placeholder='원본 값 [TAB] 결과 · 한 줄에 하나 (Excel에서 두 열 복사)';area.setAttribute('aria-label','대응표 붙여넣기');
+  const prof=profileCols&&profileCols.every(c=>c>=0)?profiles.get(profileKey(profileCols,delim)):null;
+  function merge(values){const have=new Set(t.rows.map(r=>r.in));for(const [v] of values){const key=v[0];if(!have.has(key)){t.rows.push({in:key,out:'',keep:false});have.add(key);rowsMerged=true;}}}
+  if(prof&&!t._merged){merge(prof.values);t._merged=profileKey(profileCols,delim);}
+  load.onclick=()=>{if(!profileCols||profileCols.some(c=>c<0)){status('원본 열을 먼저 선택하세요.','error');return;}const k=profileKey(profileCols,delim);const p=profiles.get(k);if(p){merge(p.values);changed();renderCards();}else wantProfile(profileCols,delim,()=>{const q=profiles.get(k);if(q){merge(q.values);changed();renderCards();}});};
+  pasteBtn.onclick=()=>{area.hidden=!area.hidden;if(!area.hidden)area.focus();};
+  area.onchange=()=>{const lines=area.value.split(/\r\n|\r|\n/).filter(l=>l!=='');const bad=lines.filter(l=>l.split('\t').length!==2);if(bad.length){status('붙여넣기 형식: 원본 값 [TAB] 결과, 한 줄에 두 칸. 잘못된 줄: '+bad.slice(0,3).join(' | '),'error');return;}for(const l of lines){const [a,b]=l.split('\t');const r=t.rows.find(x=>x.in===a);if(r)r.out=b;else t.rows.push({in:a,out:b,keep:false});}area.value='';area.hidden=true;changed();renderCards();};
+  tools.append(load,pasteBtn);
+  if(fillFromCustodian){const fill=node('button','커스터디언 열에서 채우기');fill.type='button';fill.title='CustodianFirst + CustodianLast 조합으로 "First Last → Last, First"를 채웁니다.';fill.onclick=()=>fillCustodians(t);tools.append(fill);}
+  if(t.rows.length){const clear=node('button','표 비우기','danger');clear.type='button';clear.onclick=()=>{if(confirm('대응표를 비울까요?')){t.rows=[];t._merged=null;changed();renderCards();}};tools.append(clear);}
+  box.append(tools,area);
+  if(t.rows.length){
+    const counts=new Map(prof?prof.values.map(([v,c])=>[v[0],c]):[]),table=node('table',undefined,'maptable'),head=node('tr');head.append(node('th','원본 값'),node('th','건수'),node('th','결과'));table.append(head);
+    let listId=null;if(suggestions){listId='dl'+t.uid;const dl=node('datalist');dl.id=listId;suggestions.forEach(s=>option(dl,s,s));box.append(dl);}
+    t.rows.forEach(r=>{
+      const tr=node('tr'),out=node('td',undefined,'out');tr.append(node('td',show(r.in),'src'),node('td',counts.has(r.in)?count(counts.get(r.in)):'','count'),out);
+      const mark=()=>tr.classList.toggle('unset',yn?!['Y','N'].includes(r.out):r.out===''&&!(r.in===''&&r.keep));
+      if(yn){const s=node('select');option(s,'','선택');option(s,'Y','Y');option(s,'N','N');s.value=r.out;s.setAttribute('aria-label',show(r.in)+' 결과');s.onchange=()=>{r.out=s.value;mark();changed();};out.append(s);}
+      else{const i=node('input');i.type='text';i.value=r.out;if(listId)i.setAttribute('list',listId);i.setAttribute('aria-label',show(r.in)+' 결과');i.oninput=()=>{r.out=i.value;mark();changed();};out.append(i);
+        if(r.in===''){const k=node('label',undefined,'check'),c=node('input');c.type='checkbox';c.checked=!!r.keep;c.onchange=()=>{r.keep=c.checked;i.disabled=c.checked;if(c.checked){r.out='';i.value='';}mark();changed();};i.disabled=!!r.keep;k.append(c,node('span','빈 값 그대로'));out.append(k);}}
+      mark();table.append(tr);
+    });
+    wrap.append(table);box.append(wrap);
+    if(prof&&prof.capped)box.append(node('p','서로 다른 값이 1,000개를 넘어 일부만 표시합니다. 나머지는 붙여넣기로 추가하세요. 빠진 값은 전체 검사에서 예외로 나옵니다.','small warn'));
+  }else box.append(node('p',profileCols&&profileCols.every(c=>c>=0)?'원본 값을 불러오는 중이거나 아직 불러오지 않았습니다.':'원본 열을 선택하면 실제 값과 건수가 표에 채워집니다.','small muted'));
+  body.append(box);
+}
+async function fillCustodians(t){
+  const l=found(ALIASES.last),f=found(ALIASES.first);
+  if(!l||!f){status('CustodianLast / CustodianFirst 같은 성·이름 열을 찾지 못했습니다. 대응표를 직접 채우세요.','error');return;}
+  const cols=[l.index,f.index],k=profileKey(cols,'');
+  const apply=()=>{const p=profiles.get(k);if(!p)return;const map=new Map();for(const [[last,first]] of p.values)if(last&&first)map.set(first+' '+last,last+', '+first);let filled=0;for(const r of t.rows)if(r.out===''&&map.has(r.in)){r.out=map.get(r.in);filled++;}const left=t.rows.filter(r=>r.out===''&&!(r.in===''&&r.keep)).length;changed();renderCards();status(filled+'개를 '+info.headers[l.index]+' / '+info.headers[f.index]+' 열에서 채웠습니다.'+(left?' 남은 '+left+'개는 직접 입력하세요.':''));};
+  if(profiles.has(k))apply();else wantProfile(cols,'',apply);
+}
+function renderCards(){
+  recompute();const box=$('cards');box.replaceChildren();$('emptyCards').hidden=tasks.length>0;
+  tasks.forEach((t,i)=>{
+    const card=node('article',undefined,'card'),head=node('div',undefined,'cardhead'),title=node('h3',(i+1)+'. '+core.TYPES[t.type]),pill=node('span','','pill'),remove=node('button','삭제','ghost danger'),body=node('div',undefined,'cardbody');
+    card.dataset.uid=t.uid;remove.type='button';remove.onclick=()=>{tasks.splice(tasks.indexOf(t),1);changed();renderCards();};
+    head.append(title,pill,remove);card.append(head,body);
+    if(info)renderTaskBody(t,body);else body.append(node('p','DAT를 열면 이 작업을 열 이름으로 연결해 설정합니다.','small muted'));
+    const note=node('input');note.type='text';note.value=t.note||'';note.placeholder='티켓 Notes 문구 (선택, 보고서에 기록)';note.setAttribute('aria-label','티켓 Notes 문구');note.className='mt';note.oninput=()=>{t.note=note.value;};body.append(note);
+    body.append(node('div','','problems'),node('div','','preview'));box.append(card);
+  });
+  // Rendering can merge newly profiled values or auto-detected formats into tasks; recompile before showing status.
+  recompute();if(rowsMerged){rowsMerged=false;invalidate();}refreshCards();
+}
+let rowsMerged=false;
+function renderTaskBody(t,body){
+  const g=node('div',undefined,'grid2');body.append(g);const set=(k,re=false)=>v=>{t[k]=v;changed();if(re)renderCards();};
+  if(t.type==='children'){
+    targetPicker(t,g);field(g,'부모 ID 열 (비어 있으면 최상위 문서)',colSelect(t.parent,set('parent')));
+    const c=node('select');option(c,'direct','직접 자식만 (Number of child documents)');option(c,'all','모든 하위 문서 (자식의 자식 포함)');c.value=t.count;c.onchange=()=>set('count')(c.value);field(g,'무엇을 셀까요',c);
+    const w=node('select');option(w,'every','모든 문서에 자기 자식 수');option(w,'roots','최상위 문서에만, 자식 문서는 빈 값');w.value=t.writeTo;w.onchange=()=>set('writeTo')(w.value);field(g,'어느 문서에 쓸까요',w);
+  }
+  else if(t.type==='name'){
+    targetPicker(t,g);const how=node('select');option(how,'columns','성 열 + 이름 열 → Last, First');option(how,'map','이름 대응표로 직접 지정');how.value=t.how;how.onchange=()=>{t.how=how.value;changed();renderCards();};field(g,'방식',how);
+    if(t.how==='columns'){field(g,'성 (Last Name) 열',colSelect(t.last,set('last')));field(g,'이름 (First Name) 열',colSelect(t.first,set('first')));}
+    else{field(g,'원본 열',colSelect(t.source,v=>{t.source=v;t._merged=null;changed();renderCards();wantProfile([colIndex(v)],null,renderCards);}));mapTable(t,body,{profileCols:[colIndex(t.source)]});wantProfile([colIndex(t.source)],null,renderCards);}
+  }
+  else if(t.type==='allCust'){
+    targetPicker(t,g);field(g,'원본 열',colSelect(t.source,v=>{t.source=v;t._merged=null;changed();renderCards();}));
+    const p=colIndex(t.source)>=0?profiles.get(profileKey([colIndex(t.source)],'')):null;
+    const d=node('select');option(d,'','선택');for(const [v,label] of [['; ','세미콜론+공백 "; "'],[';','세미콜론 ";"'],[' | ','파이프+공백 " | "'],['|','파이프 "|"']])option(d,v,label);d.value=t.delimiter;
+    d.onchange=()=>{t.delimiter=d.value;t._merged=null;changed();renderCards();};
+    let hint='원본 값에서 사람 이름 사이에 들어간 문자입니다.';
+    if(p){const sample=p.values.map(v=>v[0][0]).find(v=>/[;|]/.test(v));if(sample)hint='예: '+sample.slice(0,80);if(!t.delimiter&&sample){const guess=['; ',' | ',';','|'].find(s=>sample.includes(s));if(guess)hint+=' → "'+guess+'"로 보입니다. 맞으면 선택하세요.';}}
+    else if(colIndex(t.source)>=0)wantProfile([colIndex(t.source)],'',renderCards);
+    field(g,'원본 구분자',d,hint);
+    const j=node('select');option(j,';','세미콜론 ";"');option(j,'; ','세미콜론+공백 "; "');j.value=t.joiner;j.onchange=()=>set('joiner')(j.value);field(g,'결과 구분자',j);
+    if(t.delimiter)mapTable(t,body,{profileCols:[colIndex(t.source)],delim:t.delimiter,fillFromCustodian:true});else body.append(node('p','원본 구분자를 고르면 이름 목록이 나옵니다.','small muted'));
+    if(t.delimiter&&colIndex(t.source)>=0)wantProfile([colIndex(t.source)],t.delimiter,renderCards);
+  }
+  else if(t.type==='pages'){
+    targetPicker(t,g);field(g,'이미지 페이지 수 열',colSelect(t.source,set('source')));
+    field(g,'placeholder 표시 열',colSelect(t.flag,v=>{t.flag=v;t.placeholder=[];changed();renderCards();}));
+    const fi=colIndex(t.flag);if(fi>=0){const p=profiles.get(profileKey([fi],''));const chips=node('div',undefined,'chips');
+      if(p){for(const [[v],c] of p.values.slice(0,40)){if(v==='')continue;const l=node('label'),cb=node('input');cb.type='checkbox';cb.checked=t.placeholder.includes(v);cb.onchange=()=>{t.placeholder=cb.checked?[...t.placeholder,v]:t.placeholder.filter(x=>x!==v);changed();};l.append(cb,node('span',v+' ('+count(c)+')'));chips.append(l);}
+        const wrap=node('div');wrap.append(node('label','placeholder를 뜻하는 값 (체크하면 페이지 수 1)'),chips);body.append(wrap);}
+      else{body.append(node('p','placeholder 표시 열의 값을 불러오는 중…','small muted'));wantProfile([fi],'',renderCards);}}
+  }
+  else if(t.type==='itemType'||t.type==='yn'||t.type==='map'){
+    if(t.type==='map')targetPicker(t,g);
+    field(g,'원본 열',colSelect(t.source,v=>{t.source=v;t._merged=null;t.rows=t.rows.filter(r=>r.out!=='');changed();renderCards();}));
+    if(t.type!=='map')targetPicker(t,g);
+    const si=colIndex(t.source);mapTable(t,body,{yn:t.type==='yn',suggestions:t.type==='itemType'?ITEM_TYPES:null,profileCols:[si]});if(si>=0)wantProfile([si],'',renderCards);
+  }
+  else if(t.type==='constant'){targetPicker(t,g);const v=node('input');v.type='text';v.value=t.value;v.oninput=()=>{t.value=v.value;changed();};field(g,'넣을 값',v,'모든 문서에 같은 값을 넣습니다.');}
+  else if(t.type==='dates'){
+    const o=node('select');option(o,'MM/DD/YYYY HH:mm','MM/DD/YYYY HH:MM · 24시간 (티켓 형식)');option(o,'MM/DD/YYYY HH:mm:ss','MM/DD/YYYY HH:MM:SS · 24시간');option(o,'MM/DD/YYYY','MM/DD/YYYY · 날짜만');o.value=t.output;o.onchange=()=>set('output')(o.value);
+    field(g,'출력 형식',o,'초는 반올림하지 않고 버립니다. 시간대 변환 없음.');
+    t.entries.forEach((e,k)=>renderDateEntry(t,e,k,body));
+    const add=node('button','+ 날짜 열 추가');add.type='button';add.className='mt';add.onclick=()=>{t.entries.push(dateEntry(''));changed();renderCards();};body.append(add);
+  }
+}
+function renderDateEntry(t,e,k,body){
+  const box=node('div',undefined,'dateentry'),hdr=node('div',undefined,'hdr'),rm=node('button','빼기','ghost danger');rm.type='button';rm.onclick=()=>{t.entries.splice(k,1);changed();renderCards();};
+  hdr.append(node('strong',e.column||'날짜 열'),rm);box.append(hdr);const g=node('div',undefined,'grid2');box.append(g);
+  const ci=colIndex(e.column),p=ci>=0?profiles.get(profileKey([ci],'')):null;
+  field(g,'날짜 열 (같은 열에 덮어씀)',colSelect(e.column,v=>{e.column=v;e.format='';e._auto=false;const tw=dateEntry(v);e.timeColumn=tw.timeColumn;e.timeFormat='';changed();renderCards();}));
+  const f=node('select');option(f,'','원본 형식 선택');core.DATE_FORMATS.forEach(x=>option(f,x,x));f.value=e.format;f.onchange=()=>{e.format=f.value;e._auto=false;changed();renderCards();};
+  let hint='';
+  if(p){const vals=p.values.map(v=>v[0][0]),d=core.detectFormat(vals),filled=p.rows-p.blank;
+    if(d.status==='ok'&&!e.format){e.format=d.candidates[0];e._auto=true;f.value=e.format;recompute();}
+    if(d.status==='ok')hint=(e._auto?'자동 감지됨 · ':'')+'값 있는 '+count(filled)+'건 / 빈 값 '+count(p.blank)+'건(그대로 둠)';
+    else if(d.status==='ambiguous')hint='두 가지 이상으로 읽힙니다: '+d.candidates.join(' / ')+'. 직접 고르세요. 예: '+vals.find(v=>v)||'';
+    else if(d.status==='empty')hint='모든 값이 비어 있습니다.';
+    else hint='맞는 형식이 없습니다. 예: '+(d.examples||[]).join(' | ')+' (시간 없는 날짜면 시간 열을 지정하거나 날짜만 출력)';
+    const ex=vals.find(v=>v);if(ex&&d.status==='ok')hint+=' · 예: '+ex;
+  }else if(ci>=0){hint='값을 확인하는 중…';wantProfile([ci],'',renderCards);}
+  field(g,'원본 형식',f,hint);
+  // Separate time columns are uncommon, so the option stays folded unless used.
+  const more=node('details'),tg=node('div',undefined,'grid2');more.open=!!e.timeColumn;more.append(node('summary','시간이 다른 열에 따로 있나요?'),tg);box.append(more);
+  const tc=colSelect(e.timeColumn,v=>{e.timeColumn=v;e.timeFormat='';changed();renderCards();},'시간 열 없음 (값에 시간 포함)');field(tg,'시간 열',tc);
+  if(e.timeColumn){const ti=colIndex(e.timeColumn),tp=ti>=0?profiles.get(profileKey([ti],'')):null;const tf=node('select');option(tf,'','시간 형식 선택');core.TIME_PARTS.forEach(x=>option(tf,x,x));
+    if(tp){const d=core.detectFormat(tp.values.map(v=>v[0][0]),core.TIME_PARTS);if(d.status==='ok'&&!e.timeFormat){e.timeFormat=d.candidates[0];recompute();}}else if(ti>=0)wantProfile([ti],'',renderCards);
+    tf.value=e.timeFormat;tf.onchange=()=>{e.timeFormat=tf.value;changed();};field(tg,'시간 형식',tf);}
+  body.append(box);
+}
+function refreshCards(){
+  if(!compiled)recompute();
+  document.querySelectorAll('#cards .card').forEach(card=>{
+    const i=tasks.findIndex(t=>String(t.uid)===card.dataset.uid);if(i<0)return;const probs=taskProblems(i),ok=!probs.length;
+    card.classList.toggle('ready',ok);card.classList.toggle('todo',!ok);const pill=card.querySelector('.pill');pill.className='pill '+(ok?'ready':'todo');pill.textContent=ok?'준비됨':'설정 필요';
+    const pb=card.querySelector('.problems');pb.hidden=ok;pb.textContent=probs.join('\n');
+    const pv=card.querySelector('.preview');pv.replaceChildren();pv.hidden=!ok||!info;
+    if(ok&&info){
+      if(tasks[i].type==='children'){pv.textContent='첨부 수는 파일 전체의 부모-자식 관계로 계산되므로 전체 검사 결과에서 확인하세요.';return;}
+      const p=core.preview(compiled,info.samples,i);pv.append(node('div','미리보기 · 처음 '+count(p.rows)+'건 기준','small muted'));
+      for(const s of p.shown){const d=node('div');d.append(node('b',s.id?s.id+' · ':''),node('span',s.column+': '),node('span',show(s.input)),node('span','→','arrow'),node('b',show(s.after)));pv.append(d);}
+      if(p.errors){const d=node('div','예외 '+count(p.errors)+'건 · '+(p.firstError.id?p.firstError.id+' · ':'')+p.firstError.message,'error');pv.append(d);}
+    }
+  });
+  buttons();
+}
+function buttons(){
+  const ready=!!(worker&&info&&compiled&&compiled.valid);
+  $('runCheck').disabled=busy||!ready;$('save').disabled=busy||!worker||!report||!report.valid||!selfTestOk;
+  $('report').disabled=busy||!verified;$('verifySaved').disabled=busy||!worker||!expected||!$('savedFile').files.length;
+  document.querySelectorAll('#addbar button').forEach(b=>b.disabled=busy||!info);
+}
+
+// ---- Source ----
+function renderSource(){
+  $('idColumn').replaceChildren();
+  if(!info){option($('idColumn'),'','DAT를 먼저 여세요');$('idColumn').disabled=true;$('sourceFacts').textContent='아직 파일이 없습니다.';$('sampleBox').hidden=true;return;}
+  option($('idColumn'),'','선택 안 함');info.headers.forEach(h=>option($('idColumn'),h,h));$('idColumn').disabled=false;
+  const id=found(ALIASES.id);$('idColumn').value=id?info.headers[id.index]:'';
+  $('sourceFacts').textContent=info.file.name+'\n문서 '+count(info.count)+'건 · 열 '+info.headers.length+'개 · '+info.meta.encoding.toUpperCase()+(info.meta.bom.length?' BOM':'')+' · '+({'\r\n':'CRLF','\n':'LF','\r':'CR'}[info.eol]||'줄바꿈 없음')+'\nSHA-256 '+info.hash;
+  const table=$('sampleTable');table.replaceChildren();const head=node('tr');info.headers.forEach(h=>head.append(node('th',h)));table.append(head);
+  info.samples.slice(0,5).forEach(r=>{const tr=node('tr');r.forEach(v=>tr.append(node('td',v.length>80?v.slice(0,80)+'…':v)));table.append(tr);});$('sampleBox').hidden=false;
+  const base=info.file.name.replace(/\.[^.]+$/,'');$('outputName').value=base+'_DW.dat';
+}
+async function openSource(file){
+  // Mapping tables are re-matched to the new file's actual values, so values new to this volume show up before the check.
+  if(busy||!file)return;invalidate();source=null;info=null;profiles.clear();profileQueue.length=0;tasks.forEach(t=>{t._merged=null;});renderSource();renderAddbar();renderCards();
+  const r=beginRun('inspect');if(!r)return;status('파일 전체를 확인하는 중입니다.');
+  try{const result=await call(r,'inspect',{file});source=file;info=result;renderSource();renderAddbar();renderCards();status('파일을 확인했습니다. 티켓 Notes에 있는 작업만 추가하세요.'+(tasks.length?'\n기존 작업 '+tasks.length+'개를 이 파일 기준으로 다시 확인했습니다.':''));}
+  catch(e){if(live(r)){info=null;source=null;renderSource();renderAddbar();renderCards();status(e.message,'error');}}
+  finally{await finishRun(r);}
+}
+$('sourceFile').onchange=()=>{const f=$('sourceFile').files[0];$('sourceFile').value='';openSource(f);};
+const drop=$('drop');
+drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('sourceFile').click();}});
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files.length)openSource(e.dataTransfer.files[0]);});
+$('idColumn').onchange=()=>changed();
+
+// ---- Check, save, verify ----
+function renderReport(rep){
+  $('results').hidden=false;$('stats').replaceChildren();
+  const changedTotal=rep.stats.reduce((n,s)=>n+s.changed,0);
+  for(const [label,v] of [['문서',rep.rows],['바뀌는 값',changedTotal],['예외',rep.exceptionCount]]){const d=node('div',label,'stat');d.append(node('strong',count(v)));$('stats').append(d);}
+  const t=$('taskStats');t.replaceChildren();const head=node('tr');['작업 · 결과 열','바뀜','예외','참고'].forEach(h=>head.append(node('th',h)));t.append(head);
+  rep.stats.forEach((s,i)=>{const tr=node('tr'),notes=[];if(s.blank)notes.push('빈 값 '+count(s.blank));if(s.seconds)notes.push('초 버림 '+count(s.seconds));if(s.time)notes.push('시간 버림 '+count(s.time));if(s.placeholder)notes.push('placeholder→1 '+count(s.placeholder));
+    const name=node('td');name.append(node('div',(i+1)+'. '+s.label),node('div',s.columns.join(', '),'small muted'));tr.append(name);[count(s.changed),count(s.exceptions),notes.join(' · ')].forEach(v=>tr.append(node('td',v)));if(s.exceptions)tr.className='error';t.append(tr);});
+  if(rep.newColumns.length){const tr=node('tr'),td=node('td','새 열(끝에 추가): '+rep.newColumns.join(', '),'small muted');td.colSpan=4;tr.append(td);t.append(tr);}
+  $('exceptionBox').hidden=!rep.exceptionCount;
+  if(rep.exceptionCount){$('exceptionText').textContent='예외 '+count(rep.exceptionCount)+'건 · 저장할 수 없습니다. 아래 목록을 보고 대응표나 원본을 고친 뒤 다시 검사하세요.'+(rep.omittedExceptions?' (CSV에는 처음 '+count(rep.exceptions.length)+'건)':'');
+    const x=$('exceptionTable');x.replaceChildren();const h=node('tr');['문서','열 · 원본 값','문제'].forEach(v=>h.append(node('th',v)));x.append(h);
+    rep.exceptions.slice(0,100).forEach(e=>{const tr=node('tr'),doc=node('td'),cell=node('td');doc.append(node('div',e.id||'-'),node('div',e.row+'번째 줄','small muted'));cell.append(node('div',e.column),node('div',show(e.value),'small muted'));tr.append(doc,cell,node('td',e.message));x.append(tr);});}
+}
+$('runCheck').onclick=async()=>{
+  if(busy||!compiled||!compiled.valid)return;invalidate();const r=beginRun('preflight');if(!r)return;status('파일 전체에 작업을 적용해 보는 중입니다. 아직 저장하지 않습니다.');
+  try{const rep=await call(r,'preflight',{file:source,tasks:tasks.map(cleanTask),idName:$('idColumn').value,headers:info.headers,hash:info.hash});report=rep;renderReport(rep);
+    if(rep.valid)status('검사 통과 · 문서 '+count(rep.rows)+'건, 예외 0건.\n결과 표를 확인하고 저장하세요.','success');else status('예외 '+count(rep.exceptionCount)+'건 · 저장할 수 없습니다.','error');}
+  catch(e){if(live(r)){report=null;status('검사 실패 · 저장하지 않았습니다.\n'+e.message,'error');}}
+  finally{await finishRun(r);}
+};
+function download(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function validOutputName(name){if(!/^[^\\/\u0000-\u001f<>:"|?*]+\.dat$/i.test(name)||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])\./i.test(name))throw new Error('경로 없이 .dat로 끝나는 새 파일 이름을 입력하세요.');if(source&&name.toLowerCase()===source.name.toLowerCase())throw new Error('원본과 다른 파일 이름을 쓰세요.');}
+function verifiedStatus(r,result){guard(r);verified={...result,tasks:tasks.map(cleanTask),idColumn:$('idColumn').value};r.verified=true;status('최종 검증 통과 · 저장된 파일 전체를 다시 읽어 확인했습니다.','success');$('verification').className='status success';$('verification').textContent='PASS · '+result.output.name+'\n문서 '+count(result.rows)+'건 · '+count(result.bytes)+' bytes\nSHA-256 '+result.outputHash;buttons();}
+$('save').onclick=async()=>{
+  if(busy||!report||!report.valid)return;
+  const name=$('outputName').value,r=beginRun('save');if(!r)return;expected=null;clearVerification('저장 중입니다. 아직 검증되지 않았습니다.');$('manualVerification').hidden=true;$('savedFile').value='';
+  try{
+    validOutputName(name);
+    if(typeof window.showSaveFilePicker==='function'){
+      let handle;try{handle=await owned(r,window.showSaveFilePicker({suggestedName:name,types:[{description:'DAT load file',accept:{'application/octet-stream':['.dat']}}]}));}
+      catch(e){if(e.name==='AbortError'){e.keepPlan=true;}throw e;}
+      r.handle=handle;
+      let f=await owned(r,handle.getFile());validOutputName(f.name);r.outputName=f.name;if(f.size)throw new Error('내용이 있는 기존 파일에는 덮어쓰지 않습니다. 새 이름을 고르세요.');
+      // A writer returned after cancellation still belongs to this old run and must be aborted.
+      r.writer=await handle.createWritable({keepExistingData:true,mode:'exclusive'});guard(r);const writer=r.writer;
+      f=await owned(r,handle.getFile());if(f.size||f.name!==r.outputName)throw new Error('저장할 파일이 바뀌었습니다. 다른 새 이름을 고르세요.');
+      status('새 파일에 쓰는 중입니다. 최종 검증은 아직입니다.');
+      expected=await call(r,'transform',{},async bytes=>{guard(r);await writer.write(bytes);guard(r);});
+      f=await owned(r,handle.getFile());if(f.size||f.name!==r.outputName)throw new Error('쓰는 동안 저장 파일이 바뀌었습니다. 저장을 취소했습니다.');
+      guard(r);r.phase='commit';r.commitAttempted=true;$('cancel').disabled=true;status('저장을 마무리하는 중입니다. 잠시 취소할 수 없습니다.');await writer.close();r.writer=null;r.committed=true;guard(r);
+      r.phase='verification';$('cancel').disabled=false;status('저장된 파일을 다시 읽어 모든 값을 확인하는 중입니다.');
+      const actual=await owned(r,handle.getFile());verifiedStatus(r,await call(r,'verify',{file:actual}));
+    }else{
+      const limit=256*1024*1024;if(source.size>limit)throw new Error('256 MiB가 넘는 파일은 최신 Chrome/Edge의 저장 기능을 쓰세요.');
+      const chunks=[];let size=0;status('결과를 만들고 확인하는 중입니다.');
+      expected=await call(r,'transform',{},bytes=>{guard(r);size+=bytes.length;if(size>limit)throw new Error('다운로드 메모리 한도를 넘었습니다. Chrome/Edge 저장 기능을 쓰세요.');chunks.push(bytes);});
+      const blob=new Blob(chunks,{type:'application/octet-stream'});await call(r,'verify',{file:new File([blob],name)});guard(r);download(blob,name);$('manualVerification').hidden=false;
+      status('만든 내용은 확인했고 다운로드를 요청했습니다.\n디스크에 저장된 파일은 아직 검증 전입니다. 아래에서 다운로드된 파일을 골라 검증하세요.','pending');$('verification').className='status pending';$('verification').textContent='다운로드된 파일 검증 대기 중';
+    }
+  }catch(e){if(live(r)){if(e.keepPlan){status('저장을 취소했습니다. 아무것도 쓰지 않았고 검사 결과는 그대로입니다.');clearVerification();}else{expected=null;verified=null;clearVerification('검증된 결과가 없습니다.');status(r.commitAttempted?'저장된 파일이 검증되지 않았습니다 · 납품하지 마세요.\n'+e.message:'저장 실패 · 검증된 결과가 없습니다.\n'+e.message,'error');}}}
+  finally{await finishRun(r);}
+};
+$('savedFile').onchange=()=>{if(busy)revision++;clearVerification('선택한 파일은 아직 검증 전입니다.');buttons();};
+$('verifySaved').onclick=async()=>{
+  const file=$('savedFile').files[0];if(busy||!file||!expected)return;const r=beginRun('verify');if(!r)return;clearVerification('검증 중입니다.');status('선택한 파일 전체를 다시 읽는 중입니다.');
+  try{verifiedStatus(r,await call(r,'verify',{file}));}catch(e){if(live(r)){clearVerification('검증 실패 · 이 파일을 납품하지 마세요.');status('최종 검증 실패 · 선택한 파일을 납품하지 마세요.\n'+e.message,'error');}}finally{await finishRun(r);}
+};
+$('report').onclick=()=>{if(busy||!verified||!report)return;const {exceptions,...summary}=report;download(new Blob([JSON.stringify({tool:'Delivery Work',version:core.VERSION,status:'PASS',scope:'저장된 파일 전체를 다시 읽어 원본과 작업 계산 결과를 비교함',verification:verified,check:summary},null,2)],{type:'application/json'}),verified.output.name.replace(/\.dat$/i,'')+'.audit.json');};
+$('exceptionCsv').onclick=()=>{if(!report)return;const esc=v=>{v=String(v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};const rows=[['줄','문서 ID','작업','열','원본 값','문제'],...report.exceptions.map(e=>[e.row,e.id,e.task,e.column,e.value,e.message])];download(new Blob(['﻿'+rows.map(r=>r.map(esc).join(',')).join('\r\n')+'\r\n'],{type:'text/csv'}),(info?info.file.name.replace(/\.[^.]+$/,''):'delivery')+'_exceptions.csv');};
+$('cancel').onclick=async()=>{
+  const r=activeRun;if(!r||cancelling||r.phase==='commit')return;
+  r.cancelled=true;cancelling=true;$('cancel').disabled=true;stopWorker('취소했습니다.');profileQueue.length=0;cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;
+  try{makeWorker();}catch(e){worker=null;}invalidate();
+  if(r.kind==='inspect'){source=null;info=null;renderSource();renderAddbar();renderCards();}
+  status(r.committed?'저장 후 취소했습니다. 결과가 검증되지 않았으니 납품하지 마세요.':'취소했습니다. 검증된 결과가 없습니다.','error');cancelling=false;lock(false);refreshCards();
+};
+
+// ---- Settings (by column name, so the same ticket setup works for another volume with the same headers) ----
+const TASK_KEYS={children:['target','parent','count','writeTo'],name:['target','how','last','first','source','rows'],allCust:['target','source','delimiter','joiner','rows'],pages:['target','source','flag','placeholder'],itemType:['target','source','rows'],yn:['target','source','rows'],map:['target','source','rows'],constant:['target','value'],dates:['output','entries']};
+function cleanTask(t){const o={type:t.type,note:typeof t.note==='string'?t.note:''};for(const k of TASK_KEYS[t.type])o[k]=k==='entries'?t.entries.map(({column,format,timeColumn,timeFormat})=>({column,format,timeColumn,timeFormat})):k==='rows'?t.rows.map(({in:i,out,keep})=>({in:i,out,keep:!!keep})):JSON.parse(JSON.stringify(t[k]));return o;}
+function parseSettings(data){
+  const str=v=>typeof v==='string',bad=m=>{throw new Error('설정 파일 형식이 잘못되었습니다: '+m);};
+  if(!data||data.tool!=='Delivery Work'||data.version!==1||!Array.isArray(data.tasks)||data.tasks.length>50)bad('Delivery Work 설정 파일이 아닙니다.');
+  if(data.idColumn!==undefined&&!str(data.idColumn))bad('문서 ID 열');
+  return data.tasks.map((t,i)=>{
+    if(!t||!TASK_KEYS[t.type])bad((i+1)+'번째 작업 종류');const o={uid:++taskSerial,type:t.type,note:str(t.note)?t.note:''};
+    for(const k of TASK_KEYS[t.type]){const v=t[k];
+      if(k==='target'){if(!v||!['existing','new'].includes(v.mode)||!str(v.name))bad((i+1)+'번째 작업의 결과 열');o.target={mode:v.mode,name:v.name};}
+      else if(k==='rows'){if(!Array.isArray(v)||v.length>5000||v.some(r=>!r||!str(r.in)||!str(r.out)))bad((i+1)+'번째 작업의 대응표');o.rows=v.map(r=>({in:r.in,out:r.out,keep:r.keep===true}));}
+      else if(k==='placeholder'){if(!Array.isArray(v)||v.some(x=>!str(x)))bad((i+1)+'번째 작업의 placeholder 값');o.placeholder=v.slice();}
+      else if(k==='entries'){if(!Array.isArray(v)||v.length>50||v.some(e=>!e||!str(e.column)||!str(e.format)||!str(e.timeColumn)||!str(e.timeFormat)))bad((i+1)+'번째 작업의 날짜 열');o.entries=v.map(e=>({column:e.column,format:e.format,timeColumn:e.timeColumn,timeFormat:e.timeFormat}));}
+      else{if(!str(v))bad((i+1)+'번째 작업의 '+k);o[k]=v;}
+    }
+    return o;
+  });
+}
+$('saveSettings').onclick=()=>{if(busy)return;if(!tasks.length){status('저장할 작업이 없습니다.','error');return;}download(new Blob([JSON.stringify({tool:'Delivery Work',version:1,savedAt:new Date().toISOString(),idColumn:$('idColumn').value,tasks:tasks.map(cleanTask)},null,2)],{type:'application/json'}),(info?info.file.name.replace(/\.[^.]+$/,''):'delivery')+'_DW-settings.json');status('설정을 이 PC에 저장했습니다. 열 이름이 같은 다른 DAT에도 불러올 수 있습니다.');};
+$('loadSettingsButton').onclick=()=>$('loadSettings').click();
+$('loadSettings').onchange=async()=>{
+  const file=$('loadSettings').files[0];$('loadSettings').value='';if(!file||busy)return;
+  try{if(file.size>4*1024*1024)throw new Error('설정 파일이 너무 큽니다.');let data;try{data=JSON.parse(await file.text());}catch{throw new Error('설정 파일이 올바른 JSON이 아닙니다.');}
+    const next=parseSettings(data);if(tasks.length&&!confirm('지금 작업을 불러온 설정으로 바꿀까요?'))return;
+    tasks.splice(0,tasks.length,...next);if(info&&data.idColumn&&info.headers.includes(data.idColumn))$('idColumn').value=data.idColumn;changed();renderCards();
+    const todo=info?compiled.problems.filter(p=>p.length).length:0;status('설정을 불러왔습니다 · 작업 '+tasks.length+'개.'+(info?(todo?' '+todo+'개 작업은 이 파일과 맞지 않는 부분이 있어 주황색으로 표시했습니다.':' 모두 이 파일과 맞습니다. 전체 검사를 실행하세요.'):' DAT를 열면 열 이름으로 연결됩니다.'));}
+  catch(e){status(e.message,'error');}
+};
+addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
+const st=core.selfTest();selfTestOk=st.ok;
+try{makeWorker();renderSource();renderAddbar();renderCards();if(!st.ok)status('자체 점검 실패 · 이 브라우저에서는 저장할 수 없습니다. 최신 Chrome/Edge를 쓰세요.','error');}catch(e){status('로컬 처리를 시작하지 못했습니다. 최신 Chrome/Edge를 쓰세요.\n'+e.message,'error');}
+</script>
+</body></html>
