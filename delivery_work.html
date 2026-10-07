@@ -116,18 +116,19 @@ footer{font-size:.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}[hidd
 // Runs on the page (instant previews) and inside a local Blob worker (full-file work). No DOM or network APIs.
 // Messages carry a code and arguments so the page can show them in English or Korean.
 function createDeliveryCore(options = {}) {
-  const VERSION = '1.1.2';
+  const VERSION = '1.1.4';
   const FE = 'þ', SEP = '\u0014';
   const CHUNK = options.chunkBytes || 1024 * 1024;
   const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
   const MAX_FIELDS = 2000, MAX_IDS = 1000000, SAMPLE_ROWS = 200, DISTINCT_CAP = 1000, ISSUE_CAP = 10000;
   const progress = options.progress || (() => {});
   const MSG = {
+    pastePending:'Apply or discard the pending pasted values before checking or saving.',pasteFormat:'Pasted line {0} must contain exactly two tab-separated values.',pasteDuplicate:'The pasted source value appears more than once: {0}',batesPageInvalid:'Page count cannot be checked: not a positive whole number ({0}).',
     badOption:'Unsupported setting: {0}. Select an explicit option.',idTarget:'The document ID column cannot be a result column.',familyRange:'Cannot calculate a family range: invalid, reversed or inconsistent Bates numbers in family {0}.',
     emptyFile:'Empty files cannot be used.',utf32:'UTF-32 is not supported. Export UTF-8 or UTF-16 instead.',noBom16:'UTF-16 without a BOM, or an unsupported encoding. Use UTF-8 or UTF-16 with a BOM.',
     incomplete:'Could not read the whole file: {0}',badEncoding:'Invalid encoding or unreadable file: {0} (UTF-8/UTF-16 only).',recordTooLarge:'Line {0} exceeds the 32 Mi-character record limit.',
     firstLineBlank:'The first line is blank. The header must be the first line.',lineBlank:'Line {0} is blank.',notDat:'Line {0}: not a þ-qualified DAT record.',tooManyFields:'More than 2,000 columns.',
-    legacyNoDc4:'Line {0}: legacy þ format without DC4 (U+0014) separators. Re-export it as a þ/DC4 DAT.',badQualifier:'Line {0}, column {1}: þ qualifiers do not match.',valueBreak:'Line {0}, column {1}: the value contains þ or a line break.',
+    legacyNoDc4:'Line {0}: legacy þ format without DC4 (U+0014) separators. Re-export it as a þ/DC4 DAT.',badQualifier:'Line {0}, column {1}: þ qualifiers do not match.',valueBreak:'Line {0}, column {1}: the value contains þ, a line break or NUL.',
     blankHeader:'The header has a column with a blank name.',dupHeader:'The header has a duplicate column name: {0}',unsafeValue:'Values cannot contain þ, DC4, line breaks or NUL.',surrogate:'The value has an unpaired Unicode character.',
     colCount:'Line {0} has {1} columns; the header has {2}.',tooManyDocs:'More than 1,000,000 documents.',mixedEol:'Mixed line endings (CRLF/LF/CR). Use a file with one line-ending style.',noRecords:'No document records.',
     changed:'The file changed since it was opened. Open it again.',headerChanged:'The header differs from when the file was opened. Open it again.',
@@ -136,7 +137,7 @@ function createDeliveryCore(options = {}) {
     newColBad:'Column names cannot contain þ, DC4 or line breaks.',newColExists:'A column named "{0}" already exists. Choose it as an existing column or use another name.',dupMapValue:'The same source value appears twice: {0}',
     unsetValues:'{0} values have no result yet.',fillTable:'Use "Load source values" to fill the value map.',needValue:'Enter the value to write.',sameLastFirst:'The same column is selected for last and first name.',
     pickDelim:'Choose the delimiter between names in the source.',commaDelim:'A comma cannot be the delimiter (it cannot be told apart from "Last, First").',pickPlaceholder:'Check at least one value that means placeholder.',
-    blankPlaceholder:'A blank value cannot mark a placeholder.',pickId:'Select the document ID column on the left.',parentIsId:'The parent ID column is the same as the document ID column.',pickOutput:'Choose an output format.',
+    blankPlaceholder:'A blank value cannot mark a placeholder.',pickId:'Select the document ID column on the left.',missingId:'The selected document ID column is not in this DAT: {0}. Select the correct column or explicitly choose none.',parentIsId:'The parent ID column is the same as the document ID column.',pickOutput:'Choose an output format.',
     addDates:'Add a date column to convert.',pickFormat:'{0}: choose the source format.',pickTimeFormat:'{0}: choose the time column format.',timeConflict:'{0}: the value already contains a time, so a time column cannot be added.',
     noTime:'{0}: the source has no time. Set a time column or choose a date-only output (times are never invented).',noSeconds:'{0}: the source has no seconds, so an output with seconds cannot be used.',noDateOut:'{0}: time-only output needs the time from the value or a time column.',
     needFind:'Enter the text to find.',needSources:'Select at least two columns to combine.',needOneTarget:'Choose at least one result column.',
@@ -237,7 +238,7 @@ function createDeliveryCore(options = {}) {
     return raw.split(SEP).map((col,i)=>{
       if(col.length<2||!col.startsWith(FE)||!col.endsWith(FE))fail('badQualifier',line,i+1);
       const value=col.slice(1,-1);
-      if(value.includes(FE)||/[\r\n]/.test(value))fail('valueBreak',line,i+1);
+      if(value.includes(FE)||/[\r\n\u0000]/.test(value))fail('valueBreak',line,i+1);
       return value;
     });
   }
@@ -353,6 +354,12 @@ function createDeliveryCore(options = {}) {
     const candidates=[...groups.values()];return {status:candidates.length===1?'ok':'ambiguous',candidates};
   }
   const parseBates=v=>{const m=/^(.*?)(\d+)$/.exec(v);return m?{prefix:m[1],digits:m[2],n:BigInt(m[2])}:null;};
+  function parseValuePaste(text){
+    const rows=[],seen=new Set();
+    text.split(/\r\n|\r|\n/).forEach((line,i)=>{if(line==='')return;const pair=line.split('\t');if(pair.length!==2)fail('pasteFormat',i+1);
+      const [input,out]=pair;safeValue(input);safeValue(out);if(seen.has(input))fail('pasteDuplicate',arg(input));seen.add(input);rows.push({in:input,out});});
+    return rows;
+  }
 
   const TYPES=['children','name','allCust','pages','itemType','dates','constant','yn','map','family','replace','combine','text','ext','bates'];
   // Compiles user tasks into column writers (and read-only checks). Every writer reads original source values only.
@@ -361,6 +368,7 @@ function createDeliveryCore(options = {}) {
     const col=n=>typeof n==='string'&&n!==''?headers.indexOf(n):-1;
     const problems=tasks.map(()=>[]),writers=[],checks=[],outHeaders=headers.slice(),owner=new Map(),parentCols=new Set(),families=new Map(),keyIndex=col(idName);
     const P=(ti,code,...args)=>problems[ti].push({code,args});
+    if(idName&&keyIndex<0)tasks.forEach((_,ti)=>P(ti,'missingId',idName));
     function claim(i,ti){if(i===keyIndex){P(ti,'idTarget');return -1;}if(owner.has(i)){P(ti,'colUsed',outHeaders[i],owner.get(i)+1);return -1;}owner.set(i,ti);return i;}
     function need(name,label,ti){const i=col(name);if(i<0)P(ti,'pickColumn','@'+label);return i;}
     function target(tg,ti,optional=false){
@@ -393,6 +401,7 @@ function createDeliveryCore(options = {}) {
     }
     tasks.forEach((t,ti)=>{
       if(!t||typeof t!=='object'||!TYPES.includes(t.type)){P(ti,'unknownTask');return;}
+      if(t._paste)P(ti,'pastePending');
       const choices={children:{count:['direct','all'],writeTo:['roots','every'],output:['count','yn',undefined]},name:{how:['map','columns']},allCust:{joiner:[';','; ']},family:{standalone:['own','blank']},replace:{mode:['all','prefix'],missing:['keep','error']},text:{op:['upper','lower','trim']},ext:{case:['keep','upper','lower']}};
       for(const [key,values] of Object.entries(choices[t.type]||{}))if(!values.includes(t[key]))P(ti,'badOption',key);
       for(const key of ['dedupe','skipBlank'])if(t[key]!==undefined&&typeof t[key]!=='boolean')P(ti,'badOption',key);
@@ -469,7 +478,7 @@ function createDeliveryCore(options = {}) {
         add(out,row=>{const v=row[s];if(v===''||!find)return v;if(!prefix)return v.split(find).join(rep);if(v.startsWith(find))return rep+v.slice(find.length);if(strict)fail('noPrefix',arg(find));return v;},row=>row[s]);
       }
       else if(type==='combine'){
-        const srcs=(Array.isArray(t.sources)?t.sources:[]).filter(n=>n!=='');const idx=srcs.map(n=>need(n,'source',ti)),out=target(t.target,ti),sep=typeof t.separator==='string'?t.separator:'',skip=t.skipBlank!==false;
+        const srcs=Array.isArray(t.sources)?t.sources:[];const idx=srcs.map(n=>need(n,'source',ti)),out=target(t.target,ti),sep=typeof t.separator==='string'?t.separator:'',skip=t.skipBlank!==false;
         if(srcs.length<2)P(ti,'needSources');try{safeValue(sep);}catch(e){P(ti,e.code);}
         add(out,row=>{let vals=idx.map(i=>row[i]);if(skip)vals=vals.filter(v=>v!=='');return vals.join(sep);},row=>idx.map(i=>row[i]).join(' | '));
       }
@@ -486,9 +495,10 @@ function createDeliveryCore(options = {}) {
         const b=need(t.beg,'beg',ti),e=need(t.end,'end',ti),pg=t.pages?need(t.pages,'pages',ti):-1;
         if(b>=0&&e>=0)checks.push({ti,type,make:()=>{let prev=null;return (row,warn)=>{
           const B=parseBates(row[b]),E=parseBates(row[e]);
+          if(pg>=0&&!/^[1-9]\d*$/.test(row[pg]))warn('batesPageInvalid',arg(row[pg]));
           if(!B||!E){warn('batesFormat',arg(!B?row[b]:row[e]));prev=null;return;}
           if(B.prefix!==E.prefix)warn('batesPrefix');else if(E.n<B.n)warn('batesOrder');
-          else if(pg>=0&&/^\d+$/.test(row[pg])){const span=E.n-B.n+1n;if(span!==BigInt(row[pg]))warn('batesPages',String(span),row[pg]);}
+          else if(pg>=0&&/^[1-9]\d*$/.test(row[pg])){const span=E.n-B.n+1n;if(span!==BigInt(row[pg]))warn('batesPages',String(span),row[pg]);}
           if(prev){if(prev.prefix!==B.prefix)warn('batesPrefixChange',arg(prev.prefix),arg(B.prefix));else if(B.n>prev.n+1n)warn('batesGap',prev.text,row[b]);else if(B.n<=prev.n)warn('batesOverlap',prev.text,row[b]);}
           prev={prefix:E.prefix,n:E.n,text:row[e]};
         };}});
@@ -613,7 +623,7 @@ function createDeliveryCore(options = {}) {
     const checks=[h.hex()==='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',renderDate(parseParts('3/2/2026 9:15:30 PM','M/D/YYYY h:mm:ss A'),'MM/DD/YYYY HH:mm')==='03/02/2026 21:15',parseParts('2026-02-29 10:00:00','YYYY-MM-DD HH:mm:ss').code==='badDate',JSON.stringify(splitDAT(compose(['a','김','']),1))==='["a","김",""]',detectFormat(['01/02/2026 10:00']).status==='ambiguous'];
     return {ok:checks.every(Boolean),checks};
   }
-  return {VERSION,MSG,TYPES,DATE_FORMATS,TIME_PARTS,OUTPUT_FORMATS,fmt,hash,inspect,profile,preflight,transform,verify,compileTasks,preview,detectFormat,parseParts,renderDate,compose,splitDAT,safeValue,encode,fold,findColumn,selfTest};
+  return {VERSION,MSG,TYPES,DATE_FORMATS,TIME_PARTS,OUTPUT_FORMATS,fmt,hash,inspect,profile,preflight,transform,verify,compileTasks,preview,detectFormat,parseParts,parseValuePaste,renderDate,compose,splitDAT,safeValue,encode,fold,findColumn,selfTest};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports=createDeliveryCore;
 </script>
@@ -623,6 +633,7 @@ $('version').textContent='v'+core.VERSION;
 
 // ---- Language: English by default, Korean via the toggle (or #ko in the address). Not stored anywhere. ----
 const UI_EN={
+  applyPaste:'Apply pasted values',discardPaste:'Discard paste',stCustIncomplete:'There are too many distinct name pairs to safely auto-fill. Set the value map manually.',stCustAmbiguous:'A full name matches different first/last name pairs. Nothing was filled; set the value map manually.',
   reviewPlan:'I checked the source/result columns, ticket rules, date formats, removed time/seconds and all QC warnings above.',configChanged:'Settings changed. Run the full check and review it again.',cleanupUnverified:'The saved file "{0}" did not pass verification. Do not deliver it. It has been left in place for inspection.',formatSuggest:'Possible source format: {0}. Confirm it against the source specification; sampled values cannot prove the date order.',settingsMissingId:'The settings refer to a document ID column that is not in this DAT: {0}. Load the matching DAT or correct the settings.',
   raw:'{0}',localBadge:'Processed on this PC · no upload',saveSettings:'Save settings',loadSettings:'Load settings',cancel:'Cancel',s1:'DAT file',dropTitle:'Choose a DAT file',dropHint:'Drag & drop or click · þ / DC4 · UTF-8 / UTF-16',
   noFile:'No file yet.',idColumn:'Document ID column',idHint:'Used for attachment counts, family ranges and issue lists.',openFirst:'Open a DAT first',noneOption:'None',firstRows:'Show first 5 records',
@@ -681,6 +692,8 @@ const UI_EN={
   h_family:'BegAttach / EndAttach / Group ID',h_replace:'e.g. path prefix, delimiters',h_combine:'Join columns into one',h_text:'UPPER / lower / trim',h_ext:'From the file name',h_bates:'Gaps · overlaps · pages (QC)',h_map:'Any other value change'
 };
 const UI_KO={
+  pastePending:'검사 또는 저장 전에 붙여넣은 값을 적용하거나 취소하세요.',pasteFormat:'붙여넣은 {0}번째 줄은 탭으로 구분한 두 값이어야 합니다.',pasteDuplicate:'붙여넣은 원본 값이 중복됩니다: {0}',batesPageInvalid:'페이지 수를 검사할 수 없습니다: 양의 정수가 아닙니다 ({0}).',
+  applyPaste:'붙여넣은 값 적용',discardPaste:'붙여넣기 취소',stCustIncomplete:'서로 다른 성/이름 조합이 너무 많아 안전하게 자동 채울 수 없습니다. 대응표를 직접 지정하세요.',stCustAmbiguous:'같은 전체 이름이 서로 다른 성/이름 조합에 해당합니다. 자동 입력하지 않았습니다. 대응표를 직접 지정하세요.',
   badOption:'지원하지 않는 설정: {0}. 명시적으로 선택하세요.',idTarget:'문서 ID 열은 결과를 덮어쓸 수 없습니다.',familyRange:'패밀리 {0}의 Bates가 유효하지 않거나 역순이거나 형식이 일치하지 않아 범위를 계산할 수 없습니다.',
   reviewPlan:'원본/결과 열, 티켓 규칙, 날짜 형식, 제거되는 시간/초와 위 QC 경고를 모두 확인했습니다.',configChanged:'설정이 변경되었습니다. 전체 검사 후 다시 확인하세요.',cleanupUnverified:'저장한 "{0}" 파일은 검증되지 않았습니다. 전달하지 마세요. 확인을 위해 파일은 남겨두었습니다.',formatSuggest:'가능한 원본 형식: {0}. 원본 명세와 대조하세요. 표본만으로 날짜 순서를 확정할 수 없습니다.',settingsMissingId:'설정의 문서 ID 열이 현재 DAT에 없습니다: {0}. 일치하는 DAT를 열거나 설정을 수정하세요.',
   localBadge:'이 PC에서만 처리 · 업로드 없음',saveSettings:'설정 저장',loadSettings:'설정 불러오기',cancel:'취소',s1:'DAT 파일',dropTitle:'DAT 파일 선택',dropHint:'끌어다 놓거나 클릭 · þ / DC4 · UTF-8 / UTF-16',
@@ -742,14 +755,14 @@ const UI_KO={
   emptyFile:'빈 파일은 사용할 수 없습니다.',utf32:'UTF-32는 지원하지 않습니다. UTF-8 또는 UTF-16으로 내보내 주세요.',noBom16:'BOM 없는 UTF-16이거나 지원하지 않는 인코딩입니다. UTF-8 또는 BOM 있는 UTF-16을 사용하세요.',
   incomplete:'파일을 끝까지 읽지 못했습니다: {0}',badEncoding:'인코딩이 잘못되었거나 읽을 수 없는 파일입니다: {0} (UTF-8/UTF-16만 지원)',recordTooLarge:'{0}번째 줄이 레코드 크기 제한(32 Mi 문자)을 넘습니다.',
   firstLineBlank:'첫 줄이 비어 있습니다. 헤더가 파일의 첫 줄이어야 합니다.',lineBlank:'{0}번째 줄이 비어 있습니다.',notDat:'{0}번째 줄: þ로 감싼 DAT 형식이 아닙니다.',tooManyFields:'열이 2,000개를 넘습니다.',
-  legacyNoDc4:'{0}번째 줄: DC4(U+0014) 구분자가 없는 구형 þ 형식입니다. þ/DC4 DAT로 다시 내보내 주세요.',badQualifier:'{0}번째 줄 {1}번째 열: þ 구분자가 맞지 않습니다.',valueBreak:'{0}번째 줄 {1}번째 열: 값 안에 þ 또는 줄바꿈이 있습니다.',
+  legacyNoDc4:'{0}번째 줄: DC4(U+0014) 구분자가 없는 구형 þ 형식입니다. þ/DC4 DAT로 다시 내보내 주세요.',badQualifier:'{0}번째 줄 {1}번째 열: þ 구분자가 맞지 않습니다.',valueBreak:'{0}번째 줄 {1}번째 열: 값 안에 þ, 줄바꿈 또는 NUL이 있습니다.',
   blankHeader:'헤더에 이름이 빈 열이 있습니다.',dupHeader:'헤더에 같은 이름의 열이 두 번 있습니다: {0}',unsafeValue:'값에 þ, DC4, 줄바꿈 또는 NUL을 넣을 수 없습니다.',surrogate:'짝이 맞지 않는 유니코드 문자가 있습니다.',
   colCount:'{0}번째 줄의 열 개수({1})가 헤더({2})와 다릅니다.',tooManyDocs:'문서가 1,000,000건을 넘습니다.',mixedEol:'줄바꿈 형식(CRLF/LF/CR)이 섞여 있습니다. 한 가지로 통일된 파일을 사용하세요.',noRecords:'문서 레코드가 없습니다.',
   changed:'파일이 처음 열었을 때와 달라졌습니다. 다시 열어 주세요.',headerChanged:'헤더가 처음 열었을 때와 다릅니다. 다시 열어 주세요.',badDate:'존재하지 않는 날짜입니다: {0}',bad12h:'12시간제 시각이 잘못되었습니다: {0}',badTime:'존재하지 않는 시각입니다: {0}',
   unknownTask:'알 수 없는 작업입니다.',colUsed:'"{0}" 열은 {1}번 작업이 이미 씁니다.',pickColumn:'{0} 열을 선택하세요.',pickTarget:'결과를 쓸 열을 선택하세요.',newColName:'새 열 이름을 입력하세요.',newColBad:'열 이름에 þ, DC4, 줄바꿈을 넣을 수 없습니다.',
   newColExists:'"{0}" 열이 이미 있습니다. 기존 열을 고르거나 다른 이름을 쓰세요.',dupMapValue:'같은 원본 값이 두 번 있습니다: {0}',unsetValues:'결과를 정하지 않은 값이 {0}개 있습니다.',fillTable:'"원본 값 불러오기"로 대응표를 채우세요.',needValue:'넣을 값을 입력하세요.',
   sameLastFirst:'성과 이름에 같은 열을 골랐습니다.',pickDelim:'원본에서 이름을 나누는 구분자를 선택하세요.',commaDelim:'쉼표는 구분자로 쓸 수 없습니다(Last, First와 구분되지 않음).',pickPlaceholder:'placeholder를 뜻하는 값을 하나 이상 체크하세요.',
-  blankPlaceholder:'빈 값은 placeholder 표시로 쓸 수 없습니다.',pickId:'왼쪽에서 문서 ID 열을 선택하세요.',parentIsId:'부모 ID 열과 문서 ID 열이 같습니다.',pickOutput:'출력 형식을 선택하세요.',addDates:'변환할 날짜 열을 추가하세요.',
+  blankPlaceholder:'빈 값은 placeholder 표시로 쓸 수 없습니다.',pickId:'왼쪽에서 문서 ID 열을 선택하세요.',missingId:'선택된 문서 ID 열이 이 DAT에 없습니다: {0}. 올바른 열을 선택하거나 직접 없음을 선택하세요.',parentIsId:'부모 ID 열과 문서 ID 열이 같습니다.',pickOutput:'출력 형식을 선택하세요.',addDates:'변환할 날짜 열을 추가하세요.',
   pickFormat:'{0}: 원본 형식을 선택하세요.',pickTimeFormat:'{0}: 시간 열의 형식을 선택하세요.',timeConflict:'{0}: 원본 값에 이미 시간이 있어 시간 열을 함께 쓸 수 없습니다.',noTime:'{0}: 원본에 시간이 없습니다. 시간 열을 지정하거나 날짜만 출력을 고르세요(시간을 만들어 넣지 않음).',
   noSeconds:'{0}: 원본에 초가 없어 초 단위 출력을 쓸 수 없습니다.',noDateOut:'{0}: 시간만 출력하려면 값이나 시간 열에 시간이 있어야 합니다.',needFind:'찾을 값을 입력하세요.',needSources:'합칠 열을 두 개 이상 선택하세요.',needOneTarget:'결과 열을 하나 이상 고르세요.',
   notInMap:'대응표에 없는 값: {0}',nameNotInMap:'대응표에 없는 이름: {0}',halfName:'성 또는 이름 하나만 비어 있습니다.',pagesBlank:'페이지 수가 비어 있습니다(placeholder 아님).',pagesNotInt:'페이지 수가 양의 정수가 아닙니다: {0}',needFullCheck:'전체 검사에서 계산됩니다.',
@@ -936,14 +949,17 @@ function targetPicker(parent,getTarget,setTarget,{label=t('targetLabel'),allowNo
 const stdTarget=(t,parent,opts)=>targetPicker(parent,()=>t.target,v=>{t.target=v;},opts);
 function mapTable(t,body,{yn=false,suggestions=null,profileCols,delim=null,fillFromCustodian=false}={}){
   const box=node('div'),tools=node('div',undefined,'rowtools'),load=node('button',t_('loadValues')),pasteBtn=node('button',t_('paste')),area=node('textarea'),wrap=node('div',undefined,'mapwrap');
-  load.type=pasteBtn.type='button';area.rows=4;area.hidden=true;area.placeholder=t_('pastePh');area.setAttribute('aria-label',t_('pasteAria'));
+  const apply=node('button',t_('applyPaste')),discard=node('button',t_('discardPaste'));
+  load.type=pasteBtn.type=apply.type=discard.type='button';area.rows=4;area.value=t._paste||'';area.hidden=!(t._pasteOpen||t._paste);area.placeholder=t_('pastePh');area.setAttribute('aria-label',t_('pasteAria'));apply.hidden=discard.hidden=area.hidden;
   const ok=profileCols&&profileCols.every(c=>c>=0),prof=ok?profiles.get(profileKey(profileCols,delim)):null;
   function merge(values){const have=new Set(t.rows.map(r=>r.in));for(const [v] of values){const key=v[0];if(!have.has(key)){t.rows.push({in:key,out:'',keep:false});have.add(key);rowsMerged=true;}}}
   if(prof&&!t._merged){merge(prof.values);t._merged=profileKey(profileCols,delim);}
   load.onclick=()=>{if(!ok){status('stPickSourceFirst',[],'error');return;}const k=profileKey(profileCols,delim),p=profiles.get(k);if(p){merge(p.values);changed();renderCards();}else wantProfile(profileCols,delim,()=>{const q=profiles.get(k);if(q){merge(q.values);changed();renderCards();}});};
-  pasteBtn.onclick=()=>{area.hidden=!area.hidden;if(!area.hidden)area.focus();};
-  area.onchange=()=>{const lines=area.value.split(/\r\n|\r|\n/).filter(l=>l!=='');const bad=lines.filter(l=>l.split('\t').length!==2);if(bad.length){status('stPasteFormat',[bad.slice(0,3).join(' | ')],'error');return;}for(const l of lines){const [a,b]=l.split('\t'),r=t.rows.find(x=>x.in===a);if(r)r.out=b;else t.rows.push({in:a,out:b,keep:false});}area.value='';area.hidden=true;changed();renderCards();};
-  tools.append(load,pasteBtn);
+  pasteBtn.onclick=()=>{t._pasteOpen=!t._pasteOpen;area.hidden=!(t._pasteOpen||t._paste);apply.hidden=discard.hidden=area.hidden;if(!area.hidden)area.focus();};
+  area.oninput=()=>{t._paste=area.value;changed();};
+  apply.onclick=()=>{try{const pasted=core.parseValuePaste(area.value),next=t.rows.map(r=>({...r}));for(const p of pasted){const r=next.find(r=>r.in===p.in);if(r){r.out=p.out;r.keep=false;}else next.push({...p,keep:false});}t.rows=next;t._paste='';t._pasteOpen=false;changed();renderCards();}catch(e){status('raw',[e],'error');}};
+  discard.onclick=()=>{t._paste='';t._pasteOpen=false;changed();renderCards();};
+  tools.append(load,pasteBtn,apply,discard);
   if(fillFromCustodian){const fill=node('button',t_('fillCust'));fill.type='button';fill.title=t_('fillCustTitle');fill.onclick=()=>fillCustodians(t);tools.append(fill);}
   if(t.rows.length){const clear=node('button',t_('clearTable'),'danger');clear.type='button';clear.onclick=()=>{if(confirm(t_('confirmClear'))){t.rows=[];t._merged=null;changed();renderCards();}};tools.append(clear);}
   box.append(tools,area);
@@ -968,7 +984,7 @@ async function fillCustodians(task){
   const l=found(ALIASES.last),f=found(ALIASES.first);
   if(!l||!f){status('stCustNoCols',[],'error');return;}
   const cols=[l.index,f.index],k=profileKey(cols,'');
-  const apply=()=>{const p=profiles.get(k);if(!p)return;const map=new Map();for(const [[last,first]] of p.values)if(last&&first)map.set(first+' '+last,last+', '+first);let filled=0;for(const r of task.rows)if(r.out===''&&map.has(r.in)){r.out=map.get(r.in);filled++;}const left=task.rows.filter(r=>r.out===''&&!(r.in===''&&r.keep)).length;changed();renderCards();status('stCustFilled',[filled,info.headers[l.index],info.headers[f.index],left?t('stCustLeft',left):'']);};
+  const apply=()=>{const p=profiles.get(k);if(!p)return;if(p.capped){status('stCustIncomplete',[],'error');return;}const map=new Map();for(const [[last,first]] of p.values)if(last&&first){const key=first+' '+last,value=last+', '+first;if(map.has(key)&&map.get(key)!==value){status('stCustAmbiguous',[],'error');return;}map.set(key,value);}let filled=0;for(const r of task.rows)if(r.out===''&&map.has(r.in)){r.out=map.get(r.in);filled++;}const left=task.rows.filter(r=>r.out===''&&!(r.in===''&&r.keep)).length;changed();renderCards();status('stCustFilled',[filled,info.headers[l.index],info.headers[f.index],left?t('stCustLeft',left):'']);};
   if(profiles.has(k))apply();else wantProfile(cols,'',apply);
 }
 let rowsMerged=false;
@@ -979,6 +995,7 @@ function renderCards(){
     card.dataset.uid=task.uid;card.dataset.type=task.type;remove.type='button';remove.onclick=()=>{tasks.splice(tasks.indexOf(task),1);changed();renderCards();};
     head.append(title,pill,remove);card.append(head,body);
     if(info)renderTaskBody(task,body);else body.append(node('p',t('needDat'),'small muted'));
+    if(task._paste&&!body.querySelector('textarea')){const discard=node('button',t('discardPaste'),'danger');discard.type='button';discard.onclick=()=>{task._paste='';task._pasteOpen=false;changed();renderCards();};body.append(discard);}
     const note=textInput(task.note,v=>{task.note=v;changed();},t('notePh'));note.setAttribute('aria-label',t('noteAria'));note.className='mt';body.append(note);
     body.append(node('div','','problems'),node('div','','preview'));box.append(card);
   });
@@ -1102,6 +1119,7 @@ function buttons(){
   $('runCheck').disabled=busy||!ready;$('reviewedPlan').disabled=busy||!report||!report.valid;
   $('save').disabled=busy||!worker||!report||!report.valid||!selfTestOk||!approvedSignature;
   $('report').disabled=busy||!verified;$('verifySaved').disabled=busy||!worker||!expected||!$('savedFile').files.length;
+  $('saveSettings').disabled=busy||hasPendingPaste();
   document.querySelectorAll('.addbar button').forEach(b=>b.disabled=busy||!info);
 }
 
@@ -1110,7 +1128,10 @@ function renderSource(auto=false){
   const keep=$('idColumn').value;$('idColumn').replaceChildren();
   if(!info){option($('idColumn'),'',t('openFirst'));$('idColumn').disabled=true;$('sourceFacts').textContent=t('noFile');$('sampleBox').hidden=true;return;}
   option($('idColumn'),'',t('noneOption'));info.headers.forEach(h=>option($('idColumn'),h,h));$('idColumn').disabled=false;
-  if(auto){const id=found(ALIASES.id);$('idColumn').value=preferredId!==null?(info.headers.includes(preferredId)?preferredId:''):(id?info.headers[id.index]:'');}else $('idColumn').value=info.headers.includes(keep)?keep:'';
+  const id=auto?found(ALIASES.id):null,selected=auto?(preferredId!==null?preferredId:(id?info.headers[id.index]:'')):keep;
+  // Retain a configured missing ID so compilation blocks instead of silently opting out of ID checks.
+  if(selected&&!info.headers.includes(selected))option($('idColumn'),selected,selected+' ⚠');
+  $('idColumn').value=selected;
   $('sourceFacts').textContent=t('facts',info.file.name,count(info.count),info.headers.length,info.meta.encoding.toUpperCase()+(info.meta.bom.length?' BOM':'')+' · '+({'\r\n':'CRLF','\n':'LF','\r':'CR'}[info.eol]||t('noEol')),info.hash);
   const table=$('sampleTable');table.replaceChildren();const thead=node('thead'),tbody=node('tbody'),head=node('tr');info.headers.forEach(h=>head.append(node('th',h)));thead.append(head);table.append(thead,tbody);
   info.samples.slice(0,5).forEach(r=>{const tr=node('tr');r.forEach(v=>{const td=node('td',v.length>80?v.slice(0,80)+'…':v);td.title=v;tr.append(td);});tbody.append(tr);});$('sampleBox').hidden=false;
@@ -1150,8 +1171,9 @@ function renderReport(rep){
   }
 }
 const cleanTasks=()=>tasks.map(cleanTask);
-const configSignature=()=>JSON.stringify({hash:info&&info.hash,idColumn:$('idColumn').value,tasks:cleanTasks()});
-function requireChecked(){if(!checkedSetup||checkedSetup.signature!==configSignature()){invalidate();status('configChanged',[],'error');return false;}return true;}
+function hasPendingPaste(){return tasks.some(t=>!!t._paste);}
+const configSignature=()=>JSON.stringify({hash:info&&info.hash,idColumn:$('idColumn').value,tasks:cleanTasks(),drafts:tasks.map(t=>t._paste||'')});
+function requireChecked(){if(hasPendingPaste()||!checkedSetup||checkedSetup.signature!==configSignature()){invalidate();status('configChanged',[],'error');return false;}return true;}
 $('reviewedPlan').onchange=()=>{approvedSignature=$('reviewedPlan').checked&&requireChecked()?checkedSetup.signature:null;buttons();};
 $('runCheck').onclick=async()=>{
   if(busy||!compiled||!compiled.valid)return;invalidate();const r=beginRun('preflight');if(!r)return;status('stChecking');
@@ -1240,7 +1262,7 @@ function parseSettings(data){
     return o;
   });
 }
-$('saveSettings').onclick=()=>{if(busy)return;if(!tasks.length){status('stNoTasks',[],'error');return;}download(new Blob([JSON.stringify({tool:'Delivery Work',version:1,savedAt:new Date().toISOString(),idColumn:$('idColumn').value,tasks:cleanTasks()},null,2)],{type:'application/json'}),(info?info.file.name.replace(/\.[^.]+$/,''):'delivery')+'_DW-settings.json');status('stSettingsSaved');};
+$('saveSettings').onclick=()=>{if(busy)return;if(hasPendingPaste()){status('pastePending',[],'error');return;}if(!tasks.length){status('stNoTasks',[],'error');return;}download(new Blob([JSON.stringify({tool:'Delivery Work',version:1,savedAt:new Date().toISOString(),idColumn:$('idColumn').value,tasks:cleanTasks()},null,2)],{type:'application/json'}),(info?info.file.name.replace(/\.[^.]+$/,''):'delivery')+'_DW-settings.json');status('stSettingsSaved');};
 $('loadSettingsButton').onclick=()=>$('loadSettings').click();
 $('loadSettings').onchange=async()=>{
   const file=$('loadSettings').files[0];$('loadSettings').value='';if(!file||busy)return;
