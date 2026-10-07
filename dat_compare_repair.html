@@ -11,7 +11,7 @@
 </style>
 </head>
 <body>
-<header><div><h1>DAT Compare &amp; Repair</h1><span class="small" style="color:#c4d7ee">v0.1.1 · Vendor baseline → customer-edited DAT</span></div><span class="badge">Local processing · No uploads</span></header>
+<header><div><h1>DAT Compare &amp; Repair</h1><span class="small" style="color:#c4d7ee">v0.2.0 · Vendor baseline → customer-edited DAT</span></div><span class="badge">Local processing · No uploads</span></header>
 <main>
 <p class="muted">Compare every record and metadata field by exact document ID. Review exceptions, then restore selected fields into a new copy of the customer DAT.</p>
 <fieldset id="sources"><div class="two">
@@ -20,40 +20,98 @@
 </div></fieldset>
 <div class="bar"><button id="load" class="primary" disabled>Read both files</button><button id="compare" class="primary" disabled>Compare all records &amp; fields</button><button id="cancel" disabled>Cancel</button><span id="progress" class="small" role="status"></span></div>
 <div id="status" class="status" role="status" aria-live="polite">Choose the baseline and customer files. Confirm the document ID fields after reading.</div>
-<p class="small">Auto encoding uses a Unicode BOM, otherwise strict UTF-8. Choose a legacy encoding explicitly if needed. Auto format accepts þ / DC4; select CSV, TSV or pipe explicitly. Limits: 128 MiB combined input, 500,000 records per file, 2,000 fields, 1,000,000 exception entries. Exceeding a limit stops the operation.</p>
+<p class="small">Auto encoding uses a Unicode BOM, otherwise strict UTF-8. Choose a legacy encoding explicitly if needed. Auto format accepts þ / DC4; select CSV, TSV or pipe explicitly. Multi-GB files are streamed; IDs and full exceptions use temporary local browser storage. Keep free temporary space of at least four times the combined input size, plus output space. Limits: 2,000 fields and 32 Mi characters per logical record. Unsupported input or storage failures stop the operation.</p>
+<section class="panel"><div class="bar"><button id="outputFolder">Choose output folder</button><span id="folderInfo" class="small">Desktop Chrome / Edge required for streaming file saving.</span></div><p class="small">Each output is saved in a new DAT-Compare subfolder. DAT outputs receive PASS only after the actual saved file is re-read in full. Incomplete or failed outputs must not be delivered. Temporary comparison storage is cleaned on the next file load after cancellation or closing this page.</p></section>
 <div id="results" hidden>
 <div id="stats" class="stats"></div>
-<section class="panel"><h2>3 · Exceptions</h2><div id="schema" class="small"></div><p class="small">Common means the same document ID. Values are compared exactly, including whitespace, letter case and Unicode characters. Screen cells are shortened; the CSV report contains full values. Character alerts are review hints, not proof of corruption.</p>
+<section class="panel"><h2>3 · Exceptions</h2><div id="schema" class="small"></div><p class="small">Common means the same document ID. Values are compared exactly, including whitespace, letter case and Unicode characters. Screen cells and tooltips are shortened; the CSV report contains full values. Character alerts are review hints, not proof of corruption.</p>
 <div class="filters"><select id="kindFilter" aria-label="Exception type"><option value="">All exception types</option></select><input id="search" type="text" aria-label="Search exceptions" placeholder="Search ID, field or value"><button id="prev">Previous</button><button id="next">Next</button></div><div id="pageInfo" class="small" style="margin-top:10px"></div>
 <div class="tablewrap"><table><thead><tr><th>Type</th><th>Document ID</th><th>Field</th><th>Baseline value</th><th>Customer value</th><th>Detail / source rows</th></tr></thead><tbody id="exceptionRows"></tbody></table></div>
-<div class="bar"><button id="report">Download full exception CSV</button><button id="audit">Download comparison audit JSON</button></div>
+<div class="bar"><button id="report">Save full exception CSV</button><button id="audit">Save comparison audit JSON</button></div>
 <p class="small">Spreadsheet formula protection is applied to report cells. Original DAT values are preserved in DAT exports.</p>
 </section>
 <section class="panel"><h2>4 · Restore selected fields</h2><div class="alert">Restoration applies to all changed cells in the fields you select, for uniquely matched IDs only. Missing records and missing columns are not inserted. Customer-only records, other fields, document IDs and customer row/column order are preserved. Export the baseline-only DAT below to review missing records separately.</div>
 <fieldset id="repairControls"><div id="restoreFields" class="fields"></div><div class="two"><div><label for="outputEncoding">New DAT encoding</label><select id="outputEncoding"><option value="utf-8">UTF-8 with BOM</option><option value="utf-16le">UTF-16 LE with BOM</option><option value="utf-16be">UTF-16 BE with BOM</option></select></div><div><label for="outputName">New filename</label><input id="outputName" type="text" value="customer_repaired.dat"></div></div><p id="plan" class="small"></p><label class="check"><input id="reviewed" type="checkbox"><span>I reviewed the exceptions and selected fields, and approve restoring their baseline values.</span></label></fieldset>
-<div class="bar" style="margin-top:12px"><button id="repair" class="primary" disabled>Build &amp; download new DAT</button></div>
+<div class="bar" style="margin-top:12px"><button id="repair" class="primary" disabled>Save new DAT &amp; verify</button></div>
 <div id="verification" class="status" role="status">No repaired DAT has been built.</div>
-<div id="verifyPanel" hidden><label for="savedFile">Re-select the downloaded DAT to verify the complete saved file</label><input id="savedFile" type="file" accept=".dat,.csv,.tsv,.txt"><button id="verify" disabled>Verify saved DAT</button><button id="repairAudit" disabled>Download verified DAT audit</button></div>
+<div id="verifyPanel" hidden><label for="savedFile">Optional: choose a copied DAT to verify; otherwise recheck the file just saved</label><input id="savedFile" type="file" accept=".dat,.csv,.tsv,.txt"><button id="verify" disabled>Verify saved DAT</button><button id="repairAudit" disabled>Save verified DAT audit</button></div>
 </section>
 <section class="panel"><h2>Record extracts</h2><p class="small">These exports select records by document ID, using the source's field order and file format. They use UTF-8 with BOM. They do not restore metadata. Extracts are disabled when IDs are invalid or ambiguous.</p><div class="bar"><button id="common">Common IDs · customer values</button><button id="missing">Baseline-only records</button><button id="added">Customer-only records</button></div></section>
 </div>
-<footer class="small">Input files are read only. Outputs are new downloads. Generated output is validated before downloading; saved-file verification requires re-selecting the downloaded file. Validate the resulting file in the intended review platform before delivery.</footer>
+<footer class="small">Input files are read only. Outputs are new files. PASS confirms saved-file integrity against the selected output plan; it does not resolve unselected exceptions or establish the correct source encoding. Confirm encoding, ID fields and restoration scope, and validate the resulting file in the intended review platform before delivery.</footer>
 </main>
-<script id="compare-core">
+
+<script id="compare-storage">
+function createCompareStorage(options={}) {
+  const PREFIX='dat-compare-temp-v2-', BATCH_ROWS=512, BATCH_UNITS=512*1024;
+  const keyText=k=>JSON.stringify(k);const units=v=>typeof v==='string'?v.length:!v||typeof v!=='object'?16:Object.values(v).reduce((n,x)=>n+units(x),0);
+  const at=(v,p)=>Array.isArray(p)?p.map(x=>at(v,x)):String(p).split('.').reduce((a,k)=>a==null?undefined:a[k],v);
+  const error=(e,detail)=>{if(e&&e.name==='ConstraintError'&&detail){const x=new Error(detail.message);Object.assign(x,detail);return x;}const x=new Error('Temporary local storage failed. No output is verified. '+(e&&e.message||e));x.name=e&&e.name||'StorageError';return x;};
+  const cmp=(a,b)=>{if(typeof indexedDB!=='undefined')return indexedDB.cmp(a,b);if(Array.isArray(a)&&Array.isArray(b)){for(let i=0;i<Math.min(a.length,b.length);i++){const c=cmp(a[i],b[i]);if(c)return c;}return a.length-b.length;}return a<b?-1:a>b?1:0;};
+  async function* batches(records){let batch=[],units=0;for await(const r of records){const n=r.raw?r.raw.length:r.values?r.values.reduce((s,v)=>s+v.length,0):128;if(batch.length&&(batch.length>=BATCH_ROWS||units+n>BATCH_UNITS)){yield batch;batch=[];units=0;}batch.push(r);units+=n;}if(batch.length)yield batch;}
+  function memory(schema){
+    const tables=new Map(schema.map(s=>[s.name,new Map()])),seq=new Map();let entries=0,closed=false;
+    const table=n=>{if(closed)throw Error('Temporary index is closed.');return tables.get(n);};
+    const tx={get:async(n,k)=>structuredClone(table(n).get(keyText(k))?.value),put:async(n,v,k)=>{const s=schema.find(x=>x.name===n);if(k===undefined)k=s.keyPath?at(v,s.keyPath):(seq.set(n,(seq.get(n)||0)+1),seq.get(n));const t=table(n),kt=keyText(k);for(const ix of s.indexes||[])if(ix.unique){const value=at(v,ix.keyPath);for(const entry of t.values())if(keyText(entry.key)!==kt&&cmp(at(entry.value,ix.keyPath),value)===0)throw Error('Duplicate or case/Unicode-equivalent key.');}if(!t.has(kt)&&++entries>50000)throw Error('Browser-local disk storage is required for this many records.');t.set(kt,{key:k,value:structuredClone(v)});return k;},add:async(n,v,k,detail)=>{const s=schema.find(x=>x.name===n);if(k===undefined&&s.keyPath)k=at(v,s.keyPath);if(k!==undefined&&table(n).has(keyText(k))){const e=new Error(detail?.message||'Duplicate key');if(detail)Object.assign(e,detail);throw e;}return tx.put(n,v,k);},del:async(n,k)=>{if(table(n).delete(keyText(k)))entries--;},clear:async n=>{entries-=table(n).size;table(n).clear();},count:async(n,index,k)=>{if(!index)return table(n).size;return (await tx.page(n,null,50001,index,k)).length;},page:async(n,after,limit=BATCH_ROWS,index,indexKey)=>{const spec=schema.find(s=>s.name===n),ix=spec.indexes?.find(x=>x.name===index);return [...table(n).values()].filter(x=>after==null||cmp(x.key,after)>0).filter(x=>{if(!ix)return true;const v=at(x.value,ix.keyPath);return ix.multiEntry?v.some(y=>cmp(y,indexKey)===0):cmp(v,indexKey)===0;}).sort((a,b)=>cmp(a.key,b.key)).slice(0,limit).map(x=>structuredClone(x));}};
+    return {kind:'memory-test',name:'memory-test',run:async(names,mode,fn)=>fn(tx),getMany:async(n,keys)=>Promise.all(keys.map(k=>tx.get(n,k))),page:tx.page,count:tx.count,clear:tx.clear,close:async()=>{closed=true;tables.clear();},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  const req=(r,detail)=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(error(r.error,detail));});
+  const remove=name=>new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(name);r.onsuccess=()=>resolve();r.onerror=()=>reject(error(r.error));r.onblocked=()=>reject(Error('Temporary storage is still in use. Close the previous job and retry.'));});
+  async function cleanup(){if(typeof indexedDB==='undefined'||!indexedDB.databases||!globalThis.navigator?.locks)return;for(const d of await indexedDB.databases()){if(!d.name?.startsWith(PREFIX))continue;await navigator.locks.request(d.name,{ifAvailable:true},async lock=>{if(lock)await remove(d.name);});}}
+  async function open(tool,schema){
+    if(typeof indexedDB==='undefined'){if(typeof document==='undefined'&&typeof WorkerGlobalScope==='undefined')return memory(schema);throw Error('Local temporary storage is unavailable. Use current Chrome/Edge.');}
+    if(!globalThis.navigator?.locks)throw Error('Local job locking is unavailable. Use current Chrome/Edge.');
+    await cleanup();
+    const name=PREFIX+tool+'-'+crypto.randomUUID();let release,locked,lockError;
+    const ready=new Promise((resolve,reject)=>{locked=resolve;lockError=reject;});
+    const held=navigator.locks.request(name,async()=>{locked();await new Promise(r=>release=r);});held.catch(lockError);await ready;
+    let db;
+    try{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>{for(const s of schema){const store=r.result.createObjectStore(s.name,{...(s.keyPath?{keyPath:s.keyPath}:{}),...(s.autoIncrement?{autoIncrement:true}:{})});for(const i of s.indexes||[])store.createIndex(i.name,i.keyPath,{unique:!!i.unique,multiEntry:!!i.multiEntry});}};db=await req(r);}catch(e){release();await held;throw error(e);}
+    let closed=false;const live=new Set();
+    const run=async(names,mode,fn)=>{
+      if(closed)throw Error('Temporary index is closed. Run the check again.');
+      const t=db.transaction(names,mode);live.add(t);let txError;
+      const done=new Promise((resolve,reject)=>{t.oncomplete=()=>resolve();t.onabort=()=>reject(txError||error(t.error||'Transaction aborted'));});done.catch(()=>{});
+      const store=n=>t.objectStore(n);const check=v=>{if(units(v)>64*1024*1024)throw Error('Indexed metadata for one document exceeds 64 Mi characters. No output is verified.');return v;};
+      const api={get:(n,k)=>req(store(n).get(k)),put:(n,v,k)=>req(k===undefined?store(n).put(check(v)):store(n).put(check(v),k)),add:(n,v,k,detail)=>req(k===undefined?store(n).add(check(v)):store(n).add(check(v),k),detail),del:(n,k)=>req(store(n).delete(k)),clear:n=>req(store(n).clear()),count:(n,index,k)=>req(index?store(n).index(index).count(IDBKeyRange.only(k)):store(n).count()),page:(n,after,limit=BATCH_ROWS,index,indexKey)=>new Promise((resolve,reject)=>{
+        if(!index){const range=after==null?null:IDBKeyRange.lowerBound(after,true),st=store(n),count=Math.min(limit,BATCH_ROWS);Promise.all([req(st.getAll(range,count)),req(st.getAllKeys(range,count))]).then(([values,keys])=>resolve(values.map((value,i)=>({key:keys[i],value}))),reject);return;}
+        const obj=index?store(n).index(index):store(n),range=index?IDBKeyRange.only(indexKey):after==null?null:IDBKeyRange.lowerBound(after,true),r=obj.openCursor(range),rows=[];let pageUnits=0;
+        r.onerror=()=>reject(error(r.error));r.onsuccess=()=>{const c=r.result;if(!c||rows.length>=limit){resolve(rows);return;}if(index&&after!=null&&cmp(c.primaryKey,after)<=0){if(cmp(c.primaryKey,after)<0)c.continuePrimaryKey(indexKey,after);else c.continue();return;}rows.push({key:c.primaryKey,value:c.value});pageUnits+=units(c.value);if(rows.length>=limit||pageUnits>=BATCH_UNITS){resolve(rows);return;}c.continue();};
+      })};
+      try{const result=await fn(api);await done;return result;}catch(e){txError=e;try{t.abort();}catch{}await done.catch(()=>{});throw e;}finally{live.delete(t);}
+    };
+    return {kind:'indexeddb',name,run,getMany:(n,keys)=>run([n],'readonly',t=>Promise.all(keys.map(k=>t.get(n,k)))),page:(...args)=>run([args[0]],'readonly',t=>t.page(...args)),count:(...args)=>run([args[0]],'readonly',t=>t.count(...args)),clear:n=>run([n],'readwrite',t=>t.clear(n)),close:async()=>{if(closed)return;closed=true;for(const t of live)try{t.abort();}catch{}db.close();try{await remove(name);}finally{release();await held;}},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  return {open,cleanup,batches,BATCH_ROWS,BATCH_UNITS,cmp};
+}
+
+</script>
+<script id="compare-codec">
+
 'use strict';
 function createCompareCore(options = {}) {
-  const VERSION='0.1.1', FE='\u00fe', DC4='\u0014';
-  const limits={bytes:128*1024*1024,records:500000,fields:2000,issues:1000000,cell:32*1024*1024,...options.limits};
+  const VERSION='0.2.0', FE='\u00fe', DC4='\u0014';
+  const limits={bytes:Number.MAX_SAFE_INTEGER,records:Number.MAX_SAFE_INTEGER,fields:2000,cell:32*1024*1024,...options.limits};
   const fail=m=>{throw new Error(m);};
   const progress=options.progress||(()=>{});
   const formats={dat:{delimiter:DC4,quote:FE},csv:{delimiter:',',quote:'"'},tsv:{delimiter:'\t',quote:'"'},pipe:{delimiter:'|',quote:'"'}};
-  function parse(text,dialect='auto') {
-    if(text.charCodeAt(0)===0xfeff)text=text.slice(1);
+  function parse(text,dialect='auto',header=true) {
+    if(header&&text.charCodeAt(0)===0xfeff)text=text.slice(1);
     if(!text.length)fail('Empty input.');
     if(text.includes('\0'))fail('NUL character found. Check the input encoding.');
     if(dialect==='auto') {if(!text.startsWith(FE))fail('Auto format requires þ / DC4. Select CSV, TSV or pipe explicitly.');dialect='dat';}
     const fmt=formats[dialect];if(!fmt)fail('Unsupported file format.');
     const {delimiter,quote}=fmt;
+    // DAT does not permit literal qualifiers, delimiters or raw newlines inside values.
+    // A single physical DAT record therefore has an exact, unambiguous fast path.
+    if(dialect==='dat'&&!/[\r\n]/.test(text)){
+      if(!text.startsWith(FE)||!text.endsWith(FE))fail('Every DAT field must be enclosed in þ.');
+      const values=text.slice(1,-1).split(FE+DC4+FE);
+      if(values.length>limits.fields)fail('Field limit exceeded.');
+      for(const v of values)if(v.includes(FE)||v.includes(DC4)||v.length>limits.cell)fail('Literal DAT qualifier/delimiter or oversized field is unsupported.');
+      if(!header)return {rows:[values],lines:[1],dialect};
+      checkHeaders(values);return {headers:values,rows:[],lines:[],dialect};
+    }
     const rows=[],lines=[];let row=[],cell='',state=0,line=1,startLine=1,active=false;
     // States: 0 start, 1 unquoted, 2 quoted, 3 after qualifier.
     function field(){row.push(cell);cell='';state=0;if(row.length>limits.fields)fail('Field limit exceeded at source row '+startLine+'.');}
@@ -77,6 +135,7 @@ function createCompareCore(options = {}) {
     if(state===2)fail('Unclosed qualifier at source row '+startLine+'.');
     if(active||row.length||state!==0){if(dialect==='dat'&&state!==3)fail('Missing final þ qualifier.');record();}
     if(!rows.length)fail('No header found.');
+    if(!header)return {rows,lines,dialect};
     const headers=rows.shift();lines.shift();
     const seen=new Set();for(const h of headers){if(!h.trim())fail('Blank header is not allowed.');if(seen.has(h))fail('Duplicate header: '+h);seen.add(h);}
     rows.forEach((r,i)=>{if(r.length!==headers.length)fail('Source row '+lines[i]+': expected '+headers.length+' fields, found '+r.length+'.');});
@@ -94,16 +153,6 @@ function createCompareCore(options = {}) {
     let text;try{text=new TextDecoder(encoding,{fatal:true,ignoreBOM:true}).decode(bytes.subarray(skip));}catch{fail('Cannot decode as '+encoding+'. Choose the correct input encoding; invalid bytes are not replaced.');}
     return {text,encoding,bom:!!bom,encodingBasis:bom?'BOM':choice==='auto'?'Strict UTF-8 default (no BOM)':'Explicit selection'};
   }
-  async function sha(bytes){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}
-  async function load(file,config={}) {
-    if(!file||!file.size)fail('Select a nonempty input file.');
-    if(file.size>limits.bytes)fail('Input byte limit exceeded.');
-    progress('Reading '+file.name);
-    const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.length!==file.size)fail('Incomplete input read: '+file.name);
-    const meta=decode(bytes,config.encoding),data=parse(meta.text,config.dialect);
-    const hash=await sha(bytes);
-    return {...data,encoding:meta.encoding,bom:meta.bom,encodingBasis:meta.encodingBasis,hash,file:{name:file.name,size:file.size,lastModified:file.lastModified}};
-  }
   function alerts(value) {
     const result=[];
     if(value.includes('\ufffd'))result.push('Replacement character U+FFFD');
@@ -111,194 +160,266 @@ function createCompareCore(options = {}) {
     if(/(?:Ã[\u0080-\u00bf]|Â[\u0080-\u00bf]|â[€\u0080-\u009f]|ï¿½|ðŸ)/.test(value))result.push('Possible mojibake sequence');
     return result;
   }
-  function compare(baseline,customer,baselineKey,customerKey) {
-    const bi=baseline.headers.indexOf(baselineKey),ci=customer.headers.indexOf(customerKey);
-    if(bi<0||ci<0)fail('Select an existing document ID field in both files.');
-    const issues=[],counts={},fieldCounts=new Map(),matches=[],missing=[],added=[];
-    let blocking=0;
-    function issue(type,id='',field='',bv='',cv='',detail='',br='',cr=''){
-      if(issues.length>=limits.issues)fail('Exception limit exceeded. No partial comparison is published.');
-      issues.push({type,id,field,baseline:bv,customer:cv,detail,baselineRow:br,customerRow:cr});counts[type]=(counts[type]||0)+1;
+
+function hash() {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), buf = new Uint8Array(64);
+    let used = 0, total = 0, done = false;
+    const rr = (x,n) => (x >>> n) | (x << (32-n));
+    function compress(b) {
+      for(let i=0;i<16;i++) { const j=i*4; w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0; }
+      for(let i=16;i<64;i++) w[i]=(w[i-16]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-7]+(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10)))>>>0;
+      let a=h[0],b0=h[1],c=h[2],d=h[3],e=h[4],f=h[5],g=h[6],z=h[7];
+      for(let i=0;i<64;i++) {
+        const t1=(z+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+        const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b0)^(a&c)^(b0&c)))>>>0;
+        z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b0;b0=a;a=(t1+t2)>>>0;
+      }
+      h[0]=(h[0]+a)>>>0;h[1]=(h[1]+b0)>>>0;h[2]=(h[2]+c)>>>0;h[3]=(h[3]+d)>>>0;h[4]=(h[4]+e)>>>0;h[5]=(h[5]+f)>>>0;h[6]=(h[6]+g)>>>0;h[7]=(h[7]+z)>>>0;
     }
-    function index(data,key,side){const map=new Map();data.rows.forEach((r,i)=>{
-      const id=r[key];if(!id.trim()||id!==id.trim()) {blocking++;issue('INVALID_ID',id,data.headers[key],side==='baseline'?id:'',side==='customer'?id:'','Blank ID or surrounding whitespace; no automatic trimming.',side==='baseline'?data.lines[i]:'',side==='customer'?data.lines[i]:'');return;}
-      const bucket=map.get(id);if(bucket)bucket.push(i);else map.set(id,[i]);
-    });return map;}
-    const bmap=index(baseline,bi,'baseline'),cmap=index(customer,ci,'customer');
-    const cHeaders=new Map(customer.headers.map((h,i)=>[h,i]));
-    const fields=[];
-    baseline.headers.forEach((h,i)=>{
-      if(i===bi)return;
-      if(cHeaders.has(h)&&cHeaders.get(h)!==ci)fields.push({name:h,b:i,c:cHeaders.get(h)});
-      else issue('BASELINE_ONLY_FIELD','',h,'(column exists)','(column absent)','No automatic column-name mapping.');
-    });
-    customer.headers.forEach((h,i)=>{if(i!==ci&&(!baseline.headers.includes(h)||baseline.headers.indexOf(h)===bi))issue('CUSTOMER_ONLY_FIELD','',h,'(column absent)','(column exists)','Customer field is retained.');});
-    // Crossed identity names would compare an ID field to metadata; reject that ambiguity.
-    if(baselineKey!==customerKey&&(customer.headers.includes(baselineKey)||baseline.headers.includes(customerKey))){blocking++;issue('KEY_FIELD_CONFLICT','','','','','Selected ID names also occur as non-ID fields on the other side.');}
-    let changedRecords=0,changedCells=0;
-    const keys=new Set([...bmap.keys(),...cmap.keys()]);
-    for(const id of keys){const bs=bmap.get(id)||[],cs=cmap.get(id)||[];
-      if(bs.length>1||cs.length>1){blocking++;issue('AMBIGUOUS_ID',id,'',String(bs.length)+' records',String(cs.length)+' records','Duplicate ID; these records are not paired.',bs.map(i=>baseline.lines[i]).join('; '),cs.map(i=>customer.lines[i]).join('; '));continue;}
-      if(!cs.length){missing.push(bs[0]);issue('BASELINE_ONLY_RECORD',id,'','','','Record missing from customer DAT.',baseline.lines[bs[0]],'');continue;}
-      if(!bs.length){added.push(cs[0]);issue('CUSTOMER_ONLY_RECORD',id,'','','','Record exists only in customer DAT.','',customer.lines[cs[0]]);continue;}
-      const b=bs[0],c=cs[0];matches.push({id,b,c});let changed=false;
-      for(const f of fields){const bv=baseline.rows[b][f.b],cv=customer.rows[c][f.c];if(bv!==cv){changed=true;changedCells++;fieldCounts.set(f.name,(fieldCounts.get(f.name)||0)+1);issue('VALUE_CHANGED',id,f.name,bv,cv,cv===''&&bv!==''?'Customer value was cleared.':'Exact decoded values differ.',baseline.lines[b],customer.lines[c]);}}
-      if(changed)changedRecords++;
-    }
-    // Scan all fields of all records, including unmapped/ambiguous records and headers.
-    for(const [side,data,key] of [['baseline',baseline,bi],['customer',customer,ci]]){
-      for(let i=-1;i<data.rows.length;i++){const row=i<0?data.headers:data.rows[i];row.forEach((value,j)=>{
-        const hint=alerts(value);if(hint.length)issue('CHARACTER_ALERT',i<0?'(header)':row[key],data.headers[j],side==='baseline'?value:'',side==='customer'?value:'',side+': '+hint.join('; '),side==='baseline'?(i<0?1:data.lines[i]):'',side==='customer'?(i<0?1:data.lines[i]):'');
-      });}
-    }
-    const summary={baselineRecords:baseline.rows.length,customerRecords:customer.rows.length,matched:matches.length,changedRecords,changedCells,baselineOnly:missing.length,customerOnly:added.length,unresolvedBaseline:baseline.rows.length-matches.length-missing.length,unresolvedCustomer:customer.rows.length-matches.length-added.length,comparedFields:fields.length,comparedCells:matches.length*fields.length,exceptions:issues.length,blocking,counts,fieldCounts:Object.fromEntries(fieldCounts)};
-    return {baseline,customer,baselineKey,customerKey,bi,ci,fields,matches,missing,added,issues,summary};
+    return {
+      update(bytes) {
+        if(done) fail('Hash already finalized.');
+        total+=bytes.length; let i=0;
+        if(used) {const take=Math.min(64-used,bytes.length);buf.set(bytes.subarray(0,take),used);used+=take;i=take;if(used===64){compress(buf);used=0;}}
+        while(i+64<=bytes.length){compress(bytes.subarray(i,i+64));i+=64;}
+        if(i<bytes.length){buf.set(bytes.subarray(i));used=bytes.length-i;}
+      },
+      hex() {
+        if(done) fail('Hash already finalized.'); done=true;
+        const tail=new Uint8Array(used<56?64:128);tail.set(buf.subarray(0,used));tail[used]=128;
+        const dv=new DataView(tail.buffer);dv.setUint32(tail.length-8,Math.floor(total/0x20000000));dv.setUint32(tail.length-4,(total%0x20000000)*8);
+        for(let i=0;i<tail.length;i+=64)compress(tail.subarray(i,i+64));
+        return Array.from(h,v=>v.toString(16).padStart(8,'0')).join('');
+      }
+    };
   }
-  function validateFields(result,names){
-    if(result.summary.blocking)fail('Invalid or ambiguous IDs block DAT outputs. Review the exception report.');
-    if(!Array.isArray(names)||!names.length)fail('Select at least one changed metadata field.');
-    if(new Set(names).size!==names.length)fail('Duplicate restore field.');
-    return names.map(name=>{const f=result.fields.find(f=>f.name===name);if(!f||f.b===result.bi||f.c===result.ci||!Object.hasOwn(result.summary.fieldCounts,name))fail('Invalid restore field: '+name);return f;});
+  const encoder=new TextEncoder();
+  function digest(text){const h=hash();h.update(encoder.encode(text));return h.hex();}
+  function rowHash(r){return digest(JSON.stringify([r.n,r.values]));}
+  function checkHeaders(headers){const seen=new Set();for(const h of headers){if(!h.trim())fail('Blank header.');if(seen.has(h))fail('Duplicate header: '+h);seen.add(h);}return headers;}
+  async function reader(file,config={}){
+    if(!file||!file.size)fail('Select a nonempty file.');
+    const prefix=new Uint8Array(await file.slice(0,4).arrayBuffer());let skip=0,bom='',choice=config.encoding||'auto';
+    if(prefix[0]===255&&prefix[1]===254&&prefix[2]===0&&prefix[3]===0||prefix[0]===0&&prefix[1]===0&&prefix[2]===254&&prefix[3]===255)fail('UTF-32 is unsupported.');
+    if(prefix[0]===239&&prefix[1]===187&&prefix[2]===191){skip=3;bom='utf-8';}else if(prefix[0]===255&&prefix[1]===254){skip=2;bom='utf-16le';}else if(prefix[0]===254&&prefix[1]===255){skip=2;bom='utf-16be';}
+    const encoding=choice==='auto'?(bom||'utf-8'):choice;if(bom&&encoding!==bom)fail('Encoding conflicts with '+bom+' BOM.');
+    const meta={encoding,bom:!!bom,encodingBasis:bom?'BOM':choice==='auto'?'Strict UTF-8 default (no BOM)':'Explicit selection',dialect:config.dialect||'auto'};
+    let decoder;try{decoder=new TextDecoder(encoding,{fatal:true,ignoreBOM:true});}catch{fail('Unsupported encoding: '+encoding);}
+    const r={meta,hash:null,bytes:0};
+    async function* textChunks(){const h=hash();try{for(let at=0;at<file.size;at+=options.chunkBytes||1024*1024){const end=Math.min(file.size,at+(options.chunkBytes||1024*1024)),bytes=new Uint8Array(await file.slice(at,end).arrayBuffer());if(bytes.length!==end-at)fail('Incomplete source read.');h.update(bytes);r.bytes+=bytes.length;const text=decoder.decode(bytes.subarray(Math.min(bytes.length,Math.max(0,skip-at))),{stream:true});progress('Reading '+file.name+' · '+Math.floor(end/file.size*100)+'%');if(text)yield text;}const tail=decoder.decode();if(tail)yield tail;r.hash=h.hex();}catch(e){fail('Cannot read/decode '+file.name+' as '+encoding+': '+e.message);}}
+    r.records=async function*(){let parts=[],units=0,quoted=false,skipLF=false,wasCR=false,line=1,rowLine=1,n=0,quote=null;
+      function take(raw){if(raw.length>limits.cell)fail('Record size exceeds 32 Mi characters at source row '+rowLine+'.');if(meta.dialect==='auto'){if(!raw.startsWith(FE))fail('Auto format requires þ / DC4.');meta.dialect='dat';}const values=parse(raw,meta.dialect,false).rows;if(values.length!==1)fail('Invalid logical record at source row '+rowLine+'.');return {n:n++,line:rowLine,values:values[0]};}
+      for await(const text of textChunks()){let start=0;if(quote===null)quote=(meta.dialect==='dat'||meta.dialect==='auto')?FE:'"';
+        if(meta.dialect==='dat'||meta.dialect==='auto'){
+          if(skipLF){skipLF=false;if(text[0]==='\n')start=1;}
+          const breaks=/\r\n|\r|\n/g;breaks.lastIndex=start;let m;
+          while((m=breaks.exec(text))){const raw=parts.join('')+text.slice(start,m.index);yield take(raw);parts=[];units=0;start=m.index+m[0].length;line++;rowLine=line;skipLF=m[0]==='\r'&&start===text.length;}
+          if(start<text.length){const tail=text.slice(start);parts.push(tail);units+=tail.length;if(units>limits.cell)fail('Record size exceeds 32 Mi characters.');}
+          continue;
+        }
+        for(let i=0;i<text.length;i++){const c=text[i];if(skipLF){skipLF=false;if(c==='\n'){start=i+1;wasCR=false;continue;}}if(c===quote)quoted=!quoted;
+          if(c==='\r'||c==='\n'){if(c==='\r'||!wasCR)line++;if(!quoted){const raw=parts.join('')+text.slice(start,i);yield take(raw);parts=[];units=0;start=i+1;rowLine=line;skipLF=c==='\r';}}wasCR=c==='\r';
+        }
+        if(start<text.length){const tail=text.slice(start);parts.push(tail);units+=tail.length;if(units>limits.cell)fail('Record size exceeds 32 Mi characters.');}
+      }
+      if(units)yield take(parts.join(''));if(!n)fail('No header found.');
+    };
+    return r;
   }
-  function serialize(headers,rows,dialect){
-    const fmt=formats[dialect];if(!fmt)fail('Unsupported output format.');
-    const field=v=>{if(typeof v!=='string'||v.includes('\0'))fail('Invalid output value.');if(dialect==='dat'&&/[\u00fe\u0014\r\n]/.test(v))fail('A value contains literal þ, DC4 or a raw line break and cannot safely be written to this DAT dialect.');return fmt.quote+v.replaceAll(fmt.quote,fmt.quote+fmt.quote)+fmt.quote;};
-    return [headers,...rows].map(r=>r.map(field).join(fmt.delimiter)).join('\r\n')+'\r\n';
-  }
-  function encode(text,encoding='utf-8'){
-    if(encoding==='utf-8'){const content=new TextEncoder().encode(text),bytes=new Uint8Array(content.length+3);bytes.set([239,187,191]);bytes.set(content,3);return bytes;}
-    if(encoding!=='utf-16le'&&encoding!=='utf-16be')fail('Output encoding must be Unicode.');
-    const bytes=new Uint8Array(2+text.length*2),le=encoding==='utf-16le';bytes.set(le?[255,254]:[254,255]);const view=new DataView(bytes.buffer);for(let i=0;i<text.length;i++)view.setUint16(2+i*2,text.charCodeAt(i),le);return bytes;
-  }
-  function checkValues(actual,headers,rows){
-    if(actual.headers.length!==headers.length||actual.headers.some((h,i)=>h!==headers[i]))fail('Output header verification failed.');
-    if(actual.rows.length!==rows.length)fail('Output record-count verification failed.');
-    for(let i=0;i<rows.length;i++)for(let j=0;j<headers.length;j++)if(actual.rows[i][j]!==rows[i][j])fail('Output value/order verification failed at record '+(i+1)+', field '+headers[j]+'.');
-  }
-  async function repair(result,names,encoding='utf-8'){
-    const fields=validateFields(result,names),rows=result.customer.rows.map(r=>r.slice());let changed=0;const changes=[];
-    for(const m of result.matches)for(const f of fields){const before=rows[m.c][f.c],after=result.baseline.rows[m.b][f.b];if(before!==after){rows[m.c][f.c]=after;changed++;changes.push({id:m.id,field:f.name,customerBefore:before,restoredBaseline:after,customerRow:result.customer.lines[m.c]});}}
-    const bytes=encode(serialize(result.customer.headers,rows,result.customer.dialect),encoding);
-    const parsed=parse(decode(bytes,encoding).text,result.customer.dialect);checkValues(parsed,result.customer.headers,rows);
-    const hash=await sha(bytes);
-    return {kind:'repair',bytes,hash,headers:result.customer.headers.slice(),rows,dialect:result.customer.dialect,encoding,changed,fields:names.slice(),changes};
-  }
-  async function extract(result,kind){
-    if(result.summary.blocking)fail('Invalid or ambiguous IDs block DAT extracts.');
-    const src=kind==='missing'?result.baseline:result.customer;
-    const selected=(kind==='missing'?result.missing:kind==='added'?result.added:kind==='common'?result.matches.map(m=>m.c):fail('Invalid extract type.')).slice().sort((a,b)=>a-b);
-    const rows=selected.map(i=>src.rows[i]);const bytes=encode(serialize(src.headers,rows,src.dialect));checkValues(parse(decode(bytes).text,src.dialect),src.headers,rows);
-    return {kind:'extract:'+kind,bytes,hash:await sha(bytes),records:rows.length,headers:src.headers.slice(),rows,dialect:src.dialect,encoding:'utf-8',changed:0,fields:[],changes:[]};
-  }
-  async function verify(output,file){
-    if(file.size!==output.bytes.length)fail('Saved file size differs from generated output.');
-    const bytes=new Uint8Array(await file.arrayBuffer()),hash=await sha(bytes);if(hash!==output.hash)fail('Saved file SHA-256 differs from generated output.');
-    checkValues(parse(decode(bytes,output.encoding).text,output.dialect),output.headers,output.rows);
-    return {status:'PASS',hash,bytes:bytes.length,records:output.rows.length,fields:output.headers.length,changedCells:output.changed,savedFile:{name:file.name,size:file.size,lastModified:file.lastModified},verifiedAt:new Date().toISOString()};
-  }
-  function csvCell(value){let s=String(value??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(s)||/^[\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
-  function reportCSV(issues){const fields=['type','id','field','baseline','customer','detail','baselineRow','customerRow'];return '\ufeff'+[fields,...issues.map(x=>fields.map(f=>x[f]))].map(r=>r.map(csvCell).join(',')).join('\r\n')+'\r\n';}
-  function provenance(result){return {tool:'DAT Compare & Repair',version:VERSION,createdAt:new Date().toISOString(),baseline:{...result.baseline.file,sha256:result.baseline.hash,encoding:result.baseline.encoding,encodingBasis:result.baseline.encodingBasis,dialect:result.baseline.dialect,key:result.baselineKey,headers:result.baseline.headers},customer:{...result.customer.file,sha256:result.customer.hash,encoding:result.customer.encoding,encodingBasis:result.customer.encodingBasis,dialect:result.customer.dialect,key:result.customerKey,headers:result.customer.headers},comparison:'Exact decoded values; ID fields are explicitly paired; no trim, case folding or Unicode normalization.',summary:result.summary};}
-  return {VERSION,limits,parse,decode,sha,load,alerts,compare,serialize,encode,repair,extract,verify,csvCell,reportCSV,provenance};
+  async function inspect(file,config={}){const r=await reader(file,config);let headers=null,records=0,maxUnits=1;for await(const row of r.records()){if(!headers)headers=checkHeaders(row.values);else{if(row.values.length!==headers.length)fail('Source row '+row.line+': expected '+headers.length+' fields, found '+row.values.length+'.');records++;maxUnits=Math.max(maxUnits,JSON.stringify(row.values).length+1024);}}return {headers,records,maxUnits,hash:r.hash,...r.meta,file:{name:file.name,size:file.size,lastModified:file.lastModified}};}
+  async function fileHash(file){const h=hash();for(let at=0;at<file.size;at+=4*1024*1024){const end=Math.min(file.size,at+4*1024*1024),b=new Uint8Array(await file.slice(at,end).arrayBuffer());if(b.length!==end-at)fail('Incomplete hash read.');h.update(b);progress('Checking '+file.name+' · '+Math.floor(end/file.size*100)+'%');}return h.hex();}
+  function line(values,dialect){const fmt=formats[dialect];if(!fmt)fail('Unsupported output format.');return values.map(v=>{if(typeof v!=='string'||v.includes('\0'))fail('Invalid output value.');if(dialect==='dat'&&/[\u00fe\u0014\r\n]/.test(v))fail('Literal DAT qualifier/delimiter/newline cannot be serialized.');return fmt.quote+v.replaceAll(fmt.quote,fmt.quote+fmt.quote)+fmt.quote;}).join(fmt.delimiter)+'\r\n';}
+  function encode(text,encoding='utf-8'){if(encoding==='utf-8')return encoder.encode(text);if(!['utf-16le','utf-16be'].includes(encoding))fail('Unsupported output encoding.');const out=new Uint8Array(text.length*2),view=new DataView(out.buffer);for(let i=0;i<text.length;i++)view.setUint16(i*2,text.charCodeAt(i),encoding==='utf-16le');return out;}
+  function outputBOM(enc){return Uint8Array.from(enc==='utf-8'?[239,187,191]:enc==='utf-16le'?[255,254]:enc==='utf-16be'?[254,255]:fail('Unsupported encoding.'));}
+  function csvCell(v){let s=String(v??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(s)||/^[\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
+  return {VERSION,limits,parse,decode,alerts,hash,digest,rowHash,reader,inspect,fileHash,line,encode,outputBOM,csvCell};
 }
-if(typeof module!=='undefined')module.exports=createCompareCore;
+
 </script>
-<script id="compare-ui">
+<script id="compare-engine">
+'use strict';
+function createDiskCompare(options={}){
+  const C=createCompareCore(options),disk=createCompareStorage(options),progress=options.progress||(()=>{});
+  let store=null,sources=null,result=null,output=null,issueBuffer=[],issueUnits=0;
+  const schema=['b','c','links','missing','issues'].map(name=>({name}));
+  const cap=max=>Math.max(1,Math.min(disk.BATCH_ROWS,Math.floor(disk.BATCH_UNITS/Math.max(1,max))));
+  const reject=m=>{throw new Error(m);};
+  const info=f=>({name:f.name,size:f.size,lastModified:f.lastModified});
+  async function dispose(){result=output=null;if(store){const s=store;store=null;await s.close();}}
+  async function load(b,c,bc={},cc={}){await dispose();sources=null;const baseline=await C.inspect(b,bc),customer=await C.inspect(c,cc);sources={b:{file:b,config:bc,meta:baseline},c:{file:c,config:cc,meta:customer}};return {baseline,customer};}
+  async function checkSources(){if(!sources)reject('Read both files first.');for(const x of Object.values(sources))try{if(x.file.size!==x.meta.file.size||await C.fileHash(x.file)!==x.meta.hash)throw Error('Hash changed');}catch{reject('Input source changed or became unreadable: '+x.file.name+'. Read both files again.');}}
+  async function* pages(name,max=1024){let after=null;while(true){const rows=await store.page(name,after,cap(max));if(!rows.length)return;for(const r of rows)yield r;after=rows.at(-1).key;}}
+  async function flushIssues(){if(!issueBuffer.length)return;const batch=issueBuffer;issueBuffer=[];issueUnits=0;await store.run(['issues'],'readwrite',t=>Promise.all(batch.map(x=>t.add('issues',x,x.sequence))));}
+  async function issue(type,id='',field='',bv='',cv='',detail='',br='',cr=''){
+    const s=result.summary,x={sequence:++s.exceptions,type,id,field,baseline:bv,customer:cv,detail,baselineRow:br,customerRow:cr};x.digest=C.digest(JSON.stringify(x));s.counts[type]=(s.counts[type]||0)+1;const units=JSON.stringify(x).length;s.maxIssueUnits=Math.max(s.maxIssueUnits,units);if(issueBuffer.length&&(issueBuffer.length>=disk.BATCH_ROWS||issueUnits+units>disk.BATCH_UNITS))await flushIssues();issueBuffer.push(x);issueUnits+=units;
+  }
+  function stored(r){if(C.rowHash(r)!==r.digest)reject('Temporary row integrity check failed. Read the files again.');return r;}
+  async function index(side,key){const src=sources[side],ki=src.meta.headers.indexOf(key),reader=await C.reader(src.file,src.config);let batch=[],units=0,count=0,indexed=0;
+    async function flush(){if(!batch.length)return;const rows=batch;batch=[];units=0;await store.run([side],'readwrite',t=>Promise.all(rows.map(r=>t.add(side,r,[r.id,r.n]))));}
+    for await(const r of reader.records()){
+      if(r.n===0){if(JSON.stringify(r.values)!==JSON.stringify(src.meta.headers))reject('Input source changed: headers differ.');}else{
+        if(r.values.length!==src.meta.headers.length)reject('Field count changed at source row '+r.line+'.');count++;const id=r.values[ki];
+        if(!id.trim()||id!==id.trim()){result.summary.blocking++;await issue('INVALID_ID',id,key,side==='b'?id:'',side==='c'?id:'','Blank ID or surrounding whitespace; no automatic trimming.',side==='b'?r.line:'',side==='c'?r.line:'');}
+        else{indexed++;r.id=id;r.digest=C.rowHash(r);const size=JSON.stringify(r).length;if(batch.length&&(batch.length>=disk.BATCH_ROWS||units+size>disk.BATCH_UNITS))await flush();batch.push(r);units+=size;}
+      }
+      for(let j=0;j<r.values.length;j++){const a=C.alerts(r.values[j]);if(a.length)await issue('CHARACTER_ALERT',r.n?r.values[ki]:'(header)',src.meta.headers[j],side==='b'?r.values[j]:'',side==='c'?r.values[j]:'',(side==='b'?'baseline':'customer')+': '+a.join('; '),side==='b'?r.line:'',side==='c'?r.line:'');}
+    }
+    await flush();if(reader.hash!==src.meta.hash||count!==src.meta.records)reject('Input source changed during indexing. Read both files again.');result.indexed[side]=indexed;
+  }
+  function checkedIssue(x){const {digest,...v}=x;if(C.digest(JSON.stringify(v))!==digest)reject('Temporary exception integrity check failed.');return v;}
+  function linkDigest(l){return C.digest(JSON.stringify([l.n,l.id,l.kind||'',l.b||null]));}
+  function checkedLink(l){if(l&&linkDigest(l)!==l.digest)reject('Temporary link integrity check failed.');return l;}
+  async function* groups(side){let group=null,seen=0;for await(const x of pages(side,sources[side].meta.maxUnits)){seen++;const r=stored(x.value);if(r.id!==r.values[side==='b'?result.bi:result.ci]||JSON.stringify(x.key)!==JSON.stringify([r.id,r.n]))reject('Temporary row identity check failed.');if(group&&group.id!==r.id){yield group;group=null;}if(!group)group={id:r.id,first:r,count:0,lines:[]};group.count++;if(group.lines.length<8)group.lines.push(r.line);}if(seen!==result.indexed[side])reject('Temporary record index is incomplete. Read both files again.');if(group)yield group;}
+  async function compare(bkey,ckey){if(!sources)reject('Read both files first.');await dispose();const b=sources.b.meta,c=sources.c.meta,bi=b.headers.indexOf(bkey),ci=c.headers.indexOf(ckey);if(bi<0||ci<0)reject('Select document ID fields.');
+    // Chromium can report usage + 10 GiB regardless of the enforced quota.
+    // Estimates are advisory; real transaction/write failures always abort the job.
+    let storageEstimate=null;if(globalThis.navigator?.storage?.estimate)try{const q=await navigator.storage.estimate();storageEstimate={quota:q.quota,usage:q.usage,advisory:true};}catch{}
+    store=await disk.open('compare',schema);result={bkey,ckey,bi,ci,fields:[],summary:{baselineRecords:b.records,customerRecords:c.records,matched:0,changedRecords:0,changedCells:0,baselineOnly:0,customerOnly:0,unresolvedBaseline:0,unresolvedCustomer:0,comparedFields:0,comparedCells:0,exceptions:0,blocking:0,counts:{},fieldCounts:Object.create(null),maxIssueUnits:1024,processing:{index:store.kind,chunkBytes:options.chunkBytes||1024*1024,batchRows:disk.BATCH_ROWS,batchUnits:disk.BATCH_UNITS,storageEstimate}}};issueBuffer=[];issueUnits=0;
+    result.indexed={b:0,c:0};try{
+      b.headers.forEach((name,j)=>{const k=c.headers.indexOf(name);if(j!==bi&&k>=0&&k!==ci)result.fields.push({name,b:j,c:k});});
+      for(const [j,h] of b.headers.entries())if(j!==bi&&!result.fields.some(f=>f.b===j))await issue('BASELINE_ONLY_FIELD','',h,'(column exists)','(column absent)','No automatic field-name mapping.');
+      for(const [j,h] of c.headers.entries())if(j!==ci&&!result.fields.some(f=>f.c===j))await issue('CUSTOMER_ONLY_FIELD','',h,'(column absent)','(column exists)','Customer field is retained.');
+      if(bkey!==ckey&&(c.headers.includes(bkey)||b.headers.includes(ckey))){result.summary.blocking++;await issue('KEY_FIELD_CONFLICT','','','','','ID field name conflicts with metadata on the other side.');}
+      await index('b',bkey);await index('c',ckey);
+      const bit=groups('b')[Symbol.asyncIterator](),cit=groups('c')[Symbol.asyncIterator]();let bn=await bit.next(),cn=await cit.next(),links=[],missing=[],linkUnits=0;
+      async function flush(){if(!links.length&&!missing.length)return;const l=links,m=missing;links=[];missing=[];linkUnits=0;for(const x of [...l,...m])x.digest=linkDigest(x);await store.run(['links','missing'],'readwrite',t=>Promise.all([...l.map(x=>t.add('links',x,x.n)),...m.map(x=>t.add('missing',x,x.n))]));}
+      while(!bn.done||!cn.done){const cmp=bn.done?1:cn.done?-1:disk.cmp(bn.value.id,cn.value.id),bg=cmp<=0?bn.value:null,cg=cmp>=0?cn.value:null,id=bg?.id||cg.id,s=result.summary;
+        if((bg?.count||0)>1||(cg?.count||0)>1){s.blocking++;await issue('AMBIGUOUS_ID',id,'',String(bg?.count||0)+' records',String(cg?.count||0)+' records','Duplicate ID; records not paired. Row locations list up to 8 per side.',bg?.lines.join('; ')||'',cg?.lines.join('; ')||'');}
+        else if(!cg){s.baselineOnly++;missing.push({n:bg.first.n,id});await issue('BASELINE_ONLY_RECORD',id,'','','','Record missing from customer DAT.',bg.first.line,'');}
+        else if(!bg){s.customerOnly++;links.push({n:cg.first.n,id,kind:'added'});await issue('CUSTOMER_ONLY_RECORD',id,'','','','Record exists only in customer DAT.','',cg.first.line);}
+        else{const br=bg.first,cr=cg.first;s.matched++;links.push({n:cr.n,id,kind:'matched',b:[id,br.n]});let changed=false;for(const f of result.fields){const bv=br.values[f.b],cv=cr.values[f.c];if(bv!==cv){changed=true;s.changedCells++;s.fieldCounts[f.name]=(s.fieldCounts[f.name]||0)+1;await issue('VALUE_CHANGED',id,f.name,bv,cv,cv===''&&bv!==''?'Customer value was cleared.':'Exact decoded values differ.',br.line,cr.line);}}if(changed)s.changedRecords++;}
+        if((bg?.count||0)<=1&&(cg?.count||0)<=1)linkUnits+=id.length+128;if(links.length+missing.length>=disk.BATCH_ROWS||linkUnits>=disk.BATCH_UNITS)await flush();if(cmp<=0)bn=await bit.next();if(cmp>=0)cn=await cit.next();if((s.matched+s.baselineOnly+s.customerOnly)%10000===0)progress('Comparing IDs · '+(s.matched+s.baselineOnly+s.customerOnly).toLocaleString());
+      }
+      await flush();await flushIssues();const s=result.summary;s.comparedFields=result.fields.length;s.comparedCells=s.matched*result.fields.length;s.unresolvedBaseline=b.records-s.matched-s.baselineOnly;s.unresolvedCustomer=c.records-s.matched-s.customerOnly;return {summary:s,provenance:provenance()};
+    }catch(e){await dispose();throw e;}
+  }
+  function requireResult(){if(!result||!store)reject('Compare the current files first.');}
+  function provenance(){requireResult();return {tool:'DAT Compare & Repair',version:C.VERSION,createdAt:new Date().toISOString(),baseline:{...sources.b.meta,key:result.bkey,sha256:sources.b.meta.hash},customer:{...sources.c.meta,key:result.ckey,sha256:sources.c.meta.hash},comparison:'Exact decoded values; no trim, case folding or Unicode normalization.',summary:result.summary};}
+  async function page({kind='',query='',after=null,page=0}={}){requireResult();const q=query.toLowerCase(),rows=[];let last=after,done=true;for await(const x of pagesFrom('issues',after,result.summary.maxIssueUnits)){last=x.key;const v=checkedIssue(x.value);if((!kind||v.type===kind)&&(!q||[v.id,v.field,v.baseline,v.customer,v.detail].some(s=>String(s).toLowerCase().includes(q))))rows.push(Object.fromEntries(Object.entries(v).map(([k,s])=>[k,typeof s==='string'&&s.length>4096?s.slice(0,4096)+'… [full value in exception CSV]':s])));if(rows.length===200){done=false;break;}}return {rows,after:last,done,page,total:!kind&&!q?result.summary.exceptions:kind&&!q?result.summary.counts[kind]||0:null};}
+  async function* pagesFrom(name,after,max){while(true){const batch=await store.page(name,after,cap(max));if(!batch.length)return;for(const x of batch)yield x;after=batch.at(-1).key;}}
+  function fields(names){requireResult();if(result.summary.blocking)reject('Invalid or ambiguous IDs block DAT outputs.');if(!Array.isArray(names)||!names.length||new Set(names).size!==names.length)reject('Select distinct changed fields.');return names.map(n=>{const f=result.fields.find(x=>x.name===n);if(!f||!Object.hasOwn(result.summary.fieldCounts,n))reject('Invalid restore field: '+n);return f;});}
+  async function* expected(kind,names=[]){requireResult();if(result.summary.blocking)reject('Invalid or ambiguous IDs block DAT outputs.');const side=kind==='extract:missing'?'b':'c',src=sources[side],fs=kind==='repair'?fields(names):[];
+    const reader=await C.reader(src.file,src.config);let header=false;
+    for await(const batch of disk.batches(reader.records())){
+      const data=batch.filter(r=>r.n>0),linkTable=side==='b'?'missing':'links',links=await store.getMany(linkTable,data.map(r=>r.n));
+      const base=kind==='repair'?await store.getMany('b',links.map(l=>l?.kind==='matched'?l.b:['\0',-1])):[];let di=0;
+      for(const r of batch){if(!header){header=true;if(JSON.stringify(r.values)!==JSON.stringify(src.meta.headers))reject('Input source changed: headers differ.');yield r;continue;}if(r.values.length!==src.meta.headers.length)reject('Input field count changed.');const link=links[di],br=base[di++];if(link&&r.values[side==='b'?result.bi:result.ci]!==link.id)reject('Temporary link identity check failed.');
+        checkedLink(link);if(side==='c'&&!link)reject('Temporary customer linkage is missing.');
+        if(kind==='repair'){if(link.kind==='matched'&&!br)reject('Temporary baseline row is missing.');if(br){stored(br);if(br.id!==link.id||br.values[result.bi]!==link.id||JSON.stringify(link.b)!==JSON.stringify([br.id,br.n]))reject('Temporary baseline linkage failed.');for(const f of fs)r.values[f.c]=br.values[f.b];}yield r;}
+        else if(kind==='extract:missing'?!!link:kind==='extract:common'?link?.kind==='matched':kind==='extract:added'?link?.kind==='added':false)yield r;
+      }
+    }
+    if(reader.hash!==src.meta.hash)reject('Input source changed while streaming output.');
+  }
+  async function sink(directory,name,encoding='utf-8'){
+    if(!directory?.getDirectoryHandle)reject('Select an output folder. Streaming file writing is required.');
+    const folder='DAT-Compare-'+crypto.randomUUID();const dir=await directory.getDirectoryHandle(folder,{create:true});let existing=false;try{await dir.getFileHandle(name);existing=true;}catch(e){if(e.name!=='NotFoundError')throw e;}if(existing)reject('Output exists. Choose a new output location.');
+    const handle=await dir.getFileHandle(name,{create:true});if((await handle.getFile()).size!==0)reject('Output destination changed before writing.');const writer=await handle.createWritable(),h=C.hash();let bytes=0,parts=[],units=0,closed=false;
+    async function flush(){if(!parts.length)return;const text=parts.join('');parts=[];units=0;await raw(C.encode(text,encoding));}
+    async function raw(b){h.update(b);bytes+=b.length;await writer.write(b);}
+    await raw(C.outputBOM(encoding));
+    return {handle,path:folder+'/'+name,text:async t=>{parts.push(t);units+=t.length;if(units>=1024*1024)await flush();},close:async()=>{await flush();await writer.close();closed=true;return {handle,path:folder+'/'+name,filename:name,bytes,hash:h.hex()};},abort:async()=>{if(!closed)try{await writer.abort();}catch{}}};
+  }
+  async function build(kind,names,encoding,directory,name){requireResult();output=null;if(result.summary.blocking)reject('Invalid or ambiguous IDs block DAT outputs.');if(kind==='repair')fields(names);else if(!['extract:missing','extract:common','extract:added'].includes(kind))reject('Invalid output type.');await checkSources();const side=kind==='extract:missing'?'b':'c',dialect=sources[side].meta.dialect,w=await sink(directory,name,encoding);let records=0;
+    try{for await(const r of expected(kind,names)){await w.text(C.line(r.values,dialect));if(r.n)records++;}const want=kind==='repair'?sources.c.meta.records:kind==='extract:common'?result.summary.matched:kind==='extract:missing'?result.summary.baselineOnly:result.summary.customerOnly;if(records!==want)reject('Output record count disagrees with the comparison.');const saved=await w.close();output={...saved,kind,fields:names.slice(),encoding,dialect,records,changed:kind==='repair'?names.reduce((n,f)=>n+result.summary.fieldCounts[f],0):0};const verified=await verify({handle:saved.handle});return {...output,verified};}catch(e){await w.abort();output=null;throw e;}
+  }
+  async function verify({file,handle}={}){requireResult();if(!output)reject('Build the current output first.');await checkSources();if(handle)file=await handle.getFile();if(!file||file.size!==output.bytes)reject('Saved file size differs from generated output.');const actual=await C.reader(file,{encoding:output.encoding,dialect:output.dialect}),ai=actual.records()[Symbol.asyncIterator](),ei=expected(output.kind,output.fields)[Symbol.asyncIterator]();let records=0;
+    while(true){const [a,e]=await Promise.all([ai.next(),ei.next()]);if(a.done&&e.done)break;if(a.done||e.done)reject('Saved record count differs.');if(a.value.values.length!==e.value.values.length||a.value.values.some((v,j)=>v!==e.value.values[j]))reject('Saved value/header/order differs at record '+records+'.');if(records++%10000===0)progress('Verifying saved records · '+records.toLocaleString());}
+    if(actual.hash!==output.hash)reject('Saved SHA-256 differs from generated output.');await checkSources();const finalFile=handle?await handle.getFile():file;if(finalFile.size!==output.bytes||await C.fileHash(finalFile)!==output.hash)reject('Saved file changed during verification.');return {status:'PASS',hash:actual.hash,bytes:file.size,records:records-1,fields:sources[output.kind==='extract:missing'?'b':'c'].meta.headers.length,changedCells:output.changed,savedFile:info(finalFile),path:handle?output.path:null,kind:output.kind,verifiedAt:new Date().toISOString()};
+  }
+  async function exportFile(op,directory,name,target){requireResult();await checkSources();let verified=null;if(op==='repairAudit')verified=await verify(target);const w=await sink(directory,name);try{
+      if(op==='report'){const cols=['type','id','field','baseline','customer','detail','baselineRow','customerRow'];await w.text(cols.map(C.csvCell).join(',')+'\r\n');let count=0;for await(const x of pages('issues',result.summary.maxIssueUnits)){const v=checkedIssue(x.value);await w.text(cols.map(k=>C.csvCell(v[k])).join(',')+'\r\n');count++;}if(count!==result.summary.exceptions)reject('Temporary exception count changed.');}
+      else if(op==='audit')await w.text(JSON.stringify(provenance(),null,2));
+      else if(op==='repairAudit'){const data={...provenance(),repair:{kind:output.kind,fields:output.fields,changedCells:output.changed,encoding:output.encoding,dialect:output.dialect,lineEnding:'CRLF',generatedOutputFilename:output.filename,generatedOutputPath:output.path,outputSha256:output.hash,verification:verified}};await w.text(JSON.stringify(data).slice(0,-1)+',"changes":[');let first=true,count=0;if(output.kind==='repair'){const fs=new Set(output.fields);for await(const x of pages('issues',result.summary.maxIssueUnits)){const v=checkedIssue(x.value);if(v.type==='VALUE_CHANGED'&&fs.has(v.field)){await w.text((first?'':',')+JSON.stringify({id:v.id,field:v.field,customerBefore:v.customer,restoredBaseline:v.baseline,customerRow:v.customerRow}));first=false;count++;}}}if(count!==output.changed)reject('Temporary repair audit count changed.');await w.text(']}');}
+      else reject('Invalid report type.');const saved=await w.close();const file=await saved.handle.getFile();if(file.size!==saved.bytes||await C.fileHash(file)!==saved.hash)reject('Saved report integrity check failed.');await checkSources();if(op==='repairAudit'){const finalFile=target.handle?await target.handle.getFile():target.file;if(finalFile.size!==output.bytes||await C.fileHash(finalFile)!==output.hash)reject('Saved DAT changed during audit writing.');}return {...saved,verified};
+    }catch(e){await w.abort();throw e;}
+  }
+  return {VERSION:C.VERSION,load,compare,page,build,verify,exportFile,checkSources,provenance,dispose,cleanup:disk.cleanup,debug:()=>({store:store?.name,summary:result?.summary})};
+}
+
+</script>
+<script id="compare-ui-v2">
 'use strict';
 const $=id=>document.getElementById(id);
-function el(tag,text){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;}
-function opt(select,value,text){const node=el('option',text);node.value=value;select.append(node);}
+function el(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;}
+function opt(s,v,t){const n=el('option',t);n.value=v;s.append(n);}
 const encodings=[['auto','Auto · BOM / strict UTF-8'],['utf-8','UTF-8'],['utf-16le','UTF-16 LE'],['utf-16be','UTF-16 BE'],['windows-1252','Windows-1252'],['euc-kr','Korean · CP949 / EUC-KR'],['gb18030','Chinese · GB18030'],['shift_jis','Japanese · Shift-JIS']];
 const dialects=[['auto','Auto · þ / DC4'],['dat','DAT · þ / DC4'],['csv','CSV · comma / quote'],['tsv','TSV · tab / quote'],['pipe','Pipe / quote']];
 for(const side of ['baseline','customer']){for(const [v,t] of encodings)opt($(side+'Encoding'),v,t);for(const [v,t] of dialects)opt($(side+'Dialect'),v,t);}
 function workerMain(){
-  let baseline=null,customer=null,baselineSource=null,customerSource=null,result=null,output=null,verified=null;
-  const core=createCompareCore({progress:message=>postMessage({progress:message})});
-  async function checkSources(){for(const [file,data] of [[baselineSource,baseline],[customerSource,customer]]){if(!file||!data)throw new Error('Read both files first.');try{const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.length!==data.file.size||await core.sha(bytes)!==data.hash)throw new Error('Bytes differ.');}catch{throw new Error('Input source changed or became unreadable: '+data.file.name+'. Read both files again.');}}}
-  onmessage=async event=>{const {id,op,payload}=event.data;try{
-    let value;
-    if(['report','audit','repair','extract','verify','repairAudit'].includes(op))await checkSources();
-    if(op==='load'){
-      baseline=customer=baselineSource=customerSource=result=output=verified=null;
-      if(payload.baseline.size+payload.customer.size>core.limits.bytes)throw new Error('Combined input exceeds 128 MiB.');
-      baseline=await core.load(payload.baseline,payload.baselineConfig);customer=await core.load(payload.customer,payload.customerConfig);baselineSource=payload.baseline;customerSource=payload.customer;
-      const meta=d=>({headers:d.headers,records:d.rows.length,hash:d.hash,encoding:d.encoding,bom:d.bom,encodingBasis:d.encodingBasis,dialect:d.dialect,file:d.file});value={baseline:meta(baseline),customer:meta(customer)};
-    } else if(op==='compare'){
-      result=output=verified=null;if(!baseline||!customer)throw new Error('Read both files first.');
-      result=core.compare(baseline,customer,payload.baselineKey,payload.customerKey);value={summary:result.summary,provenance:core.provenance(result)};
-    } else if(op==='page'){
-      if(!result)throw new Error('Compare first.');const query=(payload.query||'').toLowerCase(),kind=payload.kind||'';
-      const hits=result.issues.filter(x=>(!kind||x.type===kind)&&(!query||[x.id,x.field,x.baseline,x.customer,x.detail].some(v=>v.toLowerCase().includes(query))));
-      const pages=Math.max(1,Math.ceil(hits.length/200)),page=Math.min(Math.max(0,payload.page||0),pages-1);value={rows:hits.slice(page*200,page*200+200),total:hits.length,page,pages};
-    } else if(op==='report'){if(!result)throw new Error('Compare first.');value=new Blob([core.reportCSV(result.issues)],{type:'text/csv;charset=utf-8'});
-    } else if(op==='audit'){if(!result)throw new Error('Compare first.');value=core.provenance(result);
-    } else if(op==='repair'){
-      output=verified=null;if(!result)throw new Error('Compare first.');output=await core.repair(result,payload.fields,payload.encoding);output.filename=payload.name;
-      value={kind:output.kind,filename:output.filename,blob:new Blob([output.bytes],{type:'application/octet-stream'}),hash:output.hash,bytes:output.bytes.length,changed:output.changed,fields:output.fields};
-    } else if(op==='extract'){output=verified=null;if(!result)throw new Error('Compare first.');output=await core.extract(result,payload.kind);output.filename=payload.name;value={kind:output.kind,filename:output.filename,blob:new Blob([output.bytes],{type:'application/octet-stream'}),bytes:output.bytes.length,hash:output.hash,records:output.records};
-    } else if(op==='verify'){verified=null;if(!output)throw new Error('Build an output first.');verified=await core.verify(output,payload.file);value=verified;
-    } else if(op==='repairAudit'){verified=null;if(!result||!output)throw new Error('Verify the saved output first.');verified=await core.verify(output,payload.file);value={...core.provenance(result),repair:{kind:output.kind,fields:output.fields,changedCells:output.changed,changes:output.changes,encoding:output.encoding,dialect:output.dialect,lineEnding:'CRLF',outputFilename:output.filename,outputSha256:output.hash,verification:verified}};
-    } else throw new Error('Unknown operation.');
-    postMessage({id,value});
-  }catch(error){postMessage({id,error:error.message});}};
+  const engine=createDiskCompare({progress:message=>postMessage({progress:message})});let output=null;
+  onmessage=async event=>{const {id,op,payload:p}=event.data;try{let value;
+    if(op==='load'){output=null;await engine.cleanup();value=await engine.load(p.baseline,p.customer,p.baselineConfig,p.customerConfig);}
+    else if(op==='compare'){output=null;value=await engine.compare(p.baselineKey,p.customerKey);}
+    else if(op==='page')value=await engine.page(p);
+    else if(op==='repair'||op==='extract'){output=null;value=await engine.build(op==='repair'?'repair':'extract:'+p.kind,p.fields||[],p.encoding||'utf-8',p.directory,p.name);output=value;}
+    else if(op==='verify'){if(!output)throw Error('Build the current output first.');value=await engine.verify(p.file?{file:p.file}:{handle:output.handle});}
+    else if(['report','audit','repairAudit'].includes(op))value=await engine.exportFile(op,p.directory,p.name,p.file?{file:p.file}:{handle:output?.handle});
+    else throw Error('Unknown operation.');postMessage({id,value});
+  }catch(e){postMessage({id,error:e.message});}};
 }
-let worker=null,pending=new Map(),serial=0,revision=0,busy=false,loaded=null,loadedFiles=null,compared=null,built=null,verified=null,verifiedFile=null,pageIndex=0,pageSerial=0,loadedSignature='',compareSignature='',builtSignature='';
-function initWorker(){const source=createCompareCore.toString()+'\n('+workerMain.toString()+')();',url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));worker=new Worker(url);URL.revokeObjectURL(url);worker.onmessage=event=>{const x=event.data;if(x.progress){$('progress').textContent=x.progress;return;}const p=pending.get(x.id);if(!p)return;pending.delete(x.id);x.error?p.reject(new Error(x.error)):p.resolve(x.value);};worker.onerror=()=>{resetWorker();busy=false;clearLoaded();setStatus('Local worker failed. Read the files again.','error');};}
+let worker=null,pending=new Map(),serial=0,revision=0,busy=false,loaded=null,loadedFiles=null,compared=null,built=null,verified=null,verifiedFile=null,directory=null,pageIndex=0,pageAfter=[null],pageEnd=null,pageSerial=0,loadedSignature='',compareSignature='',builtSignature='';
+function initWorker(){const source=[createCompareStorage,createCompareCore,createDiskCompare].map(f=>f.toString()).join('\n')+'\n('+workerMain.toString()+')();',url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));const w=new Worker(url);worker=w;URL.revokeObjectURL(url);w.onmessage=event=>{if(w!==worker)return;const x=event.data;if(x.progress){$('progress').textContent=x.progress;return;}const p=pending.get(x.id);if(!p)return;pending.delete(x.id);x.error?p.reject(new Error(x.error)):p.resolve(x.value);};w.onerror=()=>{if(w!==worker)return;resetWorker();busy=false;clearLoaded();setStatus('Local worker failed. Read the files again.','error');};}
 function resetWorker(){if(worker)worker.terminate();worker=null;for(const p of pending.values())p.reject(new Error('Operation cancelled or inputs changed.'));pending.clear();}
 function request(op,payload={}){if(!worker)initWorker();return new Promise((resolve,reject)=>{const id=++serial;pending.set(id,{resolve,reject});try{worker.postMessage({id,op,payload});}catch(e){pending.delete(id);reject(e);}});}
-function setStatus(text,kind=''){const n=$('status');n.textContent=text;n.className='status '+kind;}
+function setStatus(t,k=''){const n=$('status');n.textContent=t;n.className='status '+k;}
 function files(){return [$('baselineFile').files[0],$('customerFile').files[0]];}
 function fileSignature(){return JSON.stringify([...files().map(f=>f?[f.name,f.size,f.lastModified]:null),...['baselineEncoding','customerEncoding','baselineDialect','customerDialect'].map(id=>$(id).value)]);}
 function comparisonSignature(){return JSON.stringify([fileSignature(),$('baselineKey').value,$('customerKey').value]);}
 function chosenFields(){return [...$('restoreFields').querySelectorAll('input:checked')].map(n=>n.value);}
 function repairSignature(){return JSON.stringify([comparisonSignature(),chosenFields(),$('outputEncoding').value,$('outputName').value,$('reviewed').checked]);}
-function clearOutput(){built=verified=verifiedFile=null;builtSignature='';$('savedFile').value='';$('verifyPanel').hidden=true;$('verification').textContent='No current DAT output has been built.';$('verification').className='status';}
-function clearComparison(){revision++;pageSerial++;compared=null;compareSignature='';$('results').hidden=true;$('reviewed').checked=false;$('restoreFields').replaceChildren();clearOutput();buttons();}
+function clearOutput(){built=verified=verifiedFile=null;builtSignature='';$('savedFile').value='';$('verifyPanel').hidden=true;$('verification').textContent='No current DAT output.';$('verification').className='status';}
+function resetPages(){pageIndex=0;pageAfter=[null];pageEnd=null;}
+function clearComparison(){revision++;pageSerial++;compared=null;compareSignature='';$('results').hidden=true;$('reviewed').checked=false;$('restoreFields').replaceChildren();clearOutput();resetPages();buttons();}
 function clearLoaded(){clearComparison();loaded=null;loadedFiles=null;loadedSignature='';for(const s of ['baseline','customer']){$(s+'Key').replaceChildren();opt($(s+'Key'),'','Load files first');$(s+'Facts').textContent='Read both files to inspect this input.';}buttons();}
 function buttons(){
-  $('sources').disabled=busy;$('repairControls').disabled=busy;$('cancel').disabled=!busy;
-  $('load').disabled=busy||!files().every(Boolean);$('compare').disabled=busy||!loaded||!$('baselineKey').value||!$('customerKey').value;for(const side of ['baseline','customer'])$(side+'Key').disabled=busy||!loaded;
+  $('sources').disabled=busy;$('repairControls').disabled=busy;$('cancel').disabled=!busy;$('outputFolder').disabled=busy;
+  $('load').disabled=busy||!files().every(Boolean);$('compare').disabled=busy||!loaded||!$('baselineKey').value||!$('customerKey').value;for(const s of ['baseline','customer'])$(s+'Key').disabled=busy||!loaded;
   const valid=!!compared&&compared.summary.blocking===0;
   $('repair').disabled=busy||!valid||!chosenFields().length||!$('reviewed').checked;
   for(const id of ['report','audit'])$(id).disabled=busy||!compared;
   for(const id of ['common','missing','added'])$(id).disabled=busy||!valid;
-  $('savedFile').disabled=busy;$('verify').disabled=busy||!built||!$('savedFile').files[0];$('repairAudit').disabled=busy||!verified;
+  $('savedFile').disabled=busy;$('verify').disabled=busy||!built;$('repairAudit').disabled=busy||!verified;
+  for(const id of ['prev','next','search','kindFilter'])$(id).disabled=busy||!compared;
+  if(!busy&&compared){$('prev').disabled=pageIndex===0;$('next').disabled=pageEnd===null;}
 }
-async function run(operation){if(busy)return;busy=true;const r=revision;buttons();try{await operation(()=>{if(r!==revision)throw new Error('Inputs changed; stale result discarded.');});}catch(e){if(r===revision){clearOutput();if(e.message.startsWith('Input source changed')){resetWorker();busy=false;clearLoaded();$('progress').textContent='';}setStatus(e.message,'error');}}finally{if(r===revision){busy=false;$('progress').textContent='';buttons();}}}
-function download(blob,name){const url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+async function run(fn){if(busy)return;busy=true;const r=revision;buttons();try{await fn(()=>{if(r!==revision)throw Error('Inputs changed; stale result discarded.');});}catch(e){if(r===revision){clearOutput();if(e.message.startsWith('Input source changed')){resetWorker();busy=false;clearLoaded();}setStatus(e.message,'error');}}finally{if(r===revision){busy=false;$('progress').textContent='';buttons();}}}
 function sourceCurrent(){return loadedFiles&&loadedSignature===fileSignature()&&loadedFiles.every((f,i)=>f===files()[i]);}
-function ensureComparison(){if(!compared||!sourceCurrent()||compareSignature!==comparisonSignature()){const sourceOK=sourceCurrent();busy=false;if(sourceOK)clearComparison();else{resetWorker();clearLoaded();}setStatus(sourceOK?'Inputs or ID fields changed. Compare again.':'Input files changed. Read both files again.','error');throw new Error('Stale comparison discarded.');}}
-function validName(name){if(!/^[^\\/\u0000-\u001f<>:"|?*]+\.dat$/i.test(name)||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])\./i.test(name))throw new Error('Enter a valid new .dat filename without a path.');if(files().some(f=>f&&f.name.toLowerCase()===name.toLowerCase()))throw new Error('Output filename must differ from both input filenames.');}
-function interruptBusy(){if(!busy)return false;resetWorker();busy=false;clearLoaded();setStatus('Inputs changed during processing. Read both files again.','error');$('progress').textContent='';return true;}
-function outputChanged() {if(interruptBusy())return;revision++;pageSerial++;clearOutput();$('reviewed').checked=false;renderPlan();buttons();}
-function renderPlan(){const total=chosenFields().reduce((n,f)=>n+(compared?.summary.fieldCounts[f]||0),0);$('plan').textContent=total+' changed cells will be restored across '+chosenFields().length+' selected fields. Other values and customer record order are retained.';}
+function ensureComparison(){if(!compared||!sourceCurrent()||compareSignature!==comparisonSignature())throw Error('Inputs or ID fields changed. Read and compare the current files again.');}
+function validName(name){if(!/^[^\\/\u0000-\u001f<>:"|?*]+\.dat$/i.test(name)||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])\./i.test(name))throw Error('Enter a valid new .dat filename without a path.');if(files().some(f=>f&&f.name.toLowerCase()===name.toLowerCase()))throw Error('Output filename must differ from both input filenames.');}
+async function chooseFolder(){if(!window.showDirectoryPicker)throw Error('This browser cannot stream to an output folder. Use desktop Chrome or Edge.');const d=await window.showDirectoryPicker({mode:'readwrite'});directory=d;$('folderInfo').textContent=d.name+' · Every output gets a new DAT-Compare subfolder.';return d;}
+function requireFolder(){if(!directory)throw Error('Choose an output folder first.');return directory;}
+$('outputFolder').addEventListener('click',async()=>{if(busy)return;try{await chooseFolder();}catch(e){if(e.name!=='AbortError')setStatus(e.message,'error');}});
+function interruptBusy(){if(!busy)return false;resetWorker();busy=false;clearLoaded();setStatus('Settings changed during processing. Read both files again.','error');$('progress').textContent='';return true;}
+function outputChanged(){if(interruptBusy())return;revision++;pageSerial++;clearOutput();$('reviewed').checked=false;renderPlan();buttons();}
+function renderPlan(){const n=chosenFields().reduce((n,f)=>n+(compared?.summary.fieldCounts[f]||0),0);$('plan').textContent=n.toLocaleString()+' cells will be restored in '+chosenFields().length+' selected fields. Other values and customer record order are retained.';}
 function outputCurrent(){return !!built&&builtSignature===(built.kind==='repair'?repairSignature():comparisonSignature());}
-function publishOutput(x,signature){built=x;builtSignature=signature;download(x.blob,x.filename);$('verification').textContent='Generated '+x.kind+' DAT validated: '+x.filename+'. Saved-file verification pending.\nSHA-256: '+x.hash;$('verification').className='status warn';$('verifyPanel').hidden=false;}
-function showVerified(x){$('verification').textContent='PASS · '+x.savedFile.name+' · '+built.kind+'\nEntire saved DAT re-read: SHA-256, every value, headers and record order match generated output.\nSHA-256: '+x.hash+(built.kind==='repair'?'\n'+x.changedCells+' cells restored. Missing records/columns and other comparison exceptions may remain.':'\n'+x.records+' source records extracted; metadata values were retained.');$('verification').className='status ok';}
-async function renderPage(){if(!compared)return;const seq=++pageSerial,r=revision;try{const x=await request('page',{kind:$('kindFilter').value,query:$('search').value,page:pageIndex});if(seq!==pageSerial||r!==revision||!compared)return;pageIndex=x.page;$('exceptionRows').replaceChildren();for(const row of x.rows){const tr=el('tr');for(const key of ['type','id','field','baseline','customer','detail']){const text=String(row[key]),td=el('td',text.length>240?text.slice(0,240)+'…':text);td.title=text;if(key==='baseline'||key==='customer')td.className='value';if(key==='detail')td.append(el('div','Baseline row: '+(row.baselineRow||'—')+' · Customer row: '+(row.customerRow||'—')));tr.append(td);}$('exceptionRows').append(tr);}$('pageInfo').textContent=x.total.toLocaleString()+' exceptions · page '+(x.page+1)+' / '+x.pages+' · up to 200 per page';$('prev').disabled=x.page===0;$('next').disabled=x.page+1>=x.pages;}catch(e){if(r===revision)setStatus(e.message,'error');}}
+function showVerified(x){$('verification').textContent='PASS · '+x.savedFile.name+' · '+built.kind+(x.path?'\nSaved location: '+x.path:'\nSelected saved file verified; filesystem path is unavailable.')+'\nEntire saved DAT re-read: SHA-256, every value, headers and record order match the source-based output plan.\nSHA-256: '+x.hash+(built.kind==='repair'?'\n'+x.changedCells.toLocaleString()+' cells restored. Other comparison exceptions may remain.':'\n'+x.records.toLocaleString()+' source records extracted.');$('verification').className='status ok';}
+function publishOutput(x,sig){built=x;builtSignature=sig;verified=x.verified;verifiedFile=null;$('verifyPanel').hidden=false;showVerified(verified);setStatus('Saved and verified: '+x.path,'ok');}
+async function renderPage(){if(!compared)return;const seq=++pageSerial,r=revision;try{const x=await request('page',{kind:$('kindFilter').value,query:$('search').value,page:pageIndex,after:pageAfter[pageIndex]});if(seq!==pageSerial||r!==revision||!compared)return;pageEnd=x.done?null:x.after;$('exceptionRows').replaceChildren();for(const row of x.rows){const tr=el('tr');for(const key of ['type','id','field','baseline','customer','detail']){const t=String(row[key]),td=el('td',t.length>240?t.slice(0,240)+'…':t);td.title=t;if(key==='baseline'||key==='customer')td.className='value';if(key==='detail')td.append(el('div','Baseline row: '+(row.baselineRow||'—')+' · Customer row: '+(row.customerRow||'—')));tr.append(td);}$('exceptionRows').append(tr);}$('pageInfo').textContent=(x.total===null?'Filtered exceptions':x.total.toLocaleString()+' exceptions')+' · page '+(pageIndex+1)+' · up to 200 per page';buttons();}catch(e){if(r===revision)setStatus(e.message,'error');}}
 function showComparison(x){compared=x;$('results').hidden=false;$('stats').replaceChildren();const s=x.summary;for(const [label,value] of [['Matched IDs',s.matched],['Changed records',s.changedRecords],['Changed cells',s.changedCells],['Baseline only',s.baselineOnly],['Customer only',s.customerOnly],['ID blockers',s.blocking]]){const n=el('div',label);n.className='stat';n.append(el('strong',value.toLocaleString()));$('stats').append(n);}
-  $('schema').textContent='Baseline: '+s.baselineRecords.toLocaleString()+' records · Customer: '+s.customerRecords.toLocaleString()+' records · Compared: '+s.comparedFields+' metadata fields / '+s.comparedCells.toLocaleString()+' matched cells. Unresolved records: baseline '+s.unresolvedBaseline+', customer '+s.unresolvedCustomer+'. Field order and source encodings appear in the audit JSON.';
-  $('kindFilter').replaceChildren();opt($('kindFilter'),'','All exception types');for(const [type,n] of Object.entries(s.counts))opt($('kindFilter'),type,type+' ('+n+')');$('search').value='';pageIndex=0;
-  $('restoreFields').replaceChildren();for(const [name,n] of Object.entries(s.fieldCounts)){const label=el('label');label.className='check';const input=el('input');input.type='checkbox';input.value=name;input.addEventListener('change',outputChanged);label.append(input,el('span',name+' · '+n+' changed cells'));$('restoreFields').append(label);}
-  $('reviewed').checked=false;renderPlan();setStatus(s.blocking?'Comparison completed with '+s.blocking+' ID blockers. DAT output is disabled; download the exception report.':'Comparison completed · '+s.exceptions.toLocaleString()+' exceptions across all records and fields. Review changes before selecting restoration fields.',s.blocking?'error':s.exceptions?'warn':'ok');buttons();renderPage();
+  $('schema').textContent='Baseline: '+s.baselineRecords.toLocaleString()+' records · Customer: '+s.customerRecords.toLocaleString()+' records · Compared: '+s.comparedFields+' metadata fields / '+s.comparedCells.toLocaleString()+' matched cells. Unresolved records: baseline '+s.unresolvedBaseline+', customer '+s.unresolvedCustomer+'.';
+  $('kindFilter').replaceChildren();opt($('kindFilter'),'','All exception types');for(const [type,n] of Object.entries(s.counts))opt($('kindFilter'),type,type+' ('+n+')');$('search').value='';resetPages();
+  $('restoreFields').replaceChildren();for(const [name,n] of Object.entries(s.fieldCounts)){const l=el('label');l.className='check';const i=el('input');i.type='checkbox';i.value=name;i.addEventListener('change',outputChanged);l.append(i,el('span',name+' · '+n.toLocaleString()+' changed cells'));$('restoreFields').append(l);}
+  $('reviewed').checked=false;renderPlan();setStatus(s.blocking?'Comparison completed with '+s.blocking+' ID blockers. DAT outputs are disabled. Save the exception report.':'Comparison completed · '+s.exceptions.toLocaleString()+' exceptions. Review before selecting restoration fields.',s.blocking?'error':s.exceptions?'warn':'ok');buttons();renderPage();
 }
-for(const side of ['baseline','customer']){
-  for(const suffix of ['File','Encoding','Dialect'])$(side+suffix).addEventListener('change',()=>{resetWorker();busy=false;clearLoaded();$('progress').textContent='';setStatus('Inputs changed. Read both files again.');});
-  $(side+'Key').addEventListener('change',()=>{if(interruptBusy())return;clearComparison();setStatus('Document ID selection changed. Compare again.');});
-}
-$('load').addEventListener('click',()=>{resetWorker();clearLoaded();run(async guard=>{const sourceFiles=files(),sig=fileSignature();const x=await request('load',{baseline:sourceFiles[0],customer:sourceFiles[1],baselineConfig:{encoding:$('baselineEncoding').value,dialect:$('baselineDialect').value},customerConfig:{encoding:$('customerEncoding').value,dialect:$('customerDialect').value}});guard();if(sig!==fileSignature()||sourceFiles.some((f,i)=>f!==files()[i]))throw new Error('Input changed while reading.');loaded=x;loadedFiles=sourceFiles;loadedSignature=sig;for(const side of ['baseline','customer']){const d=x[side],select=$(side+'Key');select.replaceChildren();opt(select,'','Select document ID field');for(const h of d.headers)opt(select,h,h);$(side+'Facts').textContent=d.file.name+'\n'+d.records.toLocaleString()+' records · '+d.headers.length+' fields · '+d.encoding+(d.bom?' BOM':'')+' · '+d.dialect+'\n'+d.encodingBasis+'\nSHA-256: '+d.hash;}setStatus('Both files read. Select and confirm their document ID fields.');});});
-$('compare').addEventListener('click',()=>{clearComparison();run(async guard=>{if(!loaded||!sourceCurrent())throw new Error('Read the current files again.');const sig=comparisonSignature();const x=await request('compare',{baselineKey:$('baselineKey').value,customerKey:$('customerKey').value});guard();if(sig!==comparisonSignature()||!sourceCurrent())throw new Error('Input or ID selection changed during comparison.');compareSignature=sig;showComparison(x);});});
-$('cancel').addEventListener('click',()=>{revision++;resetWorker();busy=false;clearLoaded();setStatus('Operation cancelled. Read both files again.');$('progress').textContent='';buttons();});
-$('prev').addEventListener('click',()=>{pageIndex--;renderPage();});$('next').addEventListener('click',()=>{pageIndex++;renderPage();});$('kindFilter').addEventListener('change',()=>{pageIndex=0;renderPage();});let searchTimer;$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{pageIndex=0;renderPage();},150);});
-for(const [id,op,name] of [['report','report','dat_comparison_exceptions.csv'],['audit','audit','dat_comparison_audit.json']])$(id).addEventListener('click',()=>run(async guard=>{ensureComparison();const x=await request(op);guard();ensureComparison();download(op==='report'?x:new Blob([JSON.stringify(x,null,2)],{type:'application/json'}),name);}));
+for(const s of ['baseline','customer']){for(const suffix of ['File','Encoding','Dialect'])$(s+suffix).addEventListener('change',()=>{resetWorker();busy=false;clearLoaded();$('progress').textContent='';setStatus('Inputs changed. Read both files again.');});$(s+'Key').addEventListener('change',()=>{if(interruptBusy())return;clearComparison();setStatus('Document ID selection changed. Compare again.');});}
+$('load').addEventListener('click',()=>{resetWorker();clearLoaded();run(async guard=>{const f=files(),sig=fileSignature();const x=await request('load',{baseline:f[0],customer:f[1],baselineConfig:{encoding:$('baselineEncoding').value,dialect:$('baselineDialect').value},customerConfig:{encoding:$('customerEncoding').value,dialect:$('customerDialect').value}});guard();if(sig!==fileSignature()||f.some((f,i)=>f!==files()[i]))throw Error('Input changed while reading.');loaded=x;loadedFiles=f;loadedSignature=sig;for(const s of ['baseline','customer']){const d=x[s],sel=$(s+'Key');sel.replaceChildren();opt(sel,'','Select document ID field');for(const h of d.headers)opt(sel,h,h);$(s+'Facts').textContent=d.file.name+'\n'+d.records.toLocaleString()+' records · '+d.headers.length+' fields · '+d.encoding+(d.bom?' BOM':'')+' · '+d.dialect+'\n'+d.encodingBasis+'\nSHA-256: '+d.hash;}setStatus('Both files read. Select and confirm their document ID fields.');});});
+$('compare').addEventListener('click',()=>{clearComparison();run(async guard=>{if(!loaded||!sourceCurrent())throw Error('Read the current files again.');const sig=comparisonSignature(),x=await request('compare',{baselineKey:$('baselineKey').value,customerKey:$('customerKey').value});guard();if(sig!==comparisonSignature()||!sourceCurrent())throw Error('Input or ID selection changed.');compareSignature=sig;showComparison(x);});});
+$('cancel').addEventListener('click',()=>{resetWorker();busy=false;clearLoaded();setStatus('Operation cancelled. Read both files again.');$('progress').textContent='';buttons();});
+$('prev').addEventListener('click',()=>{pageIndex--;renderPage();});$('next').addEventListener('click',()=>{if(pageEnd===null)return;pageAfter[++pageIndex]=pageEnd;renderPage();});$('kindFilter').addEventListener('change',()=>{resetPages();renderPage();});let searchTimer;$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{resetPages();renderPage();},200);});
+for(const [id,name] of [['report','dat_comparison_exceptions.csv'],['audit','dat_comparison_audit.json']])$(id).addEventListener('click',()=>run(async guard=>{ensureComparison();const x=await request(id,{directory:requireFolder(),name});guard();ensureComparison();setStatus('Saved and hash-verified: '+x.path,'ok');}));
 for(const id of ['outputEncoding','outputName'])$(id).addEventListener(id==='outputName'?'input':'change',outputChanged);
 $('reviewed').addEventListener('change',()=>{if(interruptBusy())return;revision++;pageSerial++;clearOutput();buttons();});
-$('repair').addEventListener('click',()=>{if(busy)return;clearOutput();run(async guard=>{ensureComparison();if(!$('reviewed').checked)throw new Error('Review the restoration plan first.');const name=$('outputName').value;validName(name);const sig=repairSignature();const x=await request('repair',{fields:chosenFields(),encoding:$('outputEncoding').value,name});guard();ensureComparison();if(sig!==repairSignature())throw new Error('Restoration plan changed.');publishOutput(x,sig);});});
-$('savedFile').addEventListener('change',()=>{if(interruptBusy())return;revision++;pageSerial++;verified=verifiedFile=null;$('verification').textContent='Saved-file verification pending. Verify the selected file.';$('verification').className='status warn';buttons();});
-$('verify').addEventListener('click',()=>run(async guard=>{ensureComparison();if(!outputCurrent())throw new Error('Build the current output again.');verified=verifiedFile=null;$('verification').textContent='Saved-file verification pending.';$('verification').className='status warn';const file=$('savedFile').files[0];const x=await request('verify',{file});guard();ensureComparison();if(file!==$('savedFile').files[0]||!outputCurrent())throw new Error('Verification input or output plan changed.');verified=x;verifiedFile=file;showVerified(x);}));
-$('repairAudit').addEventListener('click',()=>run(async guard=>{ensureComparison();if(!verified||!verifiedFile||verifiedFile!==$('savedFile').files[0]||!outputCurrent())throw new Error('Verify the current selected output first.');const file=verifiedFile;verified=verifiedFile=null;$('verification').textContent='Rechecking saved DAT before publishing its audit.';$('verification').className='status warn';const x=await request('repairAudit',{file});guard();ensureComparison();if(file!==$('savedFile').files[0]||!outputCurrent())throw new Error('Verified output changed.');verified=x.repair.verification;verifiedFile=file;showVerified(verified);download(new Blob([JSON.stringify(x,null,2)],{type:'application/json'}),'dat_repair_verified_audit.json');}));
-for(const [id,kind,name] of [['common','common','common_customer.dat'],['missing','missing','baseline_only.dat'],['added','added','customer_only.dat']])$(id).addEventListener('click',()=>{if(busy)return;clearOutput();run(async guard=>{ensureComparison();validName(name);const sig=comparisonSignature();const x=await request('extract',{kind,name});guard();ensureComparison();if(sig!==comparisonSignature())throw new Error('Extraction inputs changed.');publishOutput(x,sig);setStatus(x.records+' records extracted. Re-select this download under Verify saved DAT before delivery.');});});
+$('repair').addEventListener('click',()=>{if(busy)return;clearOutput();run(async guard=>{ensureComparison();if(!$('reviewed').checked)throw Error('Review the restoration plan first.');const name=$('outputName').value;validName(name);const sig=repairSignature(),x=await request('repair',{fields:chosenFields(),encoding:$('outputEncoding').value,name,directory:requireFolder()});guard();ensureComparison();if(sig!==repairSignature())throw Error('Restoration plan changed.');publishOutput(x,sig);});});
+$('savedFile').addEventListener('change',()=>{if(interruptBusy())return;revision++;pageSerial++;verified=verifiedFile=null;$('verification').textContent='Verification pending for the selected saved file.';$('verification').className='status warn';buttons();});
+$('verify').addEventListener('click',()=>run(async guard=>{ensureComparison();if(!outputCurrent())throw Error('Build the current output again.');verified=verifiedFile=null;$('verification').textContent='Re-reading the complete saved file.';$('verification').className='status warn';const file=$('savedFile').files[0]||null,x=await request('verify',{file});guard();ensureComparison();if(file!==($('savedFile').files[0]||null)||!outputCurrent())throw Error('Verification input or output plan changed.');verified=x;verifiedFile=file;showVerified(x);}));
+$('repairAudit').addEventListener('click',()=>run(async guard=>{ensureComparison();if(!verified||verifiedFile!==($('savedFile').files[0]||null)||!outputCurrent())throw Error('Verify the current output first.');const file=verifiedFile;verified=verifiedFile=null;$('verification').textContent='Rechecking saved DAT before saving its audit.';$('verification').className='status warn';const x=await request('repairAudit',{directory:requireFolder(),name:'dat_repair_verified_audit.json',file});guard();ensureComparison();if(file!==($('savedFile').files[0]||null)||!outputCurrent())throw Error('Verified output changed.');verified=x.verified;verifiedFile=file;showVerified(verified);setStatus('Verified DAT audit saved: '+x.path,'ok');}));
+for(const [id,kind,name] of [['common','common','common_customer.dat'],['missing','missing','baseline_only.dat'],['added','added','customer_only.dat']])$(id).addEventListener('click',()=>{if(busy)return;clearOutput();run(async guard=>{ensureComparison();validName(name);const sig=comparisonSignature(),x=await request('extract',{kind,name,directory:requireFolder()});guard();ensureComparison();if(sig!==comparisonSignature())throw Error('Extraction inputs changed.');publishOutput(x,sig);});});
 buttons();
+
 </script>
 </body>
 </html>
