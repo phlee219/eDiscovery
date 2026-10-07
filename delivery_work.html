@@ -65,7 +65,7 @@ footer{font-size:.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}[hidd
 <body>
 <header>
 <span class="creator-credit" aria-hidden="true">이현수 · HYUNSOO LEE</span>
-<div class="brand"><h1>Delivery Work</h1><span class="version" id="version"></span><span class="local" data-i18n="localBadge"></span></div>
+<div class="brand"><h1>Delivery Work</h1><button type="button" id="clearTemp" data-i18n="clearTemp"></button><span class="version" id="version"></span><span class="local" data-i18n="localBadge"></span></div>
 <div class="header-tools"><button id="saveSettings" type="button" data-i18n="saveSettings"></button><button id="loadSettingsButton" type="button" data-i18n="loadSettings"></button><input id="loadSettings" type="file" accept=".json" hidden>
 <div class="lang" role="group" aria-label="Language"><button type="button" id="langEn" lang="en">EN</button><button type="button" id="langKo" lang="ko">한국어</button></div></div>
 </header>
@@ -115,12 +115,61 @@ footer{font-size:.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}[hidd
 <script id="delivery-core">'use strict';
 // Runs on the page (instant previews) and inside a local Blob worker (full-file work). No DOM or network APIs.
 // Messages carry a code and arguments so the page can show them in English or Korean.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+function createProductionStorage(options={}) {
+  const PREFIX='ediscovery-temp-v1-', BATCH_ROWS=512, BATCH_UNITS=512*1024;
+  const keyText=k=>JSON.stringify(k);const units=v=>typeof v==='string'?v.length:!v||typeof v!=='object'?16:Object.values(v).reduce((n,x)=>n+units(x),0);
+  const at=(v,p)=>Array.isArray(p)?p.map(x=>at(v,x)):String(p).split('.').reduce((a,k)=>a==null?undefined:a[k],v);
+  const error=(e,detail)=>{if(e&&e.name==='ConstraintError'&&detail){const x=new Error(detail.message);Object.assign(x,detail);return x;}const x=new Error('Temporary local storage failed. No output is verified. '+(e&&e.message||e));x.name=e&&e.name||'StorageError';return x;};
+  const cmp=(a,b)=>{if(typeof indexedDB!=='undefined')return indexedDB.cmp(a,b);if(Array.isArray(a)&&Array.isArray(b)){for(let i=0;i<Math.min(a.length,b.length);i++){const c=cmp(a[i],b[i]);if(c)return c;}return a.length-b.length;}return a<b?-1:a>b?1:0;};
+  async function* batches(records){let batch=[],units=0;for await(const r of records){const n=r.raw?r.raw.length:r.values?r.values.reduce((s,v)=>s+v.length,0):128;if(batch.length&&(batch.length>=BATCH_ROWS||units+n>BATCH_UNITS)){yield batch;batch=[];units=0;}batch.push(r);units+=n;}if(batch.length)yield batch;}
+  function memory(schema){
+    const tables=new Map(schema.map(s=>[s.name,new Map()])),seq=new Map();let entries=0,closed=false;
+    const table=n=>{if(closed)throw Error('Temporary index is closed.');return tables.get(n);};
+    const tx={get:async(n,k)=>structuredClone(table(n).get(keyText(k))?.value),put:async(n,v,k)=>{const s=schema.find(x=>x.name===n);if(k===undefined)k=s.keyPath?at(v,s.keyPath):(seq.set(n,(seq.get(n)||0)+1),seq.get(n));const t=table(n),kt=keyText(k);for(const ix of s.indexes||[])if(ix.unique){const value=at(v,ix.keyPath);for(const entry of t.values())if(keyText(entry.key)!==kt&&cmp(at(entry.value,ix.keyPath),value)===0)throw Error('Duplicate or case/Unicode-equivalent key.');}if(!t.has(kt)&&++entries>50000)throw Error('Browser-local disk storage is required for this many records.');t.set(kt,{key:k,value:structuredClone(v)});return k;},add:async(n,v,k,detail)=>{const s=schema.find(x=>x.name===n);if(k===undefined&&s.keyPath)k=at(v,s.keyPath);if(k!==undefined&&table(n).has(keyText(k))){const e=new Error(detail?.message||'Duplicate key');if(detail)Object.assign(e,detail);throw e;}return tx.put(n,v,k);},del:async(n,k)=>{if(table(n).delete(keyText(k)))entries--;},clear:async n=>{entries-=table(n).size;table(n).clear();},count:async(n,index,k)=>{if(!index)return table(n).size;return (await tx.page(n,null,50001,index,k)).length;},page:async(n,after,limit=BATCH_ROWS,index,indexKey)=>{const spec=schema.find(s=>s.name===n),ix=spec.indexes?.find(x=>x.name===index);return [...table(n).values()].filter(x=>after==null||cmp(x.key,after)>0).filter(x=>{if(!ix)return true;const v=at(x.value,ix.keyPath);return ix.multiEntry?v.some(y=>cmp(y,indexKey)===0):cmp(v,indexKey)===0;}).sort((a,b)=>cmp(a.key,b.key)).slice(0,limit).map(x=>structuredClone(x));}};
+    return {kind:'memory-test',name:'memory-test',run:async(names,mode,fn)=>fn(tx),getMany:async(n,keys)=>Promise.all(keys.map(k=>tx.get(n,k))),page:tx.page,count:tx.count,clear:tx.clear,close:async()=>{closed=true;tables.clear();},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  const req=(r,detail)=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(error(r.error,detail));});
+  const remove=name=>new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(name);r.onsuccess=()=>resolve();r.onerror=()=>reject(error(r.error));r.onblocked=()=>reject(Error('Temporary storage is still in use. Close the previous job and retry.'));});
+  async function cleanup(){if(typeof indexedDB==='undefined'||!indexedDB.databases||!globalThis.navigator?.locks)return;for(const d of await indexedDB.databases()){if(!d.name?.startsWith(PREFIX))continue;await navigator.locks.request(d.name,{ifAvailable:true},async lock=>{if(lock)await remove(d.name);});}}
+  async function open(tool,schema){
+    if(typeof indexedDB==='undefined'){if(typeof document==='undefined'&&typeof WorkerGlobalScope==='undefined')return memory(schema);throw Error('Local temporary storage is unavailable. Use current Chrome/Edge.');}
+    if(!globalThis.navigator?.locks)throw Error('Local job locking is unavailable. Use current Chrome/Edge.');
+    await cleanup();
+    const name=PREFIX+tool+'-'+crypto.randomUUID();let release,locked,lockError;
+    const ready=new Promise((resolve,reject)=>{locked=resolve;lockError=reject;});
+    const held=navigator.locks.request(name,async()=>{locked();await new Promise(r=>release=r);});held.catch(lockError);await ready;
+    let db;
+    try{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>{for(const s of schema){const store=r.result.createObjectStore(s.name,{...(s.keyPath?{keyPath:s.keyPath}:{}),...(s.autoIncrement?{autoIncrement:true}:{})});for(const i of s.indexes||[])store.createIndex(i.name,i.keyPath,{unique:!!i.unique,multiEntry:!!i.multiEntry});}};db=await req(r);}catch(e){release();await held;throw error(e);}
+    let closed=false;const live=new Set();
+    const run=async(names,mode,fn)=>{
+      if(closed)throw Error('Temporary index is closed. Run the check again.');
+      const t=db.transaction(names,mode);live.add(t);let txError;
+      const done=new Promise((resolve,reject)=>{t.oncomplete=()=>resolve();t.onabort=()=>reject(txError||error(t.error||'Transaction aborted'));});done.catch(()=>{});
+      const store=n=>t.objectStore(n);const check=v=>{if(units(v)>64*1024)throw Error('Indexed metadata for one document exceeds 64 Ki characters. No output is verified.');return v;};
+      const api={get:(n,k)=>req(store(n).get(k)),many:async(n,keys)=>{if(!keys.length)return [];let lo=keys[0],hi=lo;for(const k of keys){if(cmp(k,lo)<0)lo=k;if(cmp(k,hi)>0)hi=k;}const range=IDBKeyRange.bound(lo,hi),st=store(n),[values,found]=await Promise.all([req(st.getAll(range,keys.length)),req(st.getAllKeys(range,keys.length))]),map=new Map(found.map((k,i)=>[keyText(k),values[i]]));return Promise.all(keys.map(k=>map.has(keyText(k))?map.get(keyText(k)):req(st.get(k))));},put:(n,v,k)=>req(k===undefined?store(n).put(check(v)):store(n).put(check(v),k)),add:(n,v,k,detail)=>req(k===undefined?store(n).add(check(v)):store(n).add(check(v),k),detail),del:(n,k)=>req(store(n).delete(k)),clear:n=>req(store(n).clear()),count:(n,index,k)=>req(index?store(n).index(index).count(IDBKeyRange.only(k)):store(n).count()),page:(n,after,limit=BATCH_ROWS,index,indexKey)=>new Promise((resolve,reject)=>{
+        if(!index){const range=after==null?null:IDBKeyRange.lowerBound(after,true),st=store(n),count=Math.min(limit,BATCH_ROWS);Promise.all([req(st.getAll(range,count)),req(st.getAllKeys(range,count))]).then(([values,keys])=>resolve(values.map((value,i)=>({key:keys[i],value}))),reject);return;}
+        const obj=index?store(n).index(index):store(n),range=index?IDBKeyRange.only(indexKey):after==null?null:IDBKeyRange.lowerBound(after,true),r=obj.openCursor(range),rows=[];let pageUnits=0;
+        r.onerror=()=>reject(error(r.error));r.onsuccess=()=>{const c=r.result;if(!c||rows.length>=limit){resolve(rows);return;}if(index&&after!=null&&cmp(c.primaryKey,after)<=0){if(cmp(c.primaryKey,after)<0)c.continuePrimaryKey(indexKey,after);else c.continue();return;}rows.push({key:c.primaryKey,value:c.value});pageUnits+=units(c.value);if(rows.length>=limit||pageUnits>=BATCH_UNITS){resolve(rows);return;}c.continue();};
+      })};
+      try{const result=await fn(api);await done;return result;}catch(e){txError=e;try{t.abort();}catch{}await done.catch(()=>{});throw e;}finally{live.delete(t);}
+    };
+    return {kind:'indexeddb',name,run,getMany:(n,keys)=>run([n],'readonly',t=>t.many(n,keys)),page:(...args)=>run([args[0]],'readonly',t=>t.page(...args)),count:(...args)=>run([args[0]],'readonly',t=>t.count(...args)),clear:n=>run([n],'readwrite',t=>t.clear(n)),close:async()=>{if(closed)return;closed=true;for(const t of live)try{t.abort();}catch{}db.close();try{await remove(name);}finally{release();await held;}},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  return {open,cleanup,batches,BATCH_ROWS,BATCH_UNITS,cmp};
+}
+
 function createDeliveryCore(options = {}) {
-  const VERSION = '1.1.4';
+  const VERSION = '1.2.0';
   const FE = 'þ', SEP = '\u0014';
   const CHUNK = options.chunkBytes || 1024 * 1024;
   const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
-  const MAX_FIELDS = 2000, MAX_IDS = 1000000, SAMPLE_ROWS = 200, DISTINCT_CAP = 1000, ISSUE_CAP = 10000;
+  const MAX_FIELDS = 2000, MAX_IDS = Number.MAX_SAFE_INTEGER, SAMPLE_ROWS = 200, DISTINCT_CAP = 1000, ISSUE_CAP = 10000;
   const progress = options.progress || (() => {});
   const MSG = {
     pastePending:'Apply or discard the pending pasted values before checking or saving.',pasteFormat:'Pasted line {0} must contain exactly two tab-separated values.',pasteDuplicate:'The pasted source value appears more than once: {0}',batesPageInvalid:'Page count cannot be checked: not a positive whole number ({0}).',
@@ -130,7 +179,7 @@ function createDeliveryCore(options = {}) {
     firstLineBlank:'The first line is blank. The header must be the first line.',lineBlank:'Line {0} is blank.',notDat:'Line {0}: not a þ-qualified DAT record.',tooManyFields:'More than 2,000 columns.',
     legacyNoDc4:'Line {0}: legacy þ format without DC4 (U+0014) separators. Re-export it as a þ/DC4 DAT.',badQualifier:'Line {0}, column {1}: þ qualifiers do not match.',valueBreak:'Line {0}, column {1}: the value contains þ, a line break or NUL.',
     blankHeader:'The header has a column with a blank name.',dupHeader:'The header has a duplicate column name: {0}',unsafeValue:'Values cannot contain þ, DC4, line breaks or NUL.',surrogate:'The value has an unpaired Unicode character.',
-    colCount:'Line {0} has {1} columns; the header has {2}.',tooManyDocs:'More than 1,000,000 documents.',mixedEol:'Mixed line endings (CRLF/LF/CR). Use a file with one line-ending style.',noRecords:'No document records.',
+    colCount:'Line {0} has {1} columns; the header has {2}.',tooManyDocs:'Document count exceeds safe integer capacity.',mixedEol:'Mixed line endings (CRLF/LF/CR). Use a file with one line-ending style.',noRecords:'No document records.',
     changed:'The file changed since it was opened. Open it again.',headerChanged:'The header differs from when the file was opened. Open it again.',
     badDate:'Not a real date: {0}',bad12h:'Invalid 12-hour time: {0}',badTime:'Not a real time: {0}',
     unknownTask:'Unknown task.',colUsed:'Column "{0}" is already written by task {1}.',pickColumn:'Select the {0} column.',pickTarget:'Select where to write the result.',newColName:'Enter a name for the new column.',
@@ -291,13 +340,13 @@ function createDeliveryCore(options = {}) {
   }
 
   async function inspect(file) {
-    const r=await datReader(file);let headers=null,count=0,eol=null;const samples=[];
+    const r=await datReader(file);let headers=null,count=0,eol=null,sampleUnits=0;const samples=[];
     for await(const rec of r.records()) {
       if(!headers){headers=rec.values;checkHeaders(headers);}
       else {
         if(rec.values.length!==headers.length)fail('colCount',rec.line,rec.values.length,headers.length);
         if(++count>MAX_IDS)fail('tooManyDocs');
-        if(samples.length<SAMPLE_ROWS)samples.push(rec.values);
+        if(samples.length<SAMPLE_ROWS&&sampleUnits+rec.raw.length<=2*CHUNK){samples.push(rec.values);sampleUnits+=rec.raw.length;}
       }
       if(rec.eol){if(eol!==null&&eol!==rec.eol)fail('mixedEol');eol=rec.eol;}
     }
@@ -507,41 +556,71 @@ function createDeliveryCore(options = {}) {
     return {outHeaders,writers,checks,problems,keyIndex,srcCount:headers.length,parentCols:[...parentCols],families:[...families].map(([key,v])=>({key,...v})),valid:tasks.length>0&&problems.every(p=>!p.length)};
   }
   // Parent/child links from an explicit parent-ID column. Bad links become per-document exceptions.
-  async function buildRelations(file,compiled,loadedHash) {
-    const relations=new Map(),families=new Map();if(!compiled.parentCols.length)return {relations,families};
-    const r=await datReader(file),cols=compiled.parentCols,parentOf=cols.map(()=>new Map()),need=new Set(compiled.families.flatMap(f=>[f.b,f.e])),vals=new Map([...need].map(c=>[c,new Map()])),order=new Map();
-    for await(const rec of r.records()) {
-      if(rec.line===1)continue;const id=rec.values[compiled.keyIndex];
-      if(id===''||id!==id.trim())fail('idBlank',rec.line);
-      if(order.has(id))fail('dupId',id);order.set(id,order.size);
-      cols.forEach((c,k)=>parentOf[k].set(id,rec.values[c]));for(const [c,m] of vals)m.set(id,rec.values[c]);
-    }
-    if(loadedHash&&r.digest!==loadedHash)fail('changed');
-    cols.forEach((c,k)=>{
-      const parents=parentOf[k],direct=new Map(),all=new Map(),bad=new Map();
-      for(const [id,p] of parents){if(p==='')continue;if(p===id){bad.set(id,{code:'selfParent',args:[]});continue;}if(!parents.has(p)){bad.set(id,{code:'missingParent',args:[p]});continue;}direct.set(p,(direct.get(p)||0)+1);}
-      const pending=new Map(),queue=[];for(const id of parents.keys()){const n=direct.get(id)||0;pending.set(id,n);all.set(id,0);if(!n)queue.push(id);}
-      for(let at=0;at<queue.length;at++){const id=queue[at],p=parents.get(id);if(p&&!bad.has(id)){all.set(p,all.get(p)+1+all.get(id));pending.set(p,pending.get(p)-1);if(pending.get(p)===0)queue.push(p);}}
-      for(const [id,n] of pending)if(n>0)bad.set(id,{code:'cycle',args:[]});
-      relations.set(c,{parents,direct,all,bad});
-    });
-    for(const f of compiled.families){
-      const rel=relations.get(f.p),rootOf=new Map(),broken=new Map(),info=new Map(),begs=vals.get(f.b),ends=vals.get(f.e);
-      for(const id of order.keys()){
-        let cur=id,steps=0;const path=[];
-        while(!rootOf.has(cur)&&!broken.has(cur)){if(rel.bad.has(cur)){broken.set(cur,cur);break;}path.push(cur);const p=rel.parents.get(cur);if(p===''){rootOf.set(cur,cur);break;}cur=p;if(++steps>order.size)break;}
-        const root=rootOf.get(cur),brokenAt=broken.get(cur);for(const x of path){if(brokenAt!==undefined)broken.set(x,brokenAt);else rootOf.set(x,root);}
+  const disk=createProductionStorage(options);
+  async function dispose(plan){if(plan?.store)await plan.store.close();}
+  async function buildRelations(file,compiled,loadedHash){
+    const store=await disk.open('delivery',[{name:'docs',keyPath:'id',indexes:[{name:'children',keyPath:'edges',multiEntry:true}]},{name:'rels',keyPath:'key'},{name:'queue',autoIncrement:true},{name:'families',keyPath:'key'}]);
+    try{
+      const reader=await datReader(file),need=[...new Set(compiled.families.flatMap(f=>[f.b,f.e]))];
+      for await(const batch of disk.batches(reader.records()))await store.run(['docs'],'readwrite',async tx=>{
+        await Promise.all(batch.map(async rec=>{if(rec.line===1)return;if(rec.values.length!==compiled.srcCount)fail('colCount',rec.line,rec.values.length,compiled.srcCount);
+          const id=compiled.keyIndex>=0?rec.values[compiled.keyIndex]:String(rec.line);
+          if(!id||id!==id.trim())fail('idBlank',rec.line);
+          await tx.add('docs',{id,parents:compiled.parentCols.map(c=>rec.values[c]),edges:compiled.parentCols.filter(c=>rec.values[c]&&rec.values[c]!==id).map(c=>[c,rec.values[c]]),values:need.map(c=>[c,rec.values[c]])},undefined,{code:'dupId',args:[id],message:fmt(MSG,'dupId',[id])});
+        }));
+      });
+      if(reader.digest!==loadedHash)fail('changed');
+      for(let ci=0;ci<compiled.parentCols.length;ci++){
+        const c=compiled.parentCols[ci];let after=null;
+        for(;;){const page=await store.page('docs',after);if(!page.length)break;after=page.at(-1).key;
+          await store.run(['docs','rels','queue'],'readwrite',async tx=>{
+            await Promise.all(page.map(async ({value:d})=>{const parent=d.parents[ci],direct=await tx.count('docs','children',[c,d.id]);let bad=null;
+              if(parent===d.id)bad={code:'selfParent',args:[]};else if(parent&&!await tx.get('docs',parent))bad={code:'missingParent',args:[parent]};
+              await tx.put('rels',{key:[c,d.id],parent,direct,all:0,pending:direct,bad,root:null,broken:null});if(!direct)await tx.add('queue',{id:d.id});
+            }));
+          });
+        }
+        // Disk-backed leaf queue: a deep chain and a broad family use bounded memory.
+        for(;;){const more=await store.run(['rels','queue'],'readwrite',async tx=>{
+          let queue=await tx.page('queue',null,256),processed=0;if(!queue.length)return false;
+          if(queue.length>=32){const rows=await Promise.all(queue.map(q=>tx.get('rels',[c,q.value.id]))),parentIds=[...new Set(rows.filter(r=>r.parent&&!r.bad).map(r=>r.parent))],parents=await Promise.all(parentIds.map(id=>tx.get('rels',[c,id]))),map=new Map(parents.map(p=>[p.key[1],p]));await Promise.all(queue.map(q=>tx.del('queue',q.key)));for(const r of rows)if(r.parent&&!r.bad){const p=map.get(r.parent);p.all+=1+r.all;p.pending--;if(!Number.isSafeInteger(p.all)||p.pending<0)throw Error('Invalid descendant count.');}await Promise.all(parents.map(async p=>{await tx.put('rels',p);if(!p.pending)await tx.add('queue',{id:p.key[1]});}));return true;}
+          while(queue.length&&processed<512){const entry=queue.shift();await tx.del('queue',entry.key);processed++;
+            const r=await tx.get('rels',[c,entry.value.id]);if(r.parent&&!r.bad){const p=await tx.get('rels',[c,r.parent]);p.all+=1+r.all;p.pending--;if(!Number.isSafeInteger(p.all)||p.pending<0)throw Error('Invalid descendant count.');await tx.put('rels',p);if(!p.pending){const key=await tx.add('queue',{id:r.parent});if(queue.length<256)queue.push({key,value:{id:r.parent}});}}
+          }return true;
+        });if(!more)break;}
+        after=null;for(;;){const page=await store.page('rels',after);if(!page.length)break;after=page.at(-1).key;await store.run(['rels'],'readwrite',async tx=>{for(const {value:r} of page)if(r.key[0]===c&&r.pending>0){r.bad={code:'cycle',args:[]};await tx.put('rels',r);}});}
+        if(!compiled.families.some(f=>f.p===c))continue;
+        after=null;for(;;){const page=await store.page('rels',after);if(!page.length)break;after=page.at(-1).key;await store.run(['rels','queue'],'readwrite',async tx=>{for(const {value:r} of page){if(r.key[0]!==c||(!r.bad&&r.parent))continue;r.root=r.bad?null:r.key[1];r.broken=r.bad?r.key[1]:null;await tx.put('rels',r);await tx.add('queue',{id:r.key[1],root:r.root,broken:r.broken,after:null});}});}
+        // Root/broken-link propagation, with paged child traversal for very large families.
+        for(;;){const page=await store.page('queue',null,64);if(!page.length)break;await store.run(['docs','rels','queue'],'readwrite',async tx=>{
+          for(const q of page){await tx.del('queue',q.key);const v=q.value,children=await tx.page('docs',v.after,128,'children',[c,v.id]);
+            for(const child of children){const r=await tx.get('rels',[c,child.key]);if(r.root!==null||r.broken!==null)continue;r.root=v.root;r.broken=v.broken;await tx.put('rels',r);await tx.add('queue',{id:child.key,root:r.root,broken:r.broken,after:null});}
+            if(children.length)await tx.add('queue',{...v,after:children.at(-1).key});
+          }
+        });}
       }
-      for(const [id,root] of rootOf){
-        const b=begs.get(id),e=ends.get(id),B=parseBates(b),E=parseBates(e),cur=info.get(root);
-        if(!B||!E||B.prefix!==E.prefix||B.digits.length!==E.digits.length||E.n<B.n)fail('familyRange',root);
-        if(!cur)info.set(root,{beg:b,end:e,min:B.n,max:E.n,prefix:B.prefix,width:B.digits.length,size:1});
-        else{if(cur.prefix!==B.prefix||cur.width!==B.digits.length)fail('familyRange',root);cur.size++;if(B.n<cur.min){cur.min=B.n;cur.beg=b;}if(E.n>cur.max){cur.max=E.n;cur.end=e;}}
-      }
-      families.set(f.key,{rootOf,broken,info});
-    }
-    return {relations,families};
+      let after=null;for(;;){const page=await store.page('docs',after);if(!page.length)break;after=page.at(-1).key;await store.run(['rels','families'],'readwrite',async tx=>{
+        for(const {value:d} of page){const vals=new Map(d.values);for(const f of compiled.families){const rel=await tx.get('rels',[f.p,d.id]);if(rel.broken!==null)continue;if(rel.root===null)throw Error('Unresolved family root.');
+          const b=vals.get(f.b),e=vals.get(f.e),B=parseBates(b),E=parseBates(e),key=[f.key,rel.root],cur=await tx.get('families',key);
+          if(!B||!E||B.prefix!==E.prefix||B.digits.length!==E.digits.length||E.n<B.n)fail('familyRange',rel.root);
+          if(!cur)await tx.put('families',{key,beg:b,end:e,min:B.n,max:E.n,prefix:B.prefix,width:B.digits.length,size:1});
+          else{if(cur.prefix!==B.prefix||cur.width!==B.digits.length)fail('familyRange',rel.root);cur.size++;if(B.n<cur.min){cur.min=B.n;cur.beg=b;}if(E.n>cur.max){cur.max=E.n;cur.end=e;}await tx.put('families',cur);}
+        }}
+      });}
+      return store;
+    }catch(e){await store.close().catch(()=>{});throw e;}
   }
+  async function batchContext(compiled,store,batch){
+    const relations=new Map(),families=new Map(),ids=batch.map(r=>r.values[compiled.keyIndex]);
+    for(const c of compiled.parentCols){const rows=await store.getMany('rels',ids.map(id=>[c,id])),rel={parents:new Map(),direct:new Map(),all:new Map(),bad:new Map(),rows:new Map()};
+      rows.forEach((r,i)=>{if(!r)fail('needFullCheck');rel.rows.set(ids[i],r);rel.parents.set(ids[i],r.parent);rel.direct.set(ids[i],r.direct);rel.all.set(ids[i],r.all);if(r.bad)rel.bad.set(ids[i],r.bad);});relations.set(c,rel);
+    }
+    for(const f of compiled.families){const rel=relations.get(f.p),rootOf=new Map(),broken=new Map(),info=new Map(),roots=[];
+      for(const [id,r] of rel.rows){if(r.broken!==null)broken.set(id,r.broken);else{rootOf.set(id,r.root);roots.push(r.root);}}
+      const unique=[...new Set(roots)],values=await store.getMany('families',unique.map(root=>[f.key,root]));values.forEach((v,i)=>{if(!v)throw Error('Missing family aggregate.');info.set(unique[i],v);});families.set(f.key,{rootOf,broken,info});
+    }return {relations,families,note:null};
+  }
+
   function rowValues(compiled,values,ctx) {const out=new Map();for(const w of compiled.writers){ctx.note=null;out.set(w.out,safeValue(w.compute(values,ctx)));}return out;}
   const errInfo=e=>({code:e.code||'error',args:e.args||[],message:e.message});
   // Instant preview on the first rows; full-file results come from preflight.
@@ -554,14 +633,16 @@ function createDeliveryCore(options = {}) {
   }
   async function preflight(file,tasks,idName,headers,loadedHash) {
     const compiled=compileTasks(tasks,headers,idName);if(!compiled.valid)fail('fixTasks');
-    const {relations,families}=await buildRelations(file,compiled,loadedHash),ctx={relations,families,note:null};
-    const reader=await datReader(file),exceptions=[],warnings=[],ids=new Set(),runs=compiled.checks.map(c=>({c,run:c.make()}));let rows=0,exceptionCount=0,warningCount=0;
+    const store=await buildRelations(file,compiled,loadedHash);try{
+    const reader=await datReader(file),exceptions=[],warnings=[],runs=compiled.checks.map(c=>({c,run:c.make()}));let rows=0,exceptionCount=0,warningCount=0;
     const stats=tasks.map((t,ti)=>({type:t.type,columns:[...new Set(compiled.writers.filter(w=>w.ti===ti).map(w=>compiled.outHeaders[w.out]))],changed:0,blank:0,exceptions:0,warnings:0,seconds:0,time:0,placeholder:0}));
-    for await(const rec of reader.records()) {
+    for await(const batch of disk.batches(reader.records())) {
+      const ctx=await batchContext(compiled,store,batch.filter(r=>r.line!==1));
+      for(const rec of batch){
       if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(headers))fail('headerChanged');if(compose(compiled.outHeaders).length>MAX_RECORD)fail('recordTooLarge',1);continue;}
       rows++;const v=rec.values,id=compiled.keyIndex>=0?v[compiled.keyIndex]:'';
       if(v.length!==headers.length)fail('colCount',rec.line,v.length,headers.length);
-      if(compiled.keyIndex>=0){if(!id||id!==id.trim())fail('idBlank',rec.line);if(ids.has(id))fail('dupId',id);ids.add(id);}
+      if(compiled.keyIndex>=0&&(!id||id!==id.trim()))fail('idBlank',rec.line);
       let outputLength=rec.raw.length;
       for(const w of compiled.writers){
         ctx.note=null;let after;
@@ -574,18 +655,22 @@ function createDeliveryCore(options = {}) {
       if(outputLength>MAX_RECORD)fail('recordTooLarge',rec.line);
       for(const {c,run} of runs)run(v,(code,...args)=>{warningCount++;stats[c.ti].warnings++;if(warnings.length<ISSUE_CAP)warnings.push({row:rec.line,id,type:c.type,column:'',value:'',code,args,message:fmt(MSG,code,args)});});
     }
+    }
     if(reader.digest!==loadedHash)fail('changed');
     const report={version:VERSION,valid:exceptionCount===0,file:fileInfo(file),sourceHash:reader.digest,meta:reader.meta,rows,headers:compiled.outHeaders,newColumns:compiled.outHeaders.slice(compiled.srcCount),stats,exceptionCount,exceptions,warningCount,warnings,omitted:Math.max(0,exceptionCount-exceptions.length)+Math.max(0,warningCount-warnings.length)};
-    return {report,plan:report.valid?{file,compiled,ctx:{relations,families},headers,hash:reader.digest,meta:reader.meta,rows}:null};
+    report.processing={index:store.kind,...store.stats};if(!report.valid)await store.close();return {report,plan:report.valid?{file,compiled,store,headers,hash:reader.digest,meta:reader.meta,rows}:null};
+    }catch(e){await store.close().catch(()=>{});throw e;}
   }
   async function transform(plan,emit) {
     if(!plan)fail('noPlan');
-    const {compiled}=plan,reader=await datReader(plan.file),outHash=hash(),ctx={...plan.ctx,note:null},newNames=compiled.outHeaders.slice(compiled.srcCount);
+    const {compiled}=plan,reader=await datReader(plan.file),outHash=hash(),newNames=compiled.outHeaders.slice(compiled.srcCount);
     let bytes=0,rows=0,pieces=[],size=0;
     async function flush(){if(!size)return;const merged=new Uint8Array(size);let at=0;for(const p of pieces){merged.set(p,at);at+=p.length;}pieces=[];size=0;await emit(merged);}
     async function write(b){outHash.update(b);bytes+=b.length;pieces.push(b);size+=b.length;if(size>=CHUNK)await flush();}
     await write(new Uint8Array(plan.meta.bom));
-    for await(const rec of reader.records()) {
+    for await(const batch of disk.batches(reader.records())) {
+      const ctx=await batchContext(compiled,plan.store,batch.filter(r=>r.line!==1));
+      for(const rec of batch){
       let raw=rec.raw;
       if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(plan.headers))fail('headerChanged');if(newNames.length)raw+=SEP+compose(newNames);}
       else {
@@ -594,18 +679,21 @@ function createDeliveryCore(options = {}) {
         if(vals.size){const cols=raw.split(SEP),extra=new Array(newNames.length);for(const [i,v] of vals){if(i<compiled.srcCount)cols[i]=FE+v+FE;else extra[i-compiled.srcCount]=FE+v+FE;}raw=cols.concat(extra).join(SEP);}
       }
       await write(encode(raw+rec.eol,reader.meta.encoding));
+      }
     }
     if(reader.digest!==plan.hash||rows!==plan.rows)fail('sourceChangedSave');
     await flush();return {hash:outHash.hex(),bytes,rows};
   }
   async function verify(plan,output,expected) {
     if(!plan||!expected)fail('noResult');
-    const {compiled}=plan,src=await datReader(plan.file),out=await datReader(output),ctx={...plan.ctx,note:null},targets=new Set(compiled.writers.map(w=>w.out));
+    const {compiled}=plan,src=await datReader(plan.file),out=await datReader(output),targets=new Set(compiled.writers.map(w=>w.out));
     if(JSON.stringify(out.meta)!==JSON.stringify(plan.meta))fail('vEncoding');
     if(output.size!==expected.bytes)fail('vSize');
     const si=src.records()[Symbol.asyncIterator](),oi=out.records()[Symbol.asyncIterator]();let rows=0,written=0;
     for(;;) {
-      const [a,b]=await Promise.all([si.next(),oi.next()]);
+      const pairs=[];let units=0;for(let i=0;i<disk.BATCH_ROWS;i++){const [a,b]=await Promise.all([si.next(),oi.next()]);if(a.done&&b.done)break;if(a.done||b.done)fail('vCount');pairs.push([a,b]);units+=a.value.raw.length+b.value.raw.length;if(units>=disk.BATCH_UNITS)break;}
+      if(!pairs.length)break;const ctx=await batchContext(compiled,plan.store,pairs.map(p=>p[0].value).filter(r=>r.line!==1));
+      for(const [a,b] of pairs){
       if(a.done&&b.done)break;if(a.done||b.done)fail('vCount');
       const s=a.value,o=b.value;
       if(s.eol!==o.eol)fail('vEol',s.line);
@@ -613,6 +701,7 @@ function createDeliveryCore(options = {}) {
       rows++;if(o.values.length!==compiled.outHeaders.length)fail('vColCount',s.line);
       for(let i=0;i<compiled.srcCount;i++)if(!targets.has(i)&&s.values[i]!==o.values[i])fail('vUntouched',s.line,compiled.outHeaders[i]);
       for(const [i,v] of rowValues(compiled,s.values,ctx)){if(o.values[i]!==v)fail('vValue',s.line,compiled.outHeaders[i]);written++;}
+    }
     }
     if(src.digest!==plan.hash)fail('vSourceChanged');
     if(out.digest!==expected.hash||rows!==plan.rows)fail('vHash');
@@ -623,26 +712,26 @@ function createDeliveryCore(options = {}) {
     const checks=[h.hex()==='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',renderDate(parseParts('3/2/2026 9:15:30 PM','M/D/YYYY h:mm:ss A'),'MM/DD/YYYY HH:mm')==='03/02/2026 21:15',parseParts('2026-02-29 10:00:00','YYYY-MM-DD HH:mm:ss').code==='badDate',JSON.stringify(splitDAT(compose(['a','김','']),1))==='["a","김",""]',detectFormat(['01/02/2026 10:00']).status==='ambiguous'];
     return {ok:checks.every(Boolean),checks};
   }
-  return {VERSION,MSG,TYPES,DATE_FORMATS,TIME_PARTS,OUTPUT_FORMATS,fmt,hash,inspect,profile,preflight,transform,verify,compileTasks,preview,detectFormat,parseParts,parseValuePaste,renderDate,compose,splitDAT,safeValue,encode,fold,findColumn,selfTest};
+  return {VERSION,MSG,TYPES,DATE_FORMATS,TIME_PARTS,OUTPUT_FORMATS,fmt,hash,inspect,profile,preflight,transform,verify,compileTasks,preview,detectFormat,parseParts,parseValuePaste,renderDate,compose,splitDAT,safeValue,encode,fold,findColumn,selfTest,dispose,cleanupStorage:disk.cleanup};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports=createDeliveryCore;
 </script>
 <script>'use strict';
 const core=createDeliveryCore(),$=id=>document.getElementById(id);
-$('version').textContent='v'+core.VERSION;
+$('version').textContent='v'+core.VERSION;createProductionStorage().cleanup().catch(()=>{});
 
 // ---- Language: English by default, Korean via the toggle (or #ko in the address). Not stored anywhere. ----
 const UI_EN={
   applyPaste:'Apply pasted values',discardPaste:'Discard paste',stCustIncomplete:'There are too many distinct name pairs to safely auto-fill. Set the value map manually.',stCustAmbiguous:'A full name matches different first/last name pairs. Nothing was filled; set the value map manually.',
   reviewPlan:'I checked the source/result columns, ticket rules, date formats, removed time/seconds and all QC warnings above.',configChanged:'Settings changed. Run the full check and review it again.',cleanupUnverified:'The saved file "{0}" did not pass verification. Do not deliver it. It has been left in place for inspection.',formatSuggest:'Possible source format: {0}. Confirm it against the source specification; sampled values cannot prove the date order.',settingsMissingId:'The settings refer to a document ID column that is not in this DAT: {0}. Load the matching DAT or correct the settings.',
-  raw:'{0}',localBadge:'Processed on this PC · no upload',saveSettings:'Save settings',loadSettings:'Load settings',cancel:'Cancel',s1:'DAT file',dropTitle:'Choose a DAT file',dropHint:'Drag & drop or click · þ / DC4 · UTF-8 / UTF-16',
+  raw:'{0}',localBadge:'Temporary local disk storage · Processed on this PC · no upload',saveSettings:'Save settings',loadSettings:'Load settings',cancel:'Cancel',s1:'DAT file',dropTitle:'Choose a DAT file',dropHint:'Drag & drop or click · þ / DC4 · UTF-8 / UTF-16',
   noFile:'No file yet.',idColumn:'Document ID column',idHint:'Used for attachment counts, family ranges and issue lists.',openFirst:'Open a DAT first',noneOption:'None',firstRows:'Show first 5 records',
   s2Hint:'Choose transformations and checks for this delivery. Every task reads the original values.',previewHint:'Scroll horizontally to see more columns. Hover over shortened values to read the full text.',
   emptyCards:'Open a DAT, then choose the transformations and checks you need.\nSet the source columns, results and options for each task.',
   s3:'Check & save',runCheck:'Run full check',issueCsv:'Save issue list (CSV)',outputName:'New file name',save:'Save as new file + verify',
   saveHint:'Always use a new name. If you confirm "Replace" in the save dialog, the browser may empty the existing file first.',manualLabel:'Select the downloaded file · final verification',verifySaved:'Verify saved file',report:'Save verification report',
   footer:'Every task reads only original column values. Columns without a task are saved unchanged. Any exception blocks saving, and the saved file is re-read in full. No time-zone conversion, no automatic blank filling, no relationships inferred from Bates numbers.',
-  stStart:'Open a DAT and add tasks.',stReading:'Checking the whole file.',stOpened:'File checked. Choose the transformations and checks you need.',stOpenedKept:'File checked. Your {0} tasks were re-linked to this file by column name.',
+  clearTemp:'Clear temporary data',stStart:'Open a DAT and add tasks.',stReading:'Checking the whole file.',stOpened:'File checked. Choose the transformations and checks you need.',stOpenedKept:'File checked. Your {0} tasks were re-linked to this file by column name.',
   stChanged:'Settings changed. Run the full check again.',stProfiling:'Collecting values from: {0}',stReadyToCheck:'Set up the tasks, then run the full check.',stChecking:'Applying the tasks to the whole file. Nothing is saved yet.',
   stPassed:'Check passed · {0} documents, 0 exceptions.{1}\nReview the results, then save.',stWarnNote:' {0} warnings (not blocking).',stBlocked:'{0} exceptions · saving is blocked.',stCheckFailed:'Check failed · nothing was saved.\n{0}',
   stWriting:'Writing the new file. Final verification is still pending.',stCommitting:'Finishing the save. Cancel is briefly unavailable.',stVerifying:'Re-reading the saved file and checking every value.',
@@ -703,7 +792,7 @@ const UI_KO={
   s3:'검사 · 저장',runCheck:'전체 검사',issueCsv:'문제 목록 저장 (CSV)',outputName:'새 파일 이름',save:'새 파일로 저장 + 검증',
   saveHint:'항상 새 이름으로 저장하세요. 저장창에서 "바꾸기"를 누르면 브라우저가 기존 파일을 먼저 비울 수 있습니다.',manualLabel:'다운로드된 파일 선택 · 최종 검증',verifySaved:'저장된 파일 검증',report:'검증 보고서 저장',
   footer:'모든 작업은 원본 열 값만 읽어 계산합니다. 작업이 없는 열은 원본 그대로 저장됩니다. 예외가 하나라도 있으면 저장할 수 없고, 저장 후에는 파일 전체를 다시 읽어 확인합니다. 시간대 변환, 빈 값 자동 채우기, Bates로 관계 추정은 하지 않습니다.',
-  stStart:'DAT를 열고 작업을 추가하세요.',stReading:'파일 전체를 확인하는 중입니다.',stOpened:'파일을 확인했습니다. 필요한 변환과 검사를 선택하세요.',stOpenedKept:'파일을 확인했습니다. 기존 작업 {0}개를 열 이름으로 이 파일에 다시 연결했습니다.',
+  clearTemp:'임시 데이터 삭제',stStart:'DAT를 열고 작업을 추가하세요.',stReading:'파일 전체를 확인하는 중입니다.',stOpened:'파일을 확인했습니다. 필요한 변환과 검사를 선택하세요.',stOpenedKept:'파일을 확인했습니다. 기존 작업 {0}개를 열 이름으로 이 파일에 다시 연결했습니다.',
   stChanged:'설정이 바뀌었습니다. 전체 검사를 다시 실행하세요.',stProfiling:'원본 값을 모으는 중: {0}',stReadyToCheck:'작업을 설정하고 전체 검사를 실행하세요.',stChecking:'파일 전체에 작업을 적용해 보는 중입니다. 아직 저장하지 않습니다.',
   stPassed:'검사 통과 · 문서 {0}건, 예외 0건.{1}\n결과 표를 확인하고 저장하세요.',stWarnNote:' 경고 {0}건(저장은 가능).',stBlocked:'예외 {0}건 · 저장할 수 없습니다.',stCheckFailed:'검사 실패 · 저장하지 않았습니다.\n{0}',
   stWriting:'새 파일에 쓰는 중입니다. 최종 검증은 아직입니다.',stCommitting:'저장을 마무리하는 중입니다. 잠시 취소할 수 없습니다.',stVerifying:'저장된 파일을 다시 읽어 모든 값을 확인하는 중입니다.',
@@ -757,7 +846,7 @@ const UI_KO={
   firstLineBlank:'첫 줄이 비어 있습니다. 헤더가 파일의 첫 줄이어야 합니다.',lineBlank:'{0}번째 줄이 비어 있습니다.',notDat:'{0}번째 줄: þ로 감싼 DAT 형식이 아닙니다.',tooManyFields:'열이 2,000개를 넘습니다.',
   legacyNoDc4:'{0}번째 줄: DC4(U+0014) 구분자가 없는 구형 þ 형식입니다. þ/DC4 DAT로 다시 내보내 주세요.',badQualifier:'{0}번째 줄 {1}번째 열: þ 구분자가 맞지 않습니다.',valueBreak:'{0}번째 줄 {1}번째 열: 값 안에 þ, 줄바꿈 또는 NUL이 있습니다.',
   blankHeader:'헤더에 이름이 빈 열이 있습니다.',dupHeader:'헤더에 같은 이름의 열이 두 번 있습니다: {0}',unsafeValue:'값에 þ, DC4, 줄바꿈 또는 NUL을 넣을 수 없습니다.',surrogate:'짝이 맞지 않는 유니코드 문자가 있습니다.',
-  colCount:'{0}번째 줄의 열 개수({1})가 헤더({2})와 다릅니다.',tooManyDocs:'문서가 1,000,000건을 넘습니다.',mixedEol:'줄바꿈 형식(CRLF/LF/CR)이 섞여 있습니다. 한 가지로 통일된 파일을 사용하세요.',noRecords:'문서 레코드가 없습니다.',
+  colCount:'{0}번째 줄의 열 개수({1})가 헤더({2})와 다릅니다.',tooManyDocs:'문서 수가 안전한 정수 범위를 넘습니다.',mixedEol:'줄바꿈 형식(CRLF/LF/CR)이 섞여 있습니다. 한 가지로 통일된 파일을 사용하세요.',noRecords:'문서 레코드가 없습니다.',
   changed:'파일이 처음 열었을 때와 달라졌습니다. 다시 열어 주세요.',headerChanged:'헤더가 처음 열었을 때와 다릅니다. 다시 열어 주세요.',badDate:'존재하지 않는 날짜입니다: {0}',bad12h:'12시간제 시각이 잘못되었습니다: {0}',badTime:'존재하지 않는 시각입니다: {0}',
   unknownTask:'알 수 없는 작업입니다.',colUsed:'"{0}" 열은 {1}번 작업이 이미 씁니다.',pickColumn:'{0} 열을 선택하세요.',pickTarget:'결과를 쓸 열을 선택하세요.',newColName:'새 열 이름을 입력하세요.',newColBad:'열 이름에 þ, DC4, 줄바꿈을 넣을 수 없습니다.',
   newColExists:'"{0}" 열이 이미 있습니다. 기존 열을 고르거나 다른 이름을 쓰세요.',dupMapValue:'같은 원본 값이 두 번 있습니다: {0}',unsetValues:'결과를 정하지 않은 값이 {0}개 있습니다.',fillTable:'"원본 값 불러오기"로 대응표를 채우세요.',needValue:'넣을 값을 입력하세요.',
@@ -807,12 +896,12 @@ function workerBoot(){
     busy=true;
     try{
       let result;
-      if(m.op==='inspect'){plan=null;expected=null;result=await core.inspect(m.file);}
+      if(m.op==='inspect'){await core.dispose(plan);plan=null;expected=null;result=await core.inspect(m.file);}
       else if(m.op==='profile')result=await core.profile(m.file,m.columns,m.delimiter,m.hash);
-      else if(m.op==='preflight'){plan=null;expected=null;const r=await core.preflight(m.file,m.tasks,m.idName,m.headers,m.hash);plan=r.plan;result=r.report;}
+      else if(m.op==='preflight'){await core.dispose(plan);plan=null;expected=null;const r=await core.preflight(m.file,m.tasks,m.idName,m.headers,m.hash);plan=r.plan;result=r.report;}
       else if(m.op==='transform'){if(!plan){const e=new Error('noPlan');e.code='noPlan';e.args=[];throw e;}expected=null;expected=await core.transform(plan,bytes=>new Promise((resolve,reject)=>{const t=++token;acks.set(t,{resolve,reject});self.postMessage({type:'chunk',id:m.id,token:t,buffer:bytes.buffer},[bytes.buffer]);}));result=expected;}
       else if(m.op==='verify'){if(!plan||!expected){const e=new Error('noResult');e.code='noResult';e.args=[];throw e;}result=await core.verify(plan,m.file,expected);}
-      else throw new Error('Unknown operation.');
+      else if(m.op==='dispose'){await core.dispose(plan);plan=null;expected=null;await core.cleanupStorage();result=true;}else throw new Error('Unknown operation.');
       self.postMessage({type:'result',id:m.id,result});
     }catch(e){post(m,e);}finally{busy=false;}
   };
@@ -823,7 +912,7 @@ let checkedSetup=null,approvedSignature=null,preferredId=null;
 const pending=new Map(),profiles=new Map(),tasks=[],profileQueue=[];
 function stopWorker(code){const instance=worker;worker=null;if(instance)instance.terminate();for(const p of pending.values())p.reject(uiError(code));pending.clear();}
 function makeWorker(){
-  const url=URL.createObjectURL(new Blob(['const createDeliveryCore='+createDeliveryCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
+  const url=URL.createObjectURL(new Blob(['const createProductionStorage='+createProductionStorage.toString()+';const createDeliveryCore='+createDeliveryCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
   const instance=new Worker(url);worker=instance;URL.revokeObjectURL(url);
   instance.onmessage=async({data:m})=>{
     if(worker!==instance)return;
@@ -835,7 +924,7 @@ function makeWorker(){
   instance.onerror=()=>{if(worker===instance)recoverWorker();};
 }
 function request(op,payload={},emit){return new Promise((resolve,reject)=>{const id=++serial;if(!worker){reject(uiError('stNoWorker'));return;}pending.set(id,{resolve,reject,emit});try{worker.postMessage({id,op,...payload});}catch(e){pending.delete(id);reject(e);}});}
-function lock(on){if(cancelling&&!on)return;busy=on;$('inputs').disabled=on;$('taskInputs').disabled=on;$('outputName').disabled=on;$('savedFile').disabled=on;$('saveSettings').disabled=on;$('loadSettingsButton').disabled=on;$('langEn').disabled=on;$('langKo').disabled=on;$('progressLine').hidden=!on;$('cancel').disabled=!on||!!(activeRun&&activeRun.phase==='commit');buttons();}
+function lock(on){$('clearTemp').disabled=on;if(cancelling&&!on)return;busy=on;$('inputs').disabled=on;$('taskInputs').disabled=on;$('outputName').disabled=on;$('savedFile').disabled=on;$('saveSettings').disabled=on;$('loadSettingsButton').disabled=on;$('langEn').disabled=on;$('langKo').disabled=on;$('progressLine').hidden=!on;$('cancel').disabled=!on||!!(activeRun&&activeRun.phase==='commit');buttons();}
 function clearVerification(code='notVerified'){verified=null;setVerification(code);}
 function invalidate(){revision++;report=null;expected=null;checkedSetup=null;approvedSignature=null;$('reviewedPlan').checked=false;clearVerification();$('results').hidden=true;$('manualVerification').hidden=true;$('savedFile').value='';buttons();}
 function beginRun(kind){if(busy||activeRun)return null;if(!worker){status('stNoWorker',[],'error');return null;}const r={id:++runSerial,revision,kind,phase:'processing',cancelled:false,writer:null,committed:false,commitAttempted:false,outputName:''};activeRun=r;lock(true);$('progress').value=0;$('progressText').textContent='';return r;}
@@ -1225,6 +1314,7 @@ $('report').onclick=()=>{if(busy||!verified||!report||!requireChecked())return;c
 $('issueCsv').onclick=()=>{if(!report)return;const esc=v=>{v=String(v);if(/^[\s]*[=+@-]/.test(v)||/^[\t\r\n]/.test(v))v="'"+v;return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const rows=[...report.exceptions.map(e=>[t('sevException'),e.row,e.id,typeName(e.type),e.column,e.value,tr(e)]),...report.warnings.map(w=>[t('sevWarning'),w.row,w.id,typeName(w.type),'','',tr(w)])];
   download(new Blob(['﻿'+[t('csvHead'),...rows.map(r=>r.map(esc).join(','))].join('\r\n')+'\r\n'],{type:'text/csv'}),(info?info.file.name.replace(/\.[^.]+$/,''):'delivery')+'_issues.csv');};
+$('clearTemp').onclick=async()=>{const r=beginRun('dispose');if(!r)return;try{await call(r,'dispose');invalidate();status('stChanged');}catch(e){status('stSaveFailed',[e],'error');}finally{await finishRun(r);}};
 $('cancel').onclick=async()=>{
   const r=activeRun;if(!r||cancelling||r.phase==='commit')return;
   r.cancelled=true;cancelling=true;$('cancel').disabled=true;stopWorker('stCancelled');profileQueue.length=0;cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;

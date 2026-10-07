@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- Canonical filename: nmt_load_file_updater.html · v0.4.1. 100% local, read-only source, verified output only. -->
+<!-- Canonical filename: nmt_load_file_updater.html · v0.5.0. 100% local, read-only source, verified output only. -->
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'"/>
 <title>NMT Load File Updater</title>
 <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%231556c9%22%2F%3E%3Cpath%20d%3D%22M14%2023h34m-9-9%209%209-9%209M50%2041H16m9-9-9%209%209%209%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%226%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E"/>
 <style>
@@ -27,7 +27,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 <body>
 <div class="topbar">
   <div class="name-watermark" aria-hidden="true">이현수 · HYUNSOO LEE</div>
-  <div class="brand"><div class="logo">⇄</div><div><h1>NMT Load File Updater</h1><p>DOCID → DOCID_NMT import DAT builder · v0.4.1</p></div></div>
+  <div class="brand"><div class="logo">⇄</div><div><h1>NMT Load File Updater</h1><p>DOCID → DOCID_NMT import DAT builder · v0.5.0</p></div></div>
   <div class="privacy">🔒 100% local · source read-only · verified output only</div>
 </div>
 <main>
@@ -71,7 +71,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
   <div id="defaultsWarn" class="callout warn hidden" style="margin-top:10px"></div>
   <div id="outputCols" class="callout" style="margin-top:10px"></div>
   <div class="note">Default copy fields: <b>File Extension</b>, <b>Email Subject</b>, <b>File Name</b> (matched ignoring case, spaces and punctuation). Translation Relational is set separately and is never copied. Any default can be unchecked, and any other field can be added individually. Bulk “select all” is intentionally unavailable to reduce accidental metadata blast radius. Identifier-like fields are protected from modification.</div>
-  <div class="actions" style="margin-top:14px"><button id="btnBuild" class="btn primary">Analyze, Update & Validate</button></div>
+  <div class="actions" style="margin-top:14px"><button id="btnBuild" class="btn primary">Analyze, Update & Validate</button><button id="btnCancel" class="btn" disabled>Cancel</button><button id="btnTemp" class="btn">Clear temporary data</button><span class="small">Large files use temporary browser storage and save directly to a NEW file (Chrome/Edge). All processing stays on this PC.</span></div>
 </section>
 
 <section id="results" class="hidden" style="display:grid;gap:18px">
@@ -91,21 +91,195 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:8px}.toast
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
-const APP_VERSION='0.4.1';
+const APP_VERSION='0.5.0';
 const CANONICAL_FILENAME='nmt_load_file_updater.html';
 const FE='\u00FE', DC4='\u0014';
 const DEFAULT_FIELDS=['File Extension','Email Subject','File Name'];
 const KEY_HEADER_ALIASES=new Set(['controlnumber','docid','documentid','begdoc','begindoc','bates','batesnumber','begno','beginnumber']);
-const MAX_FILE_BYTES=512*1024*1024, MAX_ROWS=500000, MAX_COLUMNS=5000, MAX_CELL_UNITS=64*1024*1024;
+const MAX_FILE_BYTES=Number.MAX_SAFE_INTEGER, LARGE_FILE_BYTES=4*1024*1024, MAX_ROWS=Number.MAX_SAFE_INTEGER, MAX_COLUMNS=5000, MAX_CELL_UNITS=64*1024*1024;
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 let sourceFile=null, parsed=null, lastResult=null, running=false, selectedFieldSet=new Set(), operationGeneration=0;
+
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+function createProductionStorage(options={}) {
+  const PREFIX='ediscovery-temp-v1-', BATCH_ROWS=512, BATCH_UNITS=512*1024;
+  const keyText=k=>JSON.stringify(k);const units=v=>typeof v==='string'?v.length:!v||typeof v!=='object'?16:Object.values(v).reduce((n,x)=>n+units(x),0);
+  const at=(v,p)=>Array.isArray(p)?p.map(x=>at(v,x)):String(p).split('.').reduce((a,k)=>a==null?undefined:a[k],v);
+  const error=(e,detail)=>{if(e&&e.name==='ConstraintError'&&detail){const x=new Error(detail.message);Object.assign(x,detail);return x;}const x=new Error('Temporary local storage failed. No output is verified. '+(e&&e.message||e));x.name=e&&e.name||'StorageError';return x;};
+  const cmp=(a,b)=>{if(typeof indexedDB!=='undefined')return indexedDB.cmp(a,b);if(Array.isArray(a)&&Array.isArray(b)){for(let i=0;i<Math.min(a.length,b.length);i++){const c=cmp(a[i],b[i]);if(c)return c;}return a.length-b.length;}return a<b?-1:a>b?1:0;};
+  async function* batches(records){let batch=[],units=0;for await(const r of records){const n=r.raw?r.raw.length:r.values?r.values.reduce((s,v)=>s+v.length,0):128;if(batch.length&&(batch.length>=BATCH_ROWS||units+n>BATCH_UNITS)){yield batch;batch=[];units=0;}batch.push(r);units+=n;}if(batch.length)yield batch;}
+  function memory(schema){
+    const tables=new Map(schema.map(s=>[s.name,new Map()])),seq=new Map();let entries=0,closed=false;
+    const table=n=>{if(closed)throw Error('Temporary index is closed.');return tables.get(n);};
+    const tx={get:async(n,k)=>structuredClone(table(n).get(keyText(k))?.value),put:async(n,v,k)=>{const s=schema.find(x=>x.name===n);if(k===undefined)k=s.keyPath?at(v,s.keyPath):(seq.set(n,(seq.get(n)||0)+1),seq.get(n));const t=table(n),kt=keyText(k);for(const ix of s.indexes||[])if(ix.unique){const value=at(v,ix.keyPath);for(const entry of t.values())if(keyText(entry.key)!==kt&&cmp(at(entry.value,ix.keyPath),value)===0)throw Error('Duplicate or case/Unicode-equivalent key.');}if(!t.has(kt)&&++entries>50000)throw Error('Browser-local disk storage is required for this many records.');t.set(kt,{key:k,value:structuredClone(v)});return k;},add:async(n,v,k,detail)=>{const s=schema.find(x=>x.name===n);if(k===undefined&&s.keyPath)k=at(v,s.keyPath);if(k!==undefined&&table(n).has(keyText(k))){const e=new Error(detail?.message||'Duplicate key');if(detail)Object.assign(e,detail);throw e;}return tx.put(n,v,k);},del:async(n,k)=>{if(table(n).delete(keyText(k)))entries--;},clear:async n=>{entries-=table(n).size;table(n).clear();},count:async(n,index,k)=>{if(!index)return table(n).size;return (await tx.page(n,null,50001,index,k)).length;},page:async(n,after,limit=BATCH_ROWS,index,indexKey)=>{const spec=schema.find(s=>s.name===n),ix=spec.indexes?.find(x=>x.name===index);return [...table(n).values()].filter(x=>after==null||cmp(x.key,after)>0).filter(x=>{if(!ix)return true;const v=at(x.value,ix.keyPath);return ix.multiEntry?v.some(y=>cmp(y,indexKey)===0):cmp(v,indexKey)===0;}).sort((a,b)=>cmp(a.key,b.key)).slice(0,limit).map(x=>structuredClone(x));}};
+    return {kind:'memory-test',name:'memory-test',run:async(names,mode,fn)=>fn(tx),getMany:async(n,keys)=>Promise.all(keys.map(k=>tx.get(n,k))),page:tx.page,count:tx.count,clear:tx.clear,close:async()=>{closed=true;tables.clear();},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  const req=(r,detail)=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(error(r.error,detail));});
+  const remove=name=>new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(name);r.onsuccess=()=>resolve();r.onerror=()=>reject(error(r.error));r.onblocked=()=>reject(Error('Temporary storage is still in use. Close the previous job and retry.'));});
+  async function cleanup(){if(typeof indexedDB==='undefined'||!indexedDB.databases||!globalThis.navigator?.locks)return;for(const d of await indexedDB.databases()){if(!d.name?.startsWith(PREFIX))continue;await navigator.locks.request(d.name,{ifAvailable:true},async lock=>{if(lock)await remove(d.name);});}}
+  async function open(tool,schema){
+    if(typeof indexedDB==='undefined'){if(typeof document==='undefined'&&typeof WorkerGlobalScope==='undefined')return memory(schema);throw Error('Local temporary storage is unavailable. Use current Chrome/Edge.');}
+    if(!globalThis.navigator?.locks)throw Error('Local job locking is unavailable. Use current Chrome/Edge.');
+    await cleanup();
+    const name=PREFIX+tool+'-'+crypto.randomUUID();let release,locked,lockError;
+    const ready=new Promise((resolve,reject)=>{locked=resolve;lockError=reject;});
+    const held=navigator.locks.request(name,async()=>{locked();await new Promise(r=>release=r);});held.catch(lockError);await ready;
+    let db;
+    try{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>{for(const s of schema){const store=r.result.createObjectStore(s.name,{...(s.keyPath?{keyPath:s.keyPath}:{}),...(s.autoIncrement?{autoIncrement:true}:{})});for(const i of s.indexes||[])store.createIndex(i.name,i.keyPath,{unique:!!i.unique,multiEntry:!!i.multiEntry});}};db=await req(r);}catch(e){release();await held;throw error(e);}
+    let closed=false;const live=new Set();
+    const run=async(names,mode,fn)=>{
+      if(closed)throw Error('Temporary index is closed. Run the check again.');
+      const t=db.transaction(names,mode);live.add(t);let txError;
+      const done=new Promise((resolve,reject)=>{t.oncomplete=()=>resolve();t.onabort=()=>reject(txError||error(t.error||'Transaction aborted'));});done.catch(()=>{});
+      const store=n=>t.objectStore(n);const check=v=>{if(units(v)>64*1024)throw Error('Indexed metadata for one document exceeds 64 Ki characters. No output is verified.');return v;};
+      const api={get:(n,k)=>req(store(n).get(k)),many:async(n,keys)=>{if(!keys.length)return [];let lo=keys[0],hi=lo;for(const k of keys){if(cmp(k,lo)<0)lo=k;if(cmp(k,hi)>0)hi=k;}const range=IDBKeyRange.bound(lo,hi),st=store(n),[values,found]=await Promise.all([req(st.getAll(range,keys.length)),req(st.getAllKeys(range,keys.length))]),map=new Map(found.map((k,i)=>[keyText(k),values[i]]));return Promise.all(keys.map(k=>map.has(keyText(k))?map.get(keyText(k)):req(st.get(k))));},put:(n,v,k)=>req(k===undefined?store(n).put(check(v)):store(n).put(check(v),k)),add:(n,v,k,detail)=>req(k===undefined?store(n).add(check(v)):store(n).add(check(v),k),detail),del:(n,k)=>req(store(n).delete(k)),clear:n=>req(store(n).clear()),count:(n,index,k)=>req(index?store(n).index(index).count(IDBKeyRange.only(k)):store(n).count()),page:(n,after,limit=BATCH_ROWS,index,indexKey)=>new Promise((resolve,reject)=>{
+        if(!index){const range=after==null?null:IDBKeyRange.lowerBound(after,true),st=store(n),count=Math.min(limit,BATCH_ROWS);Promise.all([req(st.getAll(range,count)),req(st.getAllKeys(range,count))]).then(([values,keys])=>resolve(values.map((value,i)=>({key:keys[i],value}))),reject);return;}
+        const obj=index?store(n).index(index):store(n),range=index?IDBKeyRange.only(indexKey):after==null?null:IDBKeyRange.lowerBound(after,true),r=obj.openCursor(range),rows=[];let pageUnits=0;
+        r.onerror=()=>reject(error(r.error));r.onsuccess=()=>{const c=r.result;if(!c||rows.length>=limit){resolve(rows);return;}if(index&&after!=null&&cmp(c.primaryKey,after)<=0){if(cmp(c.primaryKey,after)<0)c.continuePrimaryKey(indexKey,after);else c.continue();return;}rows.push({key:c.primaryKey,value:c.value});pageUnits+=units(c.value);if(rows.length>=limit||pageUnits>=BATCH_UNITS){resolve(rows);return;}c.continue();};
+      })};
+      try{const result=await fn(api);await done;return result;}catch(e){txError=e;try{t.abort();}catch{}await done.catch(()=>{});throw e;}finally{live.delete(t);}
+    };
+    return {kind:'indexeddb',name,run,getMany:(n,keys)=>run([n],'readonly',t=>t.many(n,keys)),page:(...args)=>run([args[0]],'readonly',t=>t.page(...args)),count:(...args)=>run([args[0]],'readonly',t=>t.count(...args)),clear:n=>run([n],'readwrite',t=>t.clear(n)),close:async()=>{if(closed)return;closed=true;for(const t of live)try{t.abort();}catch{}db.close();try{await remove(name);}finally{release();await held;}},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  return {open,cleanup,batches,BATCH_ROWS,BATCH_UNITS,cmp};
+}
+
+function createNmtScale(options={}){
+ const disk=createProductionStorage(),CHUNK=1024*1024,MAX_RECORD=64*1024*1024,progress=options.progress||(()=>{});
+   function streamHash() {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), buf = new Uint8Array(64);
+    let used = 0, total = 0, done = false;
+    const rr = (x,n) => (x >>> n) | (x << (32-n));
+    function compress(b) {
+      for(let i=0;i<16;i++) { const j=i*4; w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0; }
+      for(let i=16;i<64;i++) w[i]=(w[i-16]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-7]+(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10)))>>>0;
+      let [a,b0,c,d,e,f,g,z]=h;
+      for(let i=0;i<64;i++) {
+        const t1=(z+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+        const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b0)^(a&c)^(b0&c)))>>>0;
+        z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b0;b0=a;a=(t1+t2)>>>0;
+      }
+      [a,b0,c,d,e,f,g,z].forEach((v,i)=>{h[i]=(h[i]+v)>>>0;});
+    }
+    return {
+      update(bytes) {
+        if(done) fail('Hash already finalized.');
+        total+=bytes.length; let i=0;
+        if(used) {const take=Math.min(64-used,bytes.length);buf.set(bytes.subarray(0,take),used);used+=take;i=take;if(used===64){compress(buf);used=0;}}
+        while(i+64<=bytes.length){compress(bytes.subarray(i,i+64));i+=64;}
+        if(i<bytes.length){buf.set(bytes.subarray(i));used=bytes.length-i;}
+      },
+      hex() {
+        if(done) fail('Hash already finalized.'); done=true;
+        const tail=new Uint8Array(used<56?64:128);tail.set(buf.subarray(0,used));tail[used]=128;
+        const dv=new DataView(tail.buffer);dv.setUint32(tail.length-8,Math.floor(total/0x20000000));dv.setUint32(tail.length-4,(total%0x20000000)*8);
+        for(let i=0;i<tail.length;i+=64)compress(tail.subarray(i,i+64));
+        return Array.from(h,v=>v.toString(16).padStart(8,'0')).join('');
+      }
+    };
+  }
+
+ const fail=message=>{throw Error(message);};
+ async function reader(file,parseOptions){
+  // Streaming detection must not reject a UTF-8 character cut at the sniff boundary.
+  const sample=new Uint8Array(await file.slice(0,CHUNK).arrayBuffer());let enc;
+  if(parseOptions.encoding==='auto'&&!(sample[0]===255&&sample[1]===254)&&!(sample[0]===254&&sample[1]===255)&&!sample.includes(0)){
+   new TextDecoder('utf-8',{fatal:true}).decode(sample,{stream:file.size>sample.length});enc={kind:'utf-8',bomBytes:sample[0]===239&&sample[1]===187&&sample[2]===191?3:0};
+  }else{try{enc=detectEncoding(sample,parseOptions.encoding);}catch(e){if(parseOptions.encoding!=='auto'||file.size<=sample.length)throw e;new TextDecoder('utf-8',{fatal:true}).decode(sample,{stream:true});enc={kind:'utf-8',bomBytes:0};}}
+  const dec=enc.kind==='cp1252'?null:new TextDecoder(enc.kind,{fatal:true,ignoreBOM:true}),hash=streamHash(),bodyEnc={...enc,bomBytes:0};
+  let carry=new Uint8Array(),bodyBytes=0;function checkBytes(raw,text){const encoded=encodeText(text,bodyEnc),joined=new Uint8Array(carry.length+raw.length);joined.set(carry);joined.set(raw,carry.length);if(encoded.length>joined.length)throw Error('Source byte round-trip differs.');for(let i=0;i<encoded.length;i++)if(encoded[i]!==joined[i])throw Error('Source byte round-trip differs.');bodyBytes+=encoded.length;carry=joined.slice(encoded.length);if(carry.length>8)throw Error('Unexpected decoder carry.');}
+  let fmt=null,pending='',scanned=0,inQuote=false,rowNo=0,headers=null,eol='',count=0;
+  const result={encoding:enc,sourceSha256:null,sourceByteRoundtripExact:false,fmt:null,headers:null,width:0,count:0,recordEol:''};
+  result.records=async function*(){
+   function record(raw,term){if(raw.length>MAX_RECORD)throw Error('Logical record exceeds 64 MiB safety limit.');const p=fmt==='fe'?parseFeRecord(raw,++rowNo):parseDelimitedRecord(raw,++rowNo,fmt==='csv'?',':fmt==='tsv'?'\t':'|');
+    if(!headers){const h=parseText(raw+(term||'\r\n'),fmt);headers=h.headers;result.headers=headers;result.width=h.width;}
+    else{if(p.values.length!==headers.length)throw Error('Row '+rowNo+' has a different column count.');count++;}
+    if(term){if(eol&&term!==eol)throw Error('Mixed physical record line endings.');eol=term;}
+    return {...p,raw,term,line:rowNo};
+   }
+   for(let offset=0;offset<file.size;offset+=CHUNK){const end=Math.min(file.size,offset+CHUNK),bytes=new Uint8Array(await file.slice(offset,end).arrayBuffer());if(bytes.length!==end-offset)throw Error('Incomplete source read.');hash.update(bytes);
+    const skip=offset===0?enc.bomBytes:0;
+    const text=dec?dec.decode(bytes.subarray(skip),{stream:true}):decodeCp1252(bytes.subarray(skip));checkBytes(bytes.subarray(skip),text);pending+=text;
+    if(!fmt){if(!/[\r\n]/.test(pending)&&pending.length<MAX_RECORD&&end<file.size)continue;fmt=detectFormat(pending,file.name,parseOptions.format);result.fmt=fmt;result.delimiter=fmt==='csv'?',':fmt==='tsv'?'\t':fmt==='pipe'?'|':null;}
+    const q=fmt==='fe'?FE:'"';let start=0,i=scanned;
+    for(;i<pending.length;i++){
+     const ch=pending[i];if(ch===q){if(i+1===pending.length)break;if(inQuote&&pending[i+1]===q){i++;continue;}inQuote=!inQuote;continue;}
+     if(!inQuote&&(ch==='\r'||ch==='\n')){if(ch==='\r'&&i+1===pending.length)break;const term=ch==='\r'&&pending[i+1]==='\n'?'\r\n':ch;yield record(pending.slice(start,i),term);i+=term.length-1;start=i+1;}
+    }
+    pending=pending.slice(start);scanned=i-start;if(pending.length>MAX_RECORD)throw Error('Logical record exceeds 64 MiB safety limit.');progress(file.name,end/file.size);
+   }
+   const tail=dec?dec.decode():'';checkBytes(new Uint8Array(),tail);pending+=tail;
+   if(!fmt){fmt=detectFormat(pending,file.name,parseOptions.format);result.fmt=fmt;}
+   // EOF resolves the one-character quote/CR look-ahead left at the chunk boundary.
+   const q=fmt==='fe'?FE:'"';let start=0;
+   for(let i=scanned;i<pending.length;i++){const ch=pending[i];if(ch===q){if(inQuote&&pending[i+1]===q){i++;continue;}inQuote=!inQuote;continue;}if(!inQuote&&(ch==='\r'||ch==='\n')){const term=ch==='\r'&&pending[i+1]==='\n'?'\r\n':ch;yield record(pending.slice(start,i),term);i+=term.length-1;start=i+1;}}
+   if(inQuote)throw Error('Unclosed field qualifier at EOF.');if(start<pending.length)yield record(pending.slice(start),'');
+   if(!headers)throw Error('Empty load file.');result.count=count;result.recordEol=eol;result.sourceSha256=hash.hex();result.sourceByteRoundtripExact=carry.length===0&&bodyBytes===file.size-enc.bomBytes;if(!result.sourceByteRoundtripExact)throw Error('Source byte round-trip is not exact.');
+  };return result;
+ }
+ async function inspect(file,parseOptions){const r=await reader(file,parseOptions);for await(const rec of r.records()){}if(!r.count)throw Error('No data records.');const {records,...info}=r;return info;}
+ async function build(file,p,config,emit){
+  const {keyIdx,selected,suffix,requireAllPairs,allowBlankOverwrite,relIdx,allowRelationalOverwrite}=config;
+  // Reuse the established configuration guards on a tiny valid pair, never the business data.
+  const base='__CONFIG__'+(suffix.endsWith('0')?'1':'0'),mock=[p.headers,p.headers.map(()=>''),p.headers.map(()=>'')];mock[1][keyIdx]=base;mock[2][keyIdx]=base+suffix;
+  const guard=buildUpdated({...p,rows:mock.map(values=>({values,tokens:values.map(v=>serializeToken(v,p.fmt,p.delimiter)),term:'\r\n'}))},keyIdx,selected,suffix,requireAllPairs,true,relIdx,true);
+  const bad=guard.issues.find(x=>x.severity==='FAIL');if(bad)throw Error(bad.title+': '+bad.detail);
+  const r={tool:'NMT Load File Updater',version:APP_VERSION,generatedUtc:nowIso(),issues:guard.issues.filter(x=>['DEFAULT_FIELDS_NOT_APPLIED','RELATIONAL_NOT_USED'].includes(x.code)),changes:[],selected:[...selected],keyIdx,relIdx,suffix,config:{requireAllPairs,allowBlankOverwrite,allowRelationalOverwrite},headers:p.headers,stats:{dataRows:p.count,targets:0,pairs:0,sourceWithoutTarget:0,selectedFields:selected.length,changedRows:0,changedCells:0,noOps:0,blockedBlankClears:0,destructiveClears:0,relationalRows:0,relationalNoOps:0,relationalBlocked:0,relationalReplaced:0,totalChangedCells:0,importRecords:0},validation:{},processing:{index:'indexeddb',...{batchRows:disk.BATCH_ROWS,batchUnits:disk.BATCH_UNITS}}};
+  const store=await disk.open('nmt',[{name:'ids',keyPath:'id',indexes:[{name:'canonical',keyPath:'canonical',unique:true}]}]);
+  const cols=[keyIdx,...[...(relIdx>=0?[relIdx]:[]),...selected].sort((a,b)=>a-b)],term=p.recordEol||'\r\n',bodyEnc={...p.encoding,bomBytes:0};r.importColumns=cols;r.stats.importColumns=cols.length;
+  const capChange=x=>{if(r.changes.length<500)r.changes.push({...x,oldValue:valuePreview(x.oldValue),newValue:valuePreview(x.newValue)});};
+  try{
+   const src=await reader(file,p.parseOptions);
+   for await(const batch of disk.batches(src.records()))await store.run(['ids'],'readwrite',async tx=>{await Promise.all(batch.map(async rec=>{if(rec.line===1)return;const id=rec.values[keyIdx];if(!id||id!==id.trim()||/[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/.test(id))throw Error('Blank, padded or unsafe Control Number at row '+rec.line);
+    await tx.add('ids',{id,canonical:canonicalId(id),line:rec.line,values:cols.map(c=>rec.values[c]),tokens:cols.map(c=>rec.tokens[c])},undefined,{message:'Duplicate or case/Unicode-equivalent Control Number: '+JSON.stringify(id)});
+   }));});if(src.sourceSha256!==p.sourceSha256)throw Error('Source changed after parsing.');
+   // Resolve and validate every pair before the first output byte is written.
+   let after=null,near=0;for(;;){const page=await store.page('ids',after);if(!page.length)break;after=page.at(-1).key;
+    const partners=await store.getMany('ids',page.map(({value:d})=>d.id.endsWith(suffix)?d.id.slice(0,-suffix.length):d.id+suffix));for(let pi=0;pi<page.length;pi++){const d=page[pi].value;const target=d.id.endsWith(suffix);if(!target){if(canonicalId(d.id).endsWith(canonicalId(suffix)))near++;if(!partners[pi])r.stats.sourceWithoutTarget++;continue;}
+      r.stats.targets++;const base=d.id.slice(0,-suffix.length);if(!base||base.endsWith(suffix))throw Error('Empty base or nested NMT suffix: '+d.id);const original=partners[pi];if(!original)throw Error('No exact source record for '+d.id);r.stats.pairs++;let changed=false;
+      for(const c of selected){const j=cols.indexOf(c),nv=original.values[j],ov=d.values[j];if(nv===ov){r.stats.noOps++;continue;}const clear=nv===''&&ov!=='';if(clear&&!allowBlankOverwrite)r.stats.blockedBlankClears++;else{r.stats.changedCells++;changed=true;if(clear)r.stats.destructiveClears++;}capChange({targetRow:d.line,sourceId:base,targetId:d.id,field:p.headers[c],oldValue:ov,newValue:nv,status:clear&&!allowBlankOverwrite?'BLOCKED BLANK CLEAR':clear?'CLEAR':'UPDATE'});}
+      if(changed)r.stats.changedRows++;if(relIdx>=0){const j=cols.indexOf(relIdx);for(const row of [original,d]){const ov=row.values[j];if(ov===d.id){r.stats.relationalNoOps++;continue;}const blocked=ov!==''&&!allowRelationalOverwrite;if(blocked)r.stats.relationalBlocked++;else{r.stats.relationalRows++;if(ov!=='')r.stats.relationalReplaced++;}capChange({targetRow:row.line,sourceId:base,targetId:row.id,field:p.headers[relIdx],oldValue:ov,newValue:d.id,status:blocked?'BLOCKED RELATIONAL REPLACE':ov===''?'RELATIONAL SET':'RELATIONAL REPLACE'});}}
+    }
+   }
+   if(!r.stats.targets)throw Error('No exact NMT targets.');if(requireAllPairs&&r.stats.sourceWithoutTarget)throw Error('Strict pairing: '+r.stats.sourceWithoutTarget+' source records have no NMT target.');if(r.stats.blockedBlankClears||r.stats.relationalBlocked)throw Error('Destructive changes blocked: '+r.stats.blockedBlankClears+' blank clears, '+r.stats.relationalBlocked+' relational replacements.');
+   if(near)addIssue(r,'WARN','SUFFIX_CASE_MISMATCH','Possible differently written suffix',near+' non-NMT records match the suffix only when case/Unicode differences are ignored.');
+   if(r.stats.sourceWithoutTarget)addIssue(r,'INFO','SOURCE_UNPAIRED_INFO','Unpaired records excluded',r.stats.sourceWithoutTarget+' source records have no target.');
+   if(r.stats.destructiveClears)addIssue(r,'WARN','BLANK_OVERWRITE_ENABLED','Destructive blank clears enabled',r.stats.destructiveClears+' selected target cells will be cleared.');if(r.stats.relationalReplaced)addIssue(r,'WARN','RELATIONAL_OVERWRITE_ENABLED','Relational replacement enabled',r.stats.relationalReplaced+' nonblank relational values will be replaced.');
+   r.stats.totalChangedCells=r.stats.changedCells+r.stats.relationalRows;r.stats.importRecords=r.stats.pairs*(relIdx>=0?2:1);r.pairInfo={stats:{dataRows:p.count,targets:r.stats.targets,pairs:r.stats.pairs,sourceWithoutTarget:r.stats.sourceWithoutTarget}};
+   async function* outputRows(){const scan=await reader(file,p.parseOptions);for await(const batch of disk.batches(scan.records())){
+    const docs=await store.getMany('ids',batch.filter(rec=>rec.line!==1).map(rec=>rec.values[keyIdx])),other=await store.getMany('ids',docs.map(d=>d.id.endsWith(suffix)?d.id.slice(0,-suffix.length):d.id+suffix));let j=0;
+    for(const rec of batch){if(rec.line===1){yield {raw:joinTokens(cols.map(c=>rec.tokens[c]),p.fmt,p.delimiter),term};continue;}const d=docs[j],partner=other[j++];if(!d||d.id!==rec.values[keyIdx]||d.line!==rec.line||cols.some((c,k)=>d.values[k]!==rec.values[c]||d.tokens[k]!==rec.tokens[c]))throw Error('Temporary index differs from source.');if(!partner||(!d.id.endsWith(suffix)&&relIdx<0))continue;const isTarget=d.id.endsWith(suffix),target=isTarget?d:partner;
+     const tokens=cols.map((c,k)=>{if(c===keyIdx)return rec.tokens[c];if(c===relIdx)return rec.values[c]===target.id?rec.tokens[c]:target.tokens[0];if(isTarget){const nv=partner.values[k];return nv===rec.values[c]?rec.tokens[c]:partner.tokens[k];}return rec.tokens[c];});yield {raw:joinTokens(tokens,p.fmt,p.delimiter),term};
+    }
+   }if(scan.sourceSha256!==p.sourceSha256)throw Error('Source changed while generating output.');}
+   const hash=streamHash();let bytes=0,pieces=[],size=0;async function flush(){if(!size)return;const out=new Uint8Array(size);let pos=0;for(const x of pieces){out.set(x,pos);pos+=x.length;}await emit(out);pieces=[];size=0;}
+   const bom=encodeText('',p.encoding);if(bom.length){hash.update(bom);bytes+=bom.length;pieces.push(bom);size+=bom.length;}
+   for await(const row of outputRows()){const b=encodeText(row.raw+row.term,bodyEnc);hash.update(b);bytes+=b.length;pieces.push(b);size+=b.length;if(size>=CHUNK)await flush();}await flush();r.importSha256=hash.hex();r.importByteCount=bytes;
+   // Keep the disk index alive only for saved-file validation; it is then deleted.
+   r.verify=async output=>{
+    if(output.size!==bytes)throw Error('Saved output size differs. Do not deliver.');const actual=await reader(output,{encoding:p.encoding.kind,format:p.fmt}),ai=actual.records()[Symbol.asyncIterator]();let rows=0;
+    for await(const wanted of outputRows()){const got=await ai.next();if(got.done||got.value.raw!==wanted.raw||got.value.term!==wanted.term)throw Error('Saved import row differs at row '+(rows+1)+'. Do not deliver.');rows++;}
+    if(!(await ai.next()).done||actual.sourceSha256!==r.importSha256||JSON.stringify(actual.encoding)!==JSON.stringify(p.encoding))throw Error('Saved output hash, encoding or record count differs. Do not deliver.');
+    r.validation={pass:true,checks:[{ok:true,code:'SAVED_IMPORT_ORACLE',detail:rows+' saved records match independently regenerated source tokens, keys, pairing, columns and order.'},{ok:true,code:'SAVED_SHA256',detail:'Entire saved output re-read; SHA-256 and byte count match.'},{ok:true,code:'SOURCE_SHA256',detail:'Source SHA-256 rechecked during generation and saved-file validation.'}]};return r.validation;
+   };r.dispose=()=>store.close();return r;
+  }catch(e){await store.close().catch(()=>{});throw e;}
+ }
+ return {reader,inspect,build,cleanup:disk.cleanup};
+}
 
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function fmtBytes(n){if(!Number.isFinite(n))return'—';const u=['B','KiB','MiB','GiB'];let x=n,i=0;while(x>=1024&&i<u.length-1){x/=1024;i++;}return(i?x.toFixed(x>=100?0:x>=10?1:2):String(x))+' '+u[i];}
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),4200);}
 function setProgress(show,label,pct){$('#progressWrap').classList.toggle('hidden',!show);if(label!=null)$('#progressLabel').textContent=label;const p=Math.max(0,Math.min(100,Number(pct)||0));$('#progressPct').textContent=Math.round(p)+'%';$('#progressBar').style.width=p+'%';}
-function setRunning(on){running=!!on;['btnFile','fileInput','btnSelfTest','btnParse','btnBuild','encoding','format','keyField','suffix','requireAllPairs','allowBlankOverwrite','relField','allowRelOverwrite','btnDefaults','btnClear','fieldFilter'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=on;});$$('#fieldList input[type="checkbox"]').forEach(e=>e.disabled=on||e.dataset.key==='1');}
+function setRunning(on){running=!!on;$('#btnCancel').disabled=!on;$('#btnImport').disabled=on||!outputReady(lastResult);['btnFile','fileInput','btnSelfTest','btnParse','btnBuild','encoding','format','keyField','suffix','requireAllPairs','allowBlankOverwrite','relField','allowRelOverwrite','btnDefaults','btnClear','fieldFilter','btnTemp'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=on;});$$('#fieldList input[type="checkbox"]').forEach(e=>e.disabled=on||e.dataset.key==='1');}
 function extOf(name){const m=/\.[^./\\]+$/.exec(String(name||''));return m?m[0]:'';}
 function baseName(name){const ex=extOf(name);return ex?name.slice(0,-ex.length):name;}
 function normalizedHeader(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g,'');}
@@ -283,6 +457,43 @@ function validateBuilt(original,result,enc){
  return v;
 }
 
+const NMT_WORKER_PURE="'use strict';const APP_VERSION="+JSON.stringify(APP_VERSION)+",FE="+JSON.stringify(FE)+",DC4="+JSON.stringify(DC4)+",DEFAULT_FIELDS="+JSON.stringify(DEFAULT_FIELDS)+",KEY_HEADER_ALIASES=new Set("+JSON.stringify([...KEY_HEADER_ALIASES])+"),MAX_ROWS="+MAX_ROWS+",MAX_COLUMNS="+MAX_COLUMNS+",MAX_CELL_UNITS="+MAX_CELL_UNITS+",CP1252_DECODE="+JSON.stringify(CP1252_DECODE)+",CP1252_ENCODE=new Map(CP1252_DECODE.map((ch,i)=>[ch,0x80+i]));\n"+
+ [extOf,baseName,normalizedHeader,canonicalId,canonicalHeader,relationalCandidates,addIssue,cloneIssue,valuePreview,nowIso,sleep0,bytesEqual,sha256Hex,decodeCp1252,encodeCp1252,detectEncoding,decodeBytes,encodeText,detectFormat,splitLogicalRecords,parseFeRecord,parseDelimitedRecord,parseText,serializeToken,joinTokens,inspectIds,buildUpdated,dominantTerm,validateBuilt].map(fn=>fn.toString()).join('\n');
+
+// Large files are processed in a local worker; output writes acknowledge backpressure.
+let scaleWorker=null,scalePending=null,scaleSerial=0,scaleWriter=null;
+function nmtScaleBoot(){const core=createNmtScale({progress:(name,p)=>self.postMessage({type:'progress',name,p})});let result=null,busy=false,ack=null;
+ const clean=r=>{const {verify,dispose,...rest}=r;return rest;};
+ self.onmessage=async({data:m})=>{if(m.type==='ack'){if(ack){const a=ack;ack=null;m.error?a.reject(Error(m.error)):a.resolve();}return;}if(busy){self.postMessage({type:'error',id:m.id,error:'Worker is busy.'});return;}busy=true;
+  try{let value;if(m.op==='inspect'){if(result)await result.dispose();result=null;value=await core.inspect(m.file,m.parseOptions);}
+   else if(m.op==='build'){if(result)await result.dispose();result=null;result=await core.build(m.file,m.parsed,m.config,bytes=>new Promise((resolve,reject)=>{ack={resolve,reject};self.postMessage({type:'chunk',id:m.id,bytes},[bytes.buffer]);}));value=clean(result);}
+   else if(m.op==='verify'){if(!result)throw Error('No generated output.');try{await result.verify(m.file);value=clean(result);}finally{await result.dispose();result=null;}}
+   else if(m.op==='dispose'){if(result)await result.dispose();result=null;await core.cleanup();value=true;}else throw Error('Unknown operation.');
+   self.postMessage({type:'result',id:m.id,result:value});
+  }catch(e){self.postMessage({type:'error',id:m.id,error:e.message||String(e)});}finally{busy=false;}
+ };
+}
+function stopScale(){const w=scaleWorker;scaleWorker=null;if(w)w.terminate();if(scalePending){scalePending.reject(Error('Operation cancelled or local worker failed. No output is verified.'));scalePending=null;}}
+function scaleCall(op,payload={},emit){if(scalePending)return Promise.reject(Error('Worker is busy.'));if(!scaleWorker){const u=URL.createObjectURL(new Blob([NMT_WORKER_PURE+'\n'+createProductionStorage.toString()+'\n'+createNmtScale.toString()+'\n('+nmtScaleBoot.toString()+')();'],{type:'text/javascript'}));const w=new Worker(u);URL.revokeObjectURL(u);scaleWorker=w;
+ w.onerror=()=>stopScale();w.onmessage=async({data:m})=>{if(w!==scaleWorker)return;if(m.type==='progress'){setProgress(true,m.name+' · streaming',m.p*100);return;}const p=scalePending;if(!p||p.id!==m.id)return;if(m.type==='chunk'){let error;try{if(!p.emit)throw Error('Output writer is unavailable.');await p.emit(m.bytes);}catch(e){error=e.message;}if(w===scaleWorker)w.postMessage({type:'ack',error});}else{scalePending=null;m.type==='error'?p.reject(Error(m.error)):p.resolve(m.result);}};
+ }return new Promise((resolve,reject)=>{const id=++scaleSerial;scalePending={id,resolve,reject,emit};scaleWorker.postMessage({id,op,...payload});});}
+async function buildLarge(op){const p=op.dataset;if(!window.showSaveFilePicker)throw Error('Multi-GB output requires current Chrome/Edge with direct disk saving.');
+ // Called synchronously from the Build click so the browser retains picker activation.
+ const handlePromise=showSaveFilePicker({suggestedName:outputName('import',{source:{name:op.source.name}})});
+ let committed=false,commitAttempted=false,writer=null;
+ try{const handle=await handlePromise;assertOperationCurrent(op);const first=await handle.getFile();assertOperationCurrent(op);if(first.name.toLowerCase()===op.source.name.toLowerCase())throw Error('Output must have a different filename from the source.');if(first.size)throw Error('Choose a NEW empty output file. Existing files cannot be overwritten.');
+  writer=await handle.createWritable();scaleWriter=writer;assertOperationCurrent(op);const fresh=await handle.getFile();assertOperationCurrent(op);if(fresh.size||fresh.name!==first.name)throw Error('Destination changed before writing.');
+  const payload={...p};delete payload.sourceIdentity;delete payload.rows;
+  const r=await scaleCall('build',{file:op.source.file,parsed:payload,config:op.config},async bytes=>{assertOperationCurrent(op);await writer.write(bytes);assertOperationCurrent(op);});assertOperationCurrent(op);
+  const beforeCommit=await handle.getFile();assertOperationCurrent(op);if(beforeCommit.size||beforeCommit.name!==first.name)throw Error('Destination changed during writing.');
+  $('#btnCancel').disabled=true;commitAttempted=true;await writer.close();committed=true;writer=null;scaleWriter=null;$('#btnCancel').disabled=false;assertOperationCurrent(op);
+  const saved=await handle.getFile();assertOperationCurrent(op);if(saved.name!==first.name)throw Error('Saved filename changed.');const verified=await scaleCall('verify',{file:saved});assertOperationCurrent(op);
+  Object.assign(r,verified,{operation:op,headers:op.headers,importFile:saved,savedName:saved.name});r.source=Object.freeze({name:op.source.name,size:op.source.size,lastModifiedUtc:new Date(op.source.lastModified).toISOString(),sha256:p.sourceSha256,format:p.fmt,encoding:p.encoding.kind,byteRoundtripExact:true,rows:p.count,columns:p.width});
+  addIssue(r,'INFO','SAVED_VERIFIED','Saved import verified',saved.name+' has been fully re-read from disk and checked. Change preview is limited to the first 500 entries; all records were validated.');return r;
+ }catch(e){if(committed||commitAttempted)e.message+=' The destination may contain an UNVERIFIED output. Do not deliver it.';throw e;}
+ finally{if(writer)try{await writer.abort();}catch(e){toast('Temporary output cleanup failed: '+e.message);}scaleWriter=null;try{if(scaleWorker&&!scalePending)await scaleCall('dispose');}catch{}}
+}
+
 /* ---------- UI ---------- */
 function invalidateResult(){operationGeneration++;lastResult=null;$('#results').classList.add('hidden');$('#verdict').textContent='NOT VALIDATED';$('#verdict').className='verdict FAIL';$('#reportPre').textContent='';['btnImport','btnTxt','btnJson'].forEach(id=>$('#'+id).disabled=true);}
 function resetAfterFile(){invalidateResult();parsed=null;selectedFieldSet=new Set();$('#configCard').classList.add('hidden');}
@@ -296,13 +507,14 @@ function isOperationCurrent(op){
 }
 function assertOperationCurrent(op){if(!isOperationCurrent(op))throw new Error('Source or configuration changed during the operation. Results discarded; parse/build again.');}
 function currentResult(){if(running)return null;if(!lastResult||!isOperationCurrent(lastResult.operation)){invalidateResult();return null;}return lastResult;}
-function outputReady(r){return !!(r&&isOperationCurrent(r.operation)&&parsed&&r.verdict!=='FAIL'&&r.validation?.pass&&r.importBytes&&r.importSha256);}
+function outputReady(r){return !!(r&&isOperationCurrent(r.operation)&&parsed&&r.verdict!=='FAIL'&&r.validation?.pass&&(r.importBytes||r.importFile)&&r.importSha256);}
 async function chooseFile(file){if(!file||running)return;resetAfterFile();sourceFile=null;$('#parseCard').classList.add('hidden');$('#fileTag').textContent='';if(file.size>MAX_FILE_BYTES){toast(`File is ${fmtBytes(file.size)}; this review build caps in-browser source size at ${fmtBytes(MAX_FILE_BYTES)}.`);return;}sourceFile=file;$('#parseCard').classList.remove('hidden');$('#fileTag').textContent=`${file.name} · ${fmtBytes(file.size)} · last modified ${file.lastModified?new Date(file.lastModified).toLocaleString():'unknown'}`;toast('Source selected. Parse & inspect the schema.');}
 async function parseSource(){
  if(running)return;resetAfterFile();if(!sourceFile)return;
  const op=Object.freeze({generation:operationGeneration,source:captureSource(sourceFile),parseOptions:captureParseOptions()});
  setRunning(true);setProgress(true,'Reading source…',8);
  try{
+  if(op.source.size>LARGE_FILE_BYTES){const p=await scaleCall('inspect',{file:op.source.file,parseOptions:op.parseOptions});assertOperationCurrent(op);p.scale=true;p.sourceName=op.source.name;p.sourceSize=op.source.size;p.sourceIdentity=op.source;p.parseOptions=op.parseOptions;p.rows=[{values:p.headers}];parsed=p;populateConfig();setProgress(false);toast('Parsed '+p.count.toLocaleString()+' records with bounded memory. Build saves directly to a new output file.');return;}
   const buf=await op.source.file.arrayBuffer(),u8=new Uint8Array(buf);assertOperationCurrent(op);
   if(u8.byteLength!==op.source.size)throw new Error('Source byte count differs from the captured file size. Parse blocked.');
   setProgress(true,'Detecting encoding…',20);const enc=detectEncoding(u8,op.parseOptions.encoding),text=decodeBytes(u8,enc);
@@ -321,7 +533,7 @@ function defaultFieldStatus(){if(!parsed)return{indices:[],missing:[],ambiguous:
 function defaultFieldIndices(){return defaultFieldStatus().indices;}
 function selectedKeyIndex(){const v=$('#keyField').value;return v===''?null:Number(v);}
 function selectedRelIndex(){const v=$('#relField').value;return v===''?null:v==='none'?-1:Number(v);}
-function populateConfig(){const p=parsed,candidates=keyCandidates(p.headers),key=suggestKey(p.headers),ds=defaultFieldStatus();$('#keyField').innerHTML='<option value="">— Select Control Number field —</option>'+p.headers.map((h,i)=>`<option value="${i}">#${i+1} · ${escHtml(h)}</option>`).join('');$('#keyField').value=key>=0?String(key):'';const relC=relationalCandidates(p.headers).filter(i=>i!==key),rel=relC.length===1?relC[0]:-1;$('#relField').innerHTML='<option value="">— Select Translation Relational field —</option><option value="none">Not used · do not fill</option>'+p.headers.map((h,i)=>`<option value="${i}">#${i+1} · ${escHtml(h)}</option>`).join('');$('#relField').value=rel>=0?String(rel):'';const relNote=rel>=0?`relational auto-detected: ${p.headers[rel]}`:relC.length?`${relC.length} relational candidates — select manually`:'RELATIONAL FIELD NOT AUTO-DETECTED — select it or choose Not used';const keyNote=candidates.length===1?'key auto-detected':candidates.length===0?'KEY NOT AUTO-DETECTED — select manually':`${candidates.length} key candidates — select manually`;const defaultNote=`defaults auto-selected ${ds.indices.length}/${DEFAULT_FIELDS.length}${ds.missing.length?' · missing '+ds.missing.join(', '):''}${ds.ambiguous.length?' · ambiguous '+ds.ambiguous.map(x=>x.wanted).join(', '):''}`;$('#schemaTag').textContent=`${p.rows.length-1} data rows · ${p.width} fields · ${p.fmt==='fe'?'Concordance DAT':p.fmt.toUpperCase()} · ${p.encoding.kind} · ${keyNote} · ${relNote} · ${defaultNote} · source bytes round-trip verified · SHA-256 ${p.sourceSha256.slice(0,12)}…`;selectedFieldSet=new Set(ds.indices.filter(i=>i!==key&&i!==rel));renderFieldList();$('#configCard').classList.remove('hidden');invalidateResult();}
+function populateConfig(){const p=parsed,candidates=keyCandidates(p.headers),key=suggestKey(p.headers),ds=defaultFieldStatus();$('#keyField').innerHTML='<option value="">— Select Control Number field —</option>'+p.headers.map((h,i)=>`<option value="${i}">#${i+1} · ${escHtml(h)}</option>`).join('');$('#keyField').value=key>=0?String(key):'';const relC=relationalCandidates(p.headers).filter(i=>i!==key),rel=relC.length===1?relC[0]:-1;$('#relField').innerHTML='<option value="">— Select Translation Relational field —</option><option value="none">Not used · do not fill</option>'+p.headers.map((h,i)=>`<option value="${i}">#${i+1} · ${escHtml(h)}</option>`).join('');$('#relField').value=rel>=0?String(rel):'';const relNote=rel>=0?`relational auto-detected: ${p.headers[rel]}`:relC.length?`${relC.length} relational candidates — select manually`:'RELATIONAL FIELD NOT AUTO-DETECTED — select it or choose Not used';const keyNote=candidates.length===1?'key auto-detected':candidates.length===0?'KEY NOT AUTO-DETECTED — select manually':`${candidates.length} key candidates — select manually`;const defaultNote=`defaults auto-selected ${ds.indices.length}/${DEFAULT_FIELDS.length}${ds.missing.length?' · missing '+ds.missing.join(', '):''}${ds.ambiguous.length?' · ambiguous '+ds.ambiguous.map(x=>x.wanted).join(', '):''}`;$('#schemaTag').textContent=`${p.count??(p.rows.length-1)} data rows · ${p.width} fields · ${p.fmt==='fe'?'Concordance DAT':p.fmt.toUpperCase()} · ${p.encoding.kind} · ${keyNote} · ${relNote} · ${defaultNote} · source bytes round-trip verified · SHA-256 ${p.sourceSha256.slice(0,12)}…`;selectedFieldSet=new Set(ds.indices.filter(i=>i!==key&&i!==rel));renderFieldList();$('#configCard').classList.remove('hidden');invalidateResult();}
 function renderFieldList(){const kv=$('#keyField').value,keyIdx=kv===''?-1:Number(kv),rel=selectedRelIndex(),filter=($('#fieldFilter').value||'').toLowerCase(),defaults=new Set(defaultFieldIndices()),protectedIds=new Set(keyCandidates(parsed.headers));for(const i of protectedIds)selectedFieldSet.delete(i);if(rel!=null&&rel>=0)selectedFieldSet.delete(rel);let html='';parsed.headers.forEach((h,i)=>{if(filter&&!h.toLowerCase().includes(filter))return;const isKey=i===keyIdx,isRel=i===rel,isProtected=protectedIds.has(i)||isRel,isDefault=defaults.has(i),checked=!isProtected&&selectedFieldSet.has(i);html+=`<label class="field-row"><input type="checkbox" data-ci="${i}" data-key="${isProtected?'1':'0'}" ${checked?'checked':''} ${running||isProtected?'disabled':''}/><span class="idx">#${i+1}</span><span>${escHtml(h)}</span><span class="field-tag">${isKey?'<span class="pill key">KEY · PROTECTED</span>':isRel?'<span class="pill default">RELATIONAL · SET TO NMT ID</span>':isProtected?'<span class="pill key">ID · PROTECTED</span>':isDefault?'<span class="pill default">DEFAULT</span>':'<span class="pill">OPTIONAL</span>'}</span></label>`;});$('#fieldList').innerHTML=html;updateSelectedCount();}
 function selectedFields(){const protectedIds=new Set(keyCandidates(parsed.headers)),rel=selectedRelIndex();return [...selectedFieldSet].filter(i=>!protectedIds.has(i)&&i!==rel).sort((a,b)=>a-b);}
 function updateSelectedCount(){const sel=selectedFields(),n=sel.length;$('#selectedCount').textContent=`${n} field${n===1?'':'s'} selected`;
@@ -338,6 +550,7 @@ async function buildAndValidate(){
  if(relIdx==null){toast('Select the Translation Relational field, or choose “Not used”, before building.');return;}
  setRunning(true);setProgress(true,'Validating exact DOCID/NMT pairing…',12);
  try{
+  if(p.scale){const r=await buildLarge(op);assertOperationCurrent(op);finalize(r);lastResult=r;renderResult(r);setProgress(false);toast('Saved and verified: '+r.savedName);return;}
   assertOperationCurrent(op);await sleep0();assertOperationCurrent(op);
   const r=buildUpdated(p,keyIdx,selected,suffix,requireAllPairs,allowBlankOverwrite,relIdx,allowRelationalOverwrite);r.operation=op;r.headers=op.headers;
   r.source=Object.freeze({name:op.source.name,size:op.source.size,lastModifiedUtc:op.source.lastModified?new Date(op.source.lastModified).toISOString():'unknown',sha256:p.sourceSha256,format:p.fmt,encoding:op.encoding.kind,byteRoundtripExact:!!p.sourceByteRoundtripExact,rows:p.rows.length-1,columns:p.width});
@@ -360,10 +573,10 @@ async function buildAndValidate(){
 }
 function finalize(r){r.issueCounts={FAIL:0,WARN:0,INFO:0};for(const x of r.issues)r.issueCounts[x.severity]=(r.issueCounts[x.severity]||0)+1;r.verdict=r.issueCounts.FAIL?'FAIL':r.issueCounts.WARN?'WARN':'PASS';r.auditText=buildAuditText(r);}
 function stat(k,v,cls=''){return`<div class="stat"><div class="k">${escHtml(k)}</div><div class="v ${cls}">${escHtml(v)}</div></div>`;}
-function renderResult(r){$('#results').classList.remove('hidden');$('#verdict').textContent=r.verdict;$('#verdict').className='verdict '+r.verdict;const s=r.stats||{},pi=r.pairInfo?.stats||{};$('#summaryGrid').innerHTML=stat('Verdict',r.verdict)+stat('Input rows',(r.source?.rows??0).toLocaleString())+stat('NMT targets',(pi.targets??0).toLocaleString())+stat('Valid pairs',(pi.pairs??0).toLocaleString())+stat('Copied fields',(s.selectedFields??r.selected?.length??0).toLocaleString())+stat('Import records',(s.importRecords??0).toLocaleString())+stat('Import columns',(s.importColumns??0).toLocaleString())+stat('Changed NMT cells',(s.changedCells??0).toLocaleString())+stat('Input SHA',r.source?.sha256?r.source.sha256.slice(0,16)+'…':'—','mono');renderIssues(r);renderPairs(r);renderChanges(r);renderMeta(r);$('#reportPre').textContent=r.auditText;$('#btnTxt').disabled=false;$('#btnJson').disabled=false;$('#btnImport').disabled=!outputReady(r);}
+function renderResult(r){$('#results').classList.remove('hidden');$('#verdict').textContent=r.verdict;$('#verdict').className='verdict '+r.verdict;const s=r.stats||{},pi=r.pairInfo?.stats||{};$('#summaryGrid').innerHTML=stat('Verdict',r.verdict)+stat('Input rows',(r.source?.rows??0).toLocaleString())+stat('NMT targets',(pi.targets??0).toLocaleString())+stat('Valid pairs',(pi.pairs??0).toLocaleString())+stat('Copied fields',(s.selectedFields??r.selected?.length??0).toLocaleString())+stat('Import records',(s.importRecords??0).toLocaleString())+stat('Import columns',(s.importColumns??0).toLocaleString())+stat('Changed NMT cells',(s.changedCells??0).toLocaleString())+stat('Input SHA',r.source?.sha256?r.source.sha256.slice(0,16)+'…':'—','mono');renderIssues(r);renderPairs(r);renderChanges(r);renderMeta(r);$('#reportPre').textContent=r.auditText;$('#btnTxt').disabled=false;$('#btnJson').disabled=false;$('#btnImport').disabled=!outputReady(r);$('#btnImport').textContent=r.savedName?'Saved & verified · '+r.savedName:'Download NMT Import DAT';}
 function renderIssues(r){$('#issueCounts').textContent=`FAIL ${r.issueCounts.FAIL} · WARN ${r.issueCounts.WARN} · INFO ${r.issueCounts.INFO}`;$('#issues').innerHTML=r.issues.length?r.issues.map(x=>`<div class="issue ${x.severity}"><div class="issue-title"><span class="sev ${x.severity}">${x.severity}</span>${escHtml(x.title)}<span class="issue-code">${escHtml(x.code)}</span></div><div class="issue-detail">${escHtml(x.detail)}</div></div>`).join(''):'<div class="small">No findings.</div>';}
 function renderPairs(r){const s=r.pairInfo?.stats||{},strict=!!r.config?.requireAllPairs;const rows=[['Data rows',s.dataRows||0,'All non-header records'],['Suffix-marked NMT targets',s.targets||0,`Control Number ends with ${JSON.stringify(r.suffix)}`],['Exact validated pairs',s.pairs||0,'NMT target had one exact source Control Number'],['Import DAT records',r.stats?.importRecords||0,r.relIdx>=0?'Original + NMT record of every validated pair, in source order':'NMT records only (Translation Relational not used)'],['NMT cells that change',r.stats?.changedCells||0,'Copied values that differ from the current NMT value'],['Relational values that change',r.stats?.relationalRows||0,r.relIdx>=0?`${r.headers?.[r.relIdx]} set to the NMT Control Number on original and NMT records`:'Not used'],['Non-NMT rows without target',s.sourceWithoutTarget||0,strict?'Blocking in strict all-pairs mode':'Excluded from the import DAT']];$('#pairBody').innerHTML=rows.map(x=>`<tr><td><b>${escHtml(x[0])}</b></td><td>${Number(x[1]).toLocaleString()}</td><td>${escHtml(x[2])}</td></tr>`).join('');}
-function renderChanges(r){const q=($('#changeFilter').value||'').toLowerCase(),limit=500;const list=(r.changes||[]).filter(x=>!q||[x.sourceId,x.targetId,x.field,x.oldValue,x.newValue,x.status].some(v=>String(v).toLowerCase().includes(q))),shown=list.slice(0,limit);$('#changeCount').textContent=list.length>limit?`Showing first ${limit.toLocaleString()} of ${list.length.toLocaleString()} matching rows`:`${list.length.toLocaleString()} matching row${list.length===1?'':'s'}`;$('#changeBody').innerHTML=shown.length?shown.map(x=>`<tr><td>${x.targetRow}</td><td class="mono">${escHtml(x.sourceId)}</td><td class="mono">${escHtml(x.targetId)}</td><td>${escHtml(x.field)}</td><td class="wrap-cell">${escHtml(valuePreview(x.oldValue))}</td><td class="wrap-cell">${escHtml(valuePreview(x.newValue))}</td><td>${escHtml(x.status)}</td></tr>`).join(''):'<tr><td colspan="7" class="small">No matching changes.</td></tr>';}
+function renderChanges(r){const q=($('#changeFilter').value||'').toLowerCase(),limit=500;const list=(r.changes||[]).filter(x=>!q||[x.sourceId,x.targetId,x.field,x.oldValue,x.newValue,x.status].some(v=>String(v).toLowerCase().includes(q))),shown=list.slice(0,limit);$('#changeCount').textContent=(r.processing?'Sample of the first 500 change entries; totals cover all records. ':'')+(list.length>limit?`Showing first ${limit.toLocaleString()} of ${list.length.toLocaleString()} matching rows`:`${list.length.toLocaleString()} matching row${list.length===1?'':'s'}`);$('#changeBody').innerHTML=shown.length?shown.map(x=>`<tr><td>${x.targetRow}</td><td class="mono">${escHtml(x.sourceId)}</td><td class="mono">${escHtml(x.targetId)}</td><td>${escHtml(x.field)}</td><td class="wrap-cell">${escHtml(valuePreview(x.oldValue))}</td><td class="wrap-cell">${escHtml(valuePreview(x.newValue))}</td><td>${escHtml(x.status)}</td></tr>`).join(''):'<tr><td colspan="7" class="small">No matching changes.</td></tr>';}
 function renderMeta(r){const vals=[['Source file',r.source?.name||'—'],['Format',r.source?.format||'—'],['Encoding',r.source?.encoding||'—'],['Input SHA-256',r.source?.sha256||'—'],['Import DAT SHA-256',r.importSha256||'Not generated'],['Suffix',r.suffix||'—'],['Key field',r.headers?.[r.keyIdx]||'—'],['Translation Relational field',r.relIdx>=0?r.headers?.[r.relIdx]:'Not used'],['Copied fields',(r.selected||[]).map(i=>r.headers[i]).join(' | ')||'—'],['Import DAT columns',(r.importColumns||[]).map(i=>r.headers[i]).join(' | ')||'—'],['Generated UTC',r.generatedUtc]];$('#metaGrid').innerHTML=vals.map(x=>`<div class="meta-item"><b>${escHtml(x[0])}</b><span class="${x[0].includes('SHA')?'mono':''}">${escHtml(x[1])}</span></div>`).join('');}
 function buildAuditText(r){const lines=[];lines.push('NMT LOAD FILE UPDATER — AUDIT REPORT');lines.push('Version: '+APP_VERSION);lines.push('Generated UTC: '+r.generatedUtc);lines.push('Verdict: '+(r.verdict||'PENDING'));lines.push('');lines.push('[SOURCE]');if(r.source){for(const [k,v] of Object.entries(r.source))lines.push(`${k}: ${v}`);}lines.push('');lines.push('[CONFIGURATION]');lines.push(`Control Number field: ${r.headers?.[r.keyIdx]||r.keyIdx}`);lines.push(`NMT suffix: ${JSON.stringify(r.suffix)}`);lines.push(`Selected fields (${r.selected?.length||0}): ${(r.selected||[]).map(i=>r.headers?.[i]||i).join(' | ')}`);lines.push(`Import DAT columns (${r.importColumns?.length||0}): ${(r.importColumns||[]).map(i=>r.headers?.[i]||i).join(' | ')}`);lines.push(`Require all source rows paired: ${!!r.config?.requireAllPairs}`);lines.push(`Allow blank destructive overwrite: ${!!r.config?.allowBlankOverwrite}`);lines.push(`Translation Relational field: ${r.relIdx>=0?(r.headers?.[r.relIdx]||r.relIdx)+' (value = NMT Control Number on original and NMT records)':'Not used'}`);lines.push(`Allow replacing different relational values: ${!!r.config?.allowRelationalOverwrite}`);lines.push('');lines.push('[PAIRING / CHANGES]');for(const [k,v] of Object.entries(r.stats||{}))lines.push(`${k}: ${v}`);if(r.pairInfo?.stats)for(const [k,v] of Object.entries(r.pairInfo.stats))if(!(k in (r.stats||{})))lines.push(`${k}: ${v}`);lines.push('');lines.push('[ISSUES]');for(const x of r.issues||[])lines.push(`${x.severity} ${x.code} — ${x.title}: ${x.detail}`);if(r.validation?.checks?.length){lines.push('');lines.push('[POST-BUILD CHECKS]');for(const c of r.validation.checks)lines.push(`${c.ok?'PASS':'FAIL'} ${c.code} — ${c.detail}`);}if(r.importSha256){lines.push('');lines.push('[OUTPUT HASH]');lines.push('Import DAT SHA-256: '+r.importSha256);}lines.push('');lines.push('[IMPORT GUARDRAILS]');lines.push('Import DAT (overlay): original records keep their exported values, which the overlay writes back unchanged; NMT records receive the original values; both carry the NMT Control Number as Translation Relational.');lines.push('Use a fresh export immediately before import. Verify the mapped identifier is unique in the workspace and use the approved import mode. Run Relativity Import/Export Precheck Load File when available before importing.');lines.push('Human QC remains required for matter-specific workflow semantics.');return lines.join('\r\n');}
 function downloadBytes(bytes,name,type='application/octet-stream'){const blob=new Blob([bytes],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);}
@@ -415,9 +628,12 @@ $('#encoding').addEventListener('change',()=>{resetAfterFile();toast('Encoding c
 $('#format').addEventListener('change',()=>{resetAfterFile();toast('Format changed. Parse & Inspect again.');});
 $('#btnBuild').addEventListener('click',buildAndValidate);
 $('#changeFilter').addEventListener('input',()=>lastResult&&renderChanges(lastResult));
-$('#btnImport').addEventListener('click',()=>{const r=currentResult();if(outputReady(r))downloadBytes(r.importBytes,outputName('import',r));});
+$('#btnImport').addEventListener('click',()=>{const r=currentResult();if(outputReady(r)){if(r.importFile)toast('Already saved and verified: '+r.savedName);else downloadBytes(r.importBytes,outputName('import',r));}});
+$('#btnCancel').onclick=()=>{if(!running)return;invalidateResult();stopScale();};
+$('#btnTemp').onclick=async()=>{if(running)return;setRunning(true);try{await scaleCall('dispose');await createProductionStorage().cleanup();toast('Temporary local data cleared.');}catch(e){toast(e.message);}finally{setRunning(false);}};
+createProductionStorage().cleanup().catch(()=>{});
 $('#btnTxt').addEventListener('click',()=>{const r=currentResult();if(r)downloadText(r.auditText,`${baseName(r.source.name)}_NMT_AUDIT.txt`);});
-$('#btnJson').addEventListener('click',()=>{const r=currentResult();if(!r)return;const clean={tool:r.tool,version:r.version,generatedUtc:r.generatedUtc,verdict:r.verdict,source:r.source,config:{keyField:r.headers?.[r.keyIdx]||r.keyIdx,suffix:r.suffix,selectedFields:(r.selected||[]).map(i=>r.headers?.[i]||i),relationalField:r.relIdx>=0?(r.headers?.[r.relIdx]||r.relIdx):null,importColumns:(r.importColumns||[]).map(i=>r.headers?.[i]||i),...r.config},stats:r.stats,pairStats:r.pairInfo?.stats,issues:r.issues,changes:r.changes,validation:r.validation,importSha256:r.importSha256||null};downloadText(JSON.stringify(clean,null,2),`${baseName(r.source.name)}_NMT_AUDIT.json`,'application/json;charset=utf-8');});
+$('#btnJson').addEventListener('click',()=>{const r=currentResult();if(!r)return;const clean={tool:r.tool,version:r.version,generatedUtc:r.generatedUtc,verdict:r.verdict,source:r.source,config:{keyField:r.headers?.[r.keyIdx]||r.keyIdx,suffix:r.suffix,selectedFields:(r.selected||[]).map(i=>r.headers?.[i]||i),relationalField:r.relIdx>=0?(r.headers?.[r.relIdx]||r.relIdx):null,importColumns:(r.importColumns||[]).map(i=>r.headers?.[i]||i),...r.config},stats:r.stats,pairStats:r.pairInfo?.stats,issues:r.issues,changes:r.changes,changePreview:r.processing?{limit:500,scope:'first change entries only; values truncated to 160 characters'}:null,processing:r.processing||null,savedOutputName:r.savedName||null,validation:r.validation,importSha256:r.importSha256||null};downloadText(JSON.stringify(clean,null,2),`${baseName(r.source.name)}_NMT_AUDIT.json`,'application/json;charset=utf-8');});
 </script>
 </body>
 </html>

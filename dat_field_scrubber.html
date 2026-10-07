@@ -19,9 +19,9 @@ header{position:relative;overflow:hidden}.creator-credit{position:absolute;left:
 </style>
 </head>
 <body>
-<header><span class="creator-credit" aria-hidden="true">이현수 · HYUNSOO LEE</span><div class="brandline"><h1>DAT Field Scrubber</h1><span class="version" id="version"></span></div><span class="local">100% local processing · No external transmission</span></header>
+<header><span class="creator-credit" aria-hidden="true">이현수 · HYUNSOO LEE</span><div class="brandline"><h1>DAT Field Scrubber</h1><span class="version" id="version"></span></div><button id="clearTemp" type="button">Clear temporary data</button><span class="local">100% local processing · No external transmission</span></header>
 <main>
-<p class="notice">Scrub selected values while preserving the final DAT header and record order. DAT: þ / DC4, UTF-8 or UTF-16 with BOM. Maximum 1 million documents. Rule expressions are case-sensitive; surrounding whitespace is trimmed.</p>
+<p class="notice">Scrub selected values while preserving the final DAT header and record order. DAT: þ / DC4, UTF-8 or UTF-16 with BOM. Multi-million-document processing uses temporary local browser storage. Rule expressions are case-sensitive; surrounding whitespace is trimmed.</p>
 <fieldset id="inputs"><div class="workspace">
 <section class="panel source"><h2><span class="step">1</span>Final ordered DAT</h2>
 <div class="filebox"><label for="sourceFile">Source file</label><input id="sourceFile" type="file" accept=".dat,.txt,.load"><p class="filelabel muted" id="sourceName">Choose a DAT file.</p></div>
@@ -54,12 +54,61 @@ header{position:relative;overflow:hidden}.creator-credit{position:absolute;left:
 </main>
 <script id="scrubber-core">'use strict';
 // This entire factory is also run in a local Blob worker. No DOM or network APIs.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+// Embedded verbatim into each standalone production tool. No network access.
+function createProductionStorage(options={}) {
+  const PREFIX='ediscovery-temp-v1-', BATCH_ROWS=512, BATCH_UNITS=512*1024;
+  const keyText=k=>JSON.stringify(k);const units=v=>typeof v==='string'?v.length:!v||typeof v!=='object'?16:Object.values(v).reduce((n,x)=>n+units(x),0);
+  const at=(v,p)=>Array.isArray(p)?p.map(x=>at(v,x)):String(p).split('.').reduce((a,k)=>a==null?undefined:a[k],v);
+  const error=(e,detail)=>{if(e&&e.name==='ConstraintError'&&detail){const x=new Error(detail.message);Object.assign(x,detail);return x;}const x=new Error('Temporary local storage failed. No output is verified. '+(e&&e.message||e));x.name=e&&e.name||'StorageError';return x;};
+  const cmp=(a,b)=>{if(typeof indexedDB!=='undefined')return indexedDB.cmp(a,b);if(Array.isArray(a)&&Array.isArray(b)){for(let i=0;i<Math.min(a.length,b.length);i++){const c=cmp(a[i],b[i]);if(c)return c;}return a.length-b.length;}return a<b?-1:a>b?1:0;};
+  async function* batches(records){let batch=[],units=0;for await(const r of records){const n=r.raw?r.raw.length:r.values?r.values.reduce((s,v)=>s+v.length,0):128;if(batch.length&&(batch.length>=BATCH_ROWS||units+n>BATCH_UNITS)){yield batch;batch=[];units=0;}batch.push(r);units+=n;}if(batch.length)yield batch;}
+  function memory(schema){
+    const tables=new Map(schema.map(s=>[s.name,new Map()])),seq=new Map();let entries=0,closed=false;
+    const table=n=>{if(closed)throw Error('Temporary index is closed.');return tables.get(n);};
+    const tx={get:async(n,k)=>structuredClone(table(n).get(keyText(k))?.value),put:async(n,v,k)=>{const s=schema.find(x=>x.name===n);if(k===undefined)k=s.keyPath?at(v,s.keyPath):(seq.set(n,(seq.get(n)||0)+1),seq.get(n));const t=table(n),kt=keyText(k);for(const ix of s.indexes||[])if(ix.unique){const value=at(v,ix.keyPath);for(const entry of t.values())if(keyText(entry.key)!==kt&&cmp(at(entry.value,ix.keyPath),value)===0)throw Error('Duplicate or case/Unicode-equivalent key.');}if(!t.has(kt)&&++entries>50000)throw Error('Browser-local disk storage is required for this many records.');t.set(kt,{key:k,value:structuredClone(v)});return k;},add:async(n,v,k,detail)=>{const s=schema.find(x=>x.name===n);if(k===undefined&&s.keyPath)k=at(v,s.keyPath);if(k!==undefined&&table(n).has(keyText(k))){const e=new Error(detail?.message||'Duplicate key');if(detail)Object.assign(e,detail);throw e;}return tx.put(n,v,k);},del:async(n,k)=>{if(table(n).delete(keyText(k)))entries--;},clear:async n=>{entries-=table(n).size;table(n).clear();},count:async(n,index,k)=>{if(!index)return table(n).size;return (await tx.page(n,null,50001,index,k)).length;},page:async(n,after,limit=BATCH_ROWS,index,indexKey)=>{const spec=schema.find(s=>s.name===n),ix=spec.indexes?.find(x=>x.name===index);return [...table(n).values()].filter(x=>after==null||cmp(x.key,after)>0).filter(x=>{if(!ix)return true;const v=at(x.value,ix.keyPath);return ix.multiEntry?v.some(y=>cmp(y,indexKey)===0):cmp(v,indexKey)===0;}).sort((a,b)=>cmp(a.key,b.key)).slice(0,limit).map(x=>structuredClone(x));}};
+    return {kind:'memory-test',name:'memory-test',run:async(names,mode,fn)=>fn(tx),getMany:async(n,keys)=>Promise.all(keys.map(k=>tx.get(n,k))),page:tx.page,count:tx.count,clear:tx.clear,close:async()=>{closed=true;tables.clear();},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  const req=(r,detail)=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(error(r.error,detail));});
+  const remove=name=>new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(name);r.onsuccess=()=>resolve();r.onerror=()=>reject(error(r.error));r.onblocked=()=>reject(Error('Temporary storage is still in use. Close the previous job and retry.'));});
+  async function cleanup(){if(typeof indexedDB==='undefined'||!indexedDB.databases||!globalThis.navigator?.locks)return;for(const d of await indexedDB.databases()){if(!d.name?.startsWith(PREFIX))continue;await navigator.locks.request(d.name,{ifAvailable:true},async lock=>{if(lock)await remove(d.name);});}}
+  async function open(tool,schema){
+    if(typeof indexedDB==='undefined'){if(typeof document==='undefined'&&typeof WorkerGlobalScope==='undefined')return memory(schema);throw Error('Local temporary storage is unavailable. Use current Chrome/Edge.');}
+    if(!globalThis.navigator?.locks)throw Error('Local job locking is unavailable. Use current Chrome/Edge.');
+    await cleanup();
+    const name=PREFIX+tool+'-'+crypto.randomUUID();let release,locked,lockError;
+    const ready=new Promise((resolve,reject)=>{locked=resolve;lockError=reject;});
+    const held=navigator.locks.request(name,async()=>{locked();await new Promise(r=>release=r);});held.catch(lockError);await ready;
+    let db;
+    try{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>{for(const s of schema){const store=r.result.createObjectStore(s.name,{...(s.keyPath?{keyPath:s.keyPath}:{}),...(s.autoIncrement?{autoIncrement:true}:{})});for(const i of s.indexes||[])store.createIndex(i.name,i.keyPath,{unique:!!i.unique,multiEntry:!!i.multiEntry});}};db=await req(r);}catch(e){release();await held;throw error(e);}
+    let closed=false;const live=new Set();
+    const run=async(names,mode,fn)=>{
+      if(closed)throw Error('Temporary index is closed. Run the check again.');
+      const t=db.transaction(names,mode);live.add(t);let txError;
+      const done=new Promise((resolve,reject)=>{t.oncomplete=()=>resolve();t.onabort=()=>reject(txError||error(t.error||'Transaction aborted'));});done.catch(()=>{});
+      const store=n=>t.objectStore(n);const check=v=>{if(units(v)>64*1024)throw Error('Indexed metadata for one document exceeds 64 Ki characters. No output is verified.');return v;};
+      const api={get:(n,k)=>req(store(n).get(k)),many:async(n,keys)=>{if(!keys.length)return [];let lo=keys[0],hi=lo;for(const k of keys){if(cmp(k,lo)<0)lo=k;if(cmp(k,hi)>0)hi=k;}const range=IDBKeyRange.bound(lo,hi),st=store(n),[values,found]=await Promise.all([req(st.getAll(range,keys.length)),req(st.getAllKeys(range,keys.length))]),map=new Map(found.map((k,i)=>[keyText(k),values[i]]));return Promise.all(keys.map(k=>map.has(keyText(k))?map.get(keyText(k)):req(st.get(k))));},put:(n,v,k)=>req(k===undefined?store(n).put(check(v)):store(n).put(check(v),k)),add:(n,v,k,detail)=>req(k===undefined?store(n).add(check(v)):store(n).add(check(v),k),detail),del:(n,k)=>req(store(n).delete(k)),clear:n=>req(store(n).clear()),count:(n,index,k)=>req(index?store(n).index(index).count(IDBKeyRange.only(k)):store(n).count()),page:(n,after,limit=BATCH_ROWS,index,indexKey)=>new Promise((resolve,reject)=>{
+        if(!index){const range=after==null?null:IDBKeyRange.lowerBound(after,true),st=store(n),count=Math.min(limit,BATCH_ROWS);Promise.all([req(st.getAll(range,count)),req(st.getAllKeys(range,count))]).then(([values,keys])=>resolve(values.map((value,i)=>({key:keys[i],value}))),reject);return;}
+        const obj=index?store(n).index(index):store(n),range=index?IDBKeyRange.only(indexKey):after==null?null:IDBKeyRange.lowerBound(after,true),r=obj.openCursor(range),rows=[];let pageUnits=0;
+        r.onerror=()=>reject(error(r.error));r.onsuccess=()=>{const c=r.result;if(!c||rows.length>=limit){resolve(rows);return;}if(index&&after!=null&&cmp(c.primaryKey,after)<=0){if(cmp(c.primaryKey,after)<0)c.continuePrimaryKey(indexKey,after);else c.continue();return;}rows.push({key:c.primaryKey,value:c.value});pageUnits+=units(c.value);if(rows.length>=limit||pageUnits>=BATCH_UNITS){resolve(rows);return;}c.continue();};
+      })};
+      try{const result=await fn(api);await done;return result;}catch(e){txError=e;try{t.abort();}catch{}await done.catch(()=>{});throw e;}finally{live.delete(t);}
+    };
+    return {kind:'indexeddb',name,run,getMany:(n,keys)=>run([n],'readonly',t=>t.many(n,keys)),page:(...args)=>run([args[0]],'readonly',t=>t.page(...args)),count:(...args)=>run([args[0]],'readonly',t=>t.count(...args)),clear:n=>run([n],'readwrite',t=>t.clear(n)),close:async()=>{if(closed)return;closed=true;for(const t of live)try{t.abort();}catch{}db.close();try{await remove(name);}finally{release();await held;}},stats:{maxBatchRows:BATCH_ROWS,maxBatchUnits:BATCH_UNITS}};
+  }
+  return {open,cleanup,batches,BATCH_ROWS,BATCH_UNITS,cmp};
+}
+
 function createScrubCore(options = {}) {
-  const VERSION = '1.2.1';
+  const VERSION = '1.3.0';
   const FE = '\u00fe', SEP = '\u0014';
   const CHUNK = options.chunkBytes || 1024 * 1024;
   const MAX_RECORD = options.maxRecord || 32 * 1024 * 1024;
-  const MAX_FIELDS = 2000, MAX_IDS = 1000000;
+  const MAX_FIELDS = 2000, MAX_IDS = Number.MAX_SAFE_INTEGER;
   const progress = options.progress || (() => {});
   function fail(message) { throw new Error(message); }
   function hash() {
@@ -143,15 +192,15 @@ function createScrubCore(options = {}) {
   async function datReader(file) {
     const r=await textReader(file);
     r.records=async function*() {
-      let pending='',line=0;
+      let pending='',line=0,scanned=0;
       for await(const chunk of r.chunks()) {
-        pending+=chunk;let start=0;const re=/\r\n|\r|\n/g;let m;
+        pending+=chunk;let start=0;const re=/\r\n|\r|\n/g;re.lastIndex=Math.max(0,scanned-1);let m;
         while((m=re.exec(pending))) {
           if(m[0]==='\r'&&m.index===pending.length-1)break;
           const raw=pending.slice(start,m.index);start=m.index+m[0].length;
           yield {raw,eol:m[0],values:splitDAT(raw,++line),line};
         }
-        pending=pending.slice(start);if(pending.length>MAX_RECORD)fail('DAT row '+(line+1)+' exceeds the 32 Mi-character record size limit.');
+        pending=pending.slice(start);scanned=pending.length;if(pending.length>MAX_RECORD)fail('DAT row '+(line+1)+' exceeds the 32 Mi-character record size limit.');
       }
       if(pending) {
         const eol=pending.endsWith('\r')?'\r':'';
@@ -198,13 +247,13 @@ function createScrubCore(options = {}) {
       const format=await listFormat(file);let headers=null,count=0,r;
       const take=(row,line)=>{
         if(!headers){headers=row;checkHeaders(headers,format);return;}
-        count++;if(count>MAX_IDS)fail(format+' exceeds the 1,000,000-document limit.');
+        count++;if(count>MAX_IDS)fail(format+' exceeds the safe document-count limit.');
         if(row.length!==headers.length)fail(format+' row '+line+': column count differs from its header.');
         if(row.every(v=>v===''))fail(format+' row '+line+': blank record.');
-        if(onData)onData(row,headers,line);
+        if(onData)return onData(row,headers,line);
       };
-      if(format==='DAT'){r=await datReader(file);for await(const rec of r.records())take(rec.values,rec.line);}
-      else{r=await textReader(file);const p=tableParser(',',row=>take(row,count+2));for await(const chunk of r.chunks())p.feed(chunk);p.finish();}
+      if(format==='DAT'){r=await datReader(file);for await(const rec of r.records())await take(rec.values,rec.line);}
+      else{r=await textReader(file);let queued=[];const p=tableParser(',',row=>queued.push(row));async function drain(){for(const row of queued)await take(row,count+2);queued=[];}for await(const chunk of r.chunks()){p.feed(chunk);await drain();}p.finish();await drain();}
       if(!headers||!count)fail(format+' has no document records.');
       return {headers,count,format,meta:r.meta,hash:r.digest};
     } catch(e) {fail((file&&file.name||'Target list')+': '+e.message);}
@@ -220,7 +269,7 @@ function createScrubCore(options = {}) {
     for await(const rec of r.records()) {
       if(!headers){headers=rec.values;checkHeaders(headers,'DAT');continue;}
       if(rec.values.length!==headers.length)fail('DAT row '+rec.line+': field count differs from the DAT header.');
-      if(++count>MAX_IDS)fail('DAT exceeds the 1,000,000-document limit.');
+      if(++count>MAX_IDS)fail('DAT exceeds the safe document-count limit.');
     }
     if(!headers||!count)fail('DAT has no document records.');
     return {headers,count,meta:r.meta,hash:r.digest};
@@ -253,53 +302,59 @@ function createScrubCore(options = {}) {
     return {actions,raw,labels,labelFlags,problems};
   }
   function fileInfo(file) {return {name:file.name,size:file.size,lastModified:file.lastModified};}
+  const disk=createProductionStorage(options);
+  async function dispose(plan){if(plan?.store)await plan.store.close();}
   async function preflight(source,key,categories,loadedSourceHash) {
     if(!categories.length)fail('Add at least one category.');
     const info=await inspectDAT(source),ki=info.headers.indexOf(key);
     if(loadedSourceHash!==undefined&&loadedSourceHash!==info.hash)fail('Source DAT changed since loading. Reload it before reviewing rules.');
     if(ki<0)fail('Select the DAT Bates identity field.');
-    const index=new Map(),cats=[];
-    for(let ci=0;ci<categories.length;ci++) {
-      const cat=categories[ci];
-      if(!cat.file||!cat.name.trim())fail('Each category requires a name and a target list file.');
-      if(categories.some((c,i)=>i<ci&&c.name===cat.name))fail('Duplicate category name: '+cat.name);
-      if(!Array.isArray(cat.actions)||cat.actions.length!==info.headers.length||Array.from(cat.actions).some(a=>a!==1&&a!==2)||!Array.isArray(cat.raw)||cat.raw.length!==info.headers.length||Array.from(cat.raw).some(v=>typeof v!=='string'))fail(cat.name+': confirm a rule for every field.');
-      if(cat.actions[ki]!==1)fail(cat.name+': the Bates identity field must be kept.');
-      if(cat.loadedHash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
-      const own=new Set();
-      const list=await listScan(cat.file,(row,headers,line)=>{
-        const cki=headers.indexOf(cat.key);if(cki<0)fail(cat.name+': select the target-list Bates column.');
-        const id=identity(row[cki],cat.name+' row '+line);if(own.has(id))fail(cat.name+': duplicate Bates value in the target list: '+id);own.add(id);
-        if(index.has(id)) {
-          const existing=index.get(id),first=categories[existing.cats[0]];
-          const conflict=cat.actions.findIndex((a,i)=>a!==first.actions[i]);
-          if(conflict>=0)fail('Conflicting category rules: '+id+' / '+info.headers[conflict]+' / '+first.name+' ↔ '+cat.name);
-          existing.cats.push(ci);
-        } else {if(index.size>=MAX_IDS)fail('Target Bates values exceed the 1,000,000-ID limit.');index.set(id,{cats:[ci],found:false});}
-      });
-      if(cat.loadedHash!==undefined&&cat.loadedHash!==list.hash)fail(cat.name+': target list changed since loading. Reload it before preflight.');
-      if(list.hash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
-      cats.push({name:cat.name,key:cat.key,actions:cat.actions.slice(),raw:cat.raw.slice(),file:fileInfo(cat.file),hash:list.hash,listFormat:list.format,listRows:list.count,matched:0});
-    }
-    if(!cats.some(c=>c.actions.includes(2)))fail('No fields are set to Scrub.');
-    const reader=await datReader(source),seen=new Set();let header=true,rows=0,matched=0,targetCells=0,changed=0,alreadyEmpty=0,overlap=0;const samples=[];
-    for await(const rec of reader.records()) {
-      if(header){header=false;if(JSON.stringify(rec.values)!==JSON.stringify(info.headers))fail('DAT header changed while being read.');continue;}
-      if(rec.values.length!==info.headers.length)fail('DAT row '+rec.line+': field count changed.');
-      const id=identity(rec.values[ki],'DAT row '+rec.line+'');if(seen.has(id))fail('Duplicate Bates value in DAT: '+id);seen.add(id);rows++;
-      const member=index.get(id);if(!member)continue;
-      member.found=true;matched++;if(member.cats.length>1)overlap++;
-      member.cats.forEach(ci=>cats[ci].matched++);
-      const actions=cats[member.cats[0]].actions;
-      actions.forEach((a,i)=>{if(a===2){targetCells++;if(rec.values[i]==='')alreadyEmpty++;else{changed++;if(samples.length<6)samples.push({id,field:info.headers[i],category:member.cats.map(ci=>cats[ci].name).join(', '),before:rec.values[i].slice(0,120),after:''});}}});
-    }
-    if(reader.digest!==info.hash)fail('DAT changed during preflight. Reload and check again.');
-    const missing=Array.from(index).filter(([,m])=>!m.found);
-    if(missing.length)fail('Target lists contain '+missing.length+' Bates values not found in the DAT. Examples: '+missing.slice(0,6).map(([id])=>id).join(', '));
-    if(!matched)fail('No documents matched the DAT.');
-    const summary={version:VERSION,source:fileInfo(source),sourceHash:info.hash,headers:info.headers,key,meta:info.meta,rows,matched,untouched:rows-matched,targetCells,changed,alreadyEmpty,overlap,categories:cats,samples};
-    return {source,index,ki,cats,categoryFiles:categories.map(c=>c.file),summary};
+    const store=await disk.open('scrubber',[{name:'ids'},{name:'targets',keyPath:'id',indexes:[{name:'found',keyPath:'found'}]}]),cats=[];
+    try{
+      for(let ci=0;ci<categories.length;ci++){
+        const cat=categories[ci];
+        if(!cat.file||!cat.name.trim())fail('Each category requires a name and a target list file.');
+        if(categories.some((c,i)=>i<ci&&c.name===cat.name))fail('Duplicate category name: '+cat.name);
+        if(!Array.isArray(cat.actions)||cat.actions.length!==info.headers.length||Array.from(cat.actions).some(a=>a!==1&&a!==2)||!Array.isArray(cat.raw)||cat.raw.length!==info.headers.length||Array.from(cat.raw).some(v=>typeof v!=='string'))fail(cat.name+': confirm a rule for every field.');
+        if(cat.actions[ki]!==1)fail(cat.name+': the Bates identity field must be kept.');
+        if(cat.loadedHash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
+        let pending=[],units=0;
+        async function flush(){if(!pending.length)return;const ids=pending;pending=[];units=0;await store.run(['targets'],'readwrite',async t=>{
+          if(ci===0){await Promise.all(ids.map(id=>t.add('targets',{id,cats:[ci],found:0},undefined,{message:cat.name+': duplicate Bates value in the target list: '+id})));return;}
+          const values=t.many?await t.many('targets',ids):await Promise.all(ids.map(id=>t.get('targets',id))),changed=new Map();
+          for(let i=0;i<ids.length;i++){const id=ids[i],m=changed.get(id)||values[i]||{id,cats:[],found:0};
+            if(m.cats.includes(ci))fail(cat.name+': duplicate Bates value in the target list: '+id);
+            if(m.cats.length){const first=cats[m.cats[0]],conflict=cat.actions.findIndex((a,k)=>a!==first.actions[k]);if(conflict>=0)fail('Conflicting category rules: '+id+' / '+info.headers[conflict]+' / '+first.name+' ↔ '+cat.name);}
+            m.cats.push(ci);changed.set(id,m);
+          }
+          await Promise.all([...changed.values()].map(m=>t.put('targets',m)));
+        });}
+        const list=await listScan(cat.file,async(row,headers,line)=>{const i=headers.indexOf(cat.key);if(i<0)fail(cat.name+': select the target-list Bates column.');const id=identity(row[i],cat.name+' row '+line);pending.push(id);units+=id.length;if(pending.length>=disk.BATCH_ROWS||units>=disk.BATCH_UNITS)await flush();});await flush();
+        if(cat.loadedHash!==undefined&&cat.loadedHash!==list.hash)fail(cat.name+': target list changed since loading. Reload it before preflight.');
+        if(list.hash===info.hash)fail(cat.name+': the target list is the source DAT itself. Select the saved-search export.');
+        cats.push({name:cat.name,key:cat.key,actions:cat.actions.slice(),raw:cat.raw.slice(),file:fileInfo(cat.file),hash:list.hash,listFormat:list.format,listRows:list.count,matched:0});
+      }
+      if(!cats.some(c=>c.actions.includes(2)))fail('No fields are set to Scrub.');
+      const reader=await datReader(source);let rows=0,matched=0,targetCells=0,changed=0,alreadyEmpty=0,overlap=0;const samples=[];
+      for await(const batch of disk.batches(reader.records())){
+        const docs=batch.filter(r=>r.line!==1);for(const rec of batch){if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(info.headers))fail('DAT header changed while being read.');}else if(rec.values.length!==info.headers.length)fail('DAT row '+rec.line+': field count changed.');}
+        const ids=docs.map(r=>identity(r.values[ki],'DAT row '+r.line));
+        const members=await store.run(['ids','targets'],'readwrite',async t=>{
+          const values=t.many?await t.many('targets',ids):await Promise.all(ids.map(id=>t.get('targets',id))),seen=new Set();for(let i=0;i<ids.length;i++){if(seen.has(ids[i])||values[i]?.found===1)fail('Duplicate Bates value in DAT: '+ids[i]);seen.add(ids[i]);}
+          await Promise.all(ids.map((id,i)=>values[i]?(values[i].found=1,t.put('targets',values[i])):t.add('ids',1,id,{message:'Duplicate Bates value in DAT: '+id})));return values;
+        });
+        for(let j=0;j<docs.length;j++){const rec=docs[j],member=members[j],id=ids[j];rows++;if(!member)continue;matched++;if(member.cats.length>1)overlap++;for(const ci of member.cats)cats[ci].matched++;
+          cats[member.cats[0]].actions.forEach((a,i)=>{if(a===2){targetCells++;if(rec.values[i]==='')alreadyEmpty++;else{changed++;if(samples.length<6)samples.push({id,field:info.headers[i],category:member.cats.map(ci=>cats[ci].name).join(', '),before:rec.values[i].slice(0,120),after:''});}}});
+        }
+      }
+      if(reader.digest!==info.hash)fail('DAT changed during preflight. Reload and check again.');
+      const missing=await store.count('targets','found',0);if(missing){const first=await store.page('targets',null,6,'found',0);fail('Target lists contain '+missing+' Bates values not found in the DAT. Examples: '+first.map(x=>x.key).join(', '));}
+      if(!matched)fail('No documents matched the DAT.');await store.clear('ids');
+      const summary={version:VERSION,source:fileInfo(source),sourceHash:info.hash,headers:info.headers,key,meta:info.meta,rows,matched,untouched:rows-matched,targetCells,changed,alreadyEmpty,overlap,categories:cats,samples,processing:{index:store.kind,batchRows:disk.BATCH_ROWS,batchUnits:disk.BATCH_UNITS}};
+      return {source,store,ki,cats,categoryFiles:categories.map(c=>c.file),summary};
+    }catch(e){await store.close().catch(()=>{});throw e;}
   }
+
   async function checkCategoryFiles(plan) {
     for(let i=0;i<plan.categoryFiles.length;i++) {
       const current=await listScan(plan.categoryFiles[i]);
@@ -318,15 +373,18 @@ function createScrubCore(options = {}) {
     async function flush(){if(!pieceBytes)return;const merged=new Uint8Array(pieceBytes);let at=0;for(const p of pieces){merged.set(p,at);at+=p.length;}pieces=[];pieceBytes=0;await emit(merged);}
     async function write(b){outHash.update(b);bytes+=b.length;pieces.push(b);pieceBytes+=b.length;if(pieceBytes>=CHUNK)await flush();}
     await write(new Uint8Array(plan.summary.meta.bom));
-    for await(const rec of reader.records()) {
+    for await(const batch of disk.batches(reader.records())) {
+      const members=await plan.store.getMany('targets',batch.map(rec=>rec.values[plan.ki]));
+      for(let j=0;j<batch.length;j++){const rec=batch[j];
       let raw=rec.raw;
       if(rec.line===1) {if(JSON.stringify(rec.values)!==JSON.stringify(plan.summary.headers))fail('Source header changed.');}
       else {
         rows++;if(rec.values.length!==plan.summary.headers.length)fail('Source field count changed.');
-        const m=plan.index.get(rec.values[plan.ki]);
+        const m=members[j];
         if(m) {const actions=plan.cats[m.cats[0]].actions;const cols=raw.split(SEP);for(let i=0;i<cols.length;i++)if(actions[i]===2){if(rec.values[i]!=='')changed++;cols[i]=FE+FE;}raw=cols.join(SEP);}
       }
       await write(encode(raw+rec.eol,reader.meta.encoding));
+      }
     }
     if(reader.digest!==plan.summary.sourceHash||rows!==plan.summary.rows||changed!==plan.summary.changed)fail('Source changed after preflight. Save cancelled.');
     await flush();return {hash:outHash.hex(),bytes,rows,changed};
@@ -336,16 +394,17 @@ function createScrubCore(options = {}) {
     const source=await datReader(plan.source),out=await datReader(output);
     if(JSON.stringify(out.meta)!==JSON.stringify(plan.summary.meta))fail('Saved-file encoding or BOM differs from the source.');
     if(output.size!==expected.bytes)fail('Saved-file size differs from the expected size.');
-    const si=source.records()[Symbol.asyncIterator](),oi=out.records()[Symbol.asyncIterator]();let rows=0,cleared=0;
+    const si=source.records()[Symbol.asyncIterator](),oi=out.records()[Symbol.asyncIterator]();let rows=0,cleared=0,memberCache=[],memberAt=0,sourceBatch=[];
+    async function nextPairBatch(){sourceBatch=[];let units=0;for(let i=0;i<disk.BATCH_ROWS;i++){const [a,b]=await Promise.all([si.next(),oi.next()]);if(a.done&&b.done)break;if(a.done||b.done)fail('Saved-file record count differs from the source.');sourceBatch.push([a,b]);units+=a.value.raw.length+b.value.raw.length;if(units>=disk.BATCH_UNITS)break;}memberCache=await plan.store.getMany('targets',sourceBatch.map(p=>p[0].value.values[plan.ki]));memberAt=0;}
     for(;;) {
-      const [a,b]=await Promise.all([si.next(),oi.next()]);
+      if(memberAt>=sourceBatch.length){await nextPairBatch();if(!sourceBatch.length)break;}const member=memberCache[memberAt],[a,b]=sourceBatch[memberAt++];
       if(a.done&&b.done)break;if(a.done||b.done)fail('Saved-file record count differs from the source.');
       const s=a.value,o=b.value;
       if(s.eol!==o.eol)fail('Saved-file row '+s.line+': line ending changed.');
       if(s.line===1){if(s.raw!==o.raw||JSON.stringify(s.values)!==JSON.stringify(plan.summary.headers))fail('Saved-file header or field order changed.');continue;}
       rows++;if(s.values.length!==plan.summary.headers.length||o.values.length!==s.values.length)fail('Saved-file row '+s.line+': field count differs.');
       if(s.values[plan.ki]!==o.values[plan.ki])fail('Saved-file identity or record order changed.');
-      const member=plan.index.get(s.values[plan.ki]),actions=member?plan.cats[member.cats[0]].actions:null;
+      const actions=member?plan.cats[member.cats[0]].actions:null;
       for(let i=0;i<s.values.length;i++) {
         const mustClear=actions&&actions[i]===2;
         if(mustClear){if(o.values[i]!=='')fail('Value required to be scrubbed is not blank: '+s.values[plan.ki]+' / '+plan.summary.headers[i]);if(s.values[i]!=='')cleared++;}
@@ -356,7 +415,7 @@ function createScrubCore(options = {}) {
     if(out.digest!==expected.hash||rows!==plan.summary.rows||cleared!==plan.summary.changed)fail('Full saved-file content verification failed.');
     return {version:VERSION,verifiedAt:new Date().toISOString(),output:fileInfo(output),outputHash:out.digest,bytes:output.size,rows,cleared};
   }
-  return {VERSION,hash,metadata,splitDAT,tableParser,inspectDAT,listScan,parseRules,preflight,transform,verify,encode};
+  return {VERSION,hash,metadata,splitDAT,tableParser,inspectDAT,listScan,parseRules,preflight,transform,verify,encode,dispose,cleanupStorage:disk.cleanup};
 }
 if(typeof module !== 'undefined' && module.exports) module.exports=createScrubCore;
 </script>
@@ -375,14 +434,14 @@ function workerBoot(){
     busy=true;
     try{
       let result;
-      if(m.op==='inspectDAT')result=await core.inspectDAT(m.file);
+      if(m.op==='inspectDAT'){await core.dispose(plan);plan=null;expected=null;result=await core.inspectDAT(m.file);}
       else if(m.op==='inspectList')result=await core.listScan(m.file);
-      else if(m.op==='preflight'){plan=null;expected=null;plan=await core.preflight(m.source,m.key,m.categories,m.loadedSourceHash);result=plan.summary;}
+      else if(m.op==='preflight'){await core.dispose(plan);plan=null;expected=null;plan=await core.preflight(m.source,m.key,m.categories,m.loadedSourceHash);result=plan.summary;}
       else if(m.op==='transform'){
         if(!plan)throw new Error('Run preflight first.');expected=null;
         expected=await core.transform(plan,bytes=>new Promise((resolve,reject)=>{const t=++token;acks.set(t,{resolve,reject});self.postMessage({type:'chunk',id:m.id,token:t,buffer:bytes.buffer},[bytes.buffer]);}));result=expected;
       }else if(m.op==='verify'){if(!plan||!expected)throw new Error('No generated output is available to verify.');result=await core.verify(plan,m.file,expected);}
-      else throw new Error('Unknown operation.');
+      else if(m.op==='dispose'){await core.dispose(plan);plan=null;expected=null;await core.cleanupStorage();result=true;}else throw new Error('Unknown operation.');
       self.postMessage({type:'result',id:m.id,result});
     }catch(e){self.postMessage({type:'error',id:m.id,error:e.message||String(e)});}finally{busy=false;}
   };
@@ -392,7 +451,7 @@ let source=null,sourceInfo=null,summary=null,expected=null,verified=null,checked
 const pending=new Map(),categories=[];
 function stopWorker(message){const instance=worker;worker=null;if(instance)instance.terminate();for(const p of pending.values())p.reject(new Error(message));pending.clear();}
 function makeWorker(){
-  const url=URL.createObjectURL(new Blob(['const createScrubCore='+createScrubCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
+  const url=URL.createObjectURL(new Blob(['const createProductionStorage='+createProductionStorage.toString()+';const createScrubCore='+createScrubCore.toString()+';('+workerBoot.toString()+')();'],{type:'text/javascript'}));
   const instance=new Worker(url);worker=instance;URL.revokeObjectURL(url);
   instance.onmessage=async({data:m})=>{
     if(worker!==instance)return;
@@ -432,7 +491,7 @@ async function recoverWorker(){
 }
 function buttons(){
   const ready=worker&&sourceInfo&&$('datKey').value&&categories.length&&categories.every(c=>c.file&&c.loaded&&c.key.value&&c.rules&&!c.rules.problems.length&&(c.mode.value==='named'||c.order.checked));
-  $('preflight').disabled=busy||!ready;$('save').disabled=busy||!worker||!summary||!$('reviewed').checked;
+  $('clearTemp').disabled=busy;$('preflight').disabled=busy||!ready;$('save').disabled=busy||!worker||!summary||!$('reviewed').checked;
   $('report').disabled=busy||!verified;$('verifySaved').disabled=busy||!worker||!expected||!$('savedFile').files.length;
 }
 function fillSelect(select,headers,current=''){select.replaceChildren();option(select,'','Select a field');for(const h of headers)option(select,h,h);select.value=headers.includes(current)?current:'';select.disabled=!headers.length;}
@@ -530,12 +589,14 @@ $('verifySaved').onclick=async()=>{
   try{verifiedStatus(r,await call(r,'verify',{file}));}catch(e){if(live(r))status('Final verification failed · do not deliver the selected file.\n'+e.message,'error');}finally{await finishRun(r);}
 };
 $('report').onclick=()=>{if(busy||!verified||!summary||!$('reviewed').checked||!requireChecked())return;const {samples,...safe}=summary;const report={tool:'DAT Field Scrubber',version:core.VERSION,status:'PASS',scope:'Saved-file re-read; full cell, schema, record order, encoding, EOL and SHA-256 verification',input:safe,output:verified};download(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),verified.output.name.replace(/\.dat$/i,'')+'.audit.json');};
+$('clearTemp').onclick=async()=>{const r=beginRun('dispose');if(!r)return;try{await call(r,'dispose');invalidate();status('Temporary local data cleared. Run preflight before saving.');}catch(e){status(e.message,'error');}finally{await finishRun(r);}};
 $('cancel').onclick=async()=>{
   const r=activeRun;if(!r||cancelling||r.phase==='commit')return;
   r.cancelled=true;cancelling=true;$('cancel').disabled=true;stopWorker('Operation cancelled.');cleanupWarning(await cleanupWriter(r));if(activeRun===r)activeRun=null;
   try{makeWorker();}catch(e){worker=null;}invalidate();status(r.committed?'Operation cancelled after saving. The output is not verified; do not deliver it.':'Operation cancelled. No output has passed final verification.','error');cancelling=false;lock(false);
 };
 addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
+createProductionStorage().cleanup().catch(e=>cleanupWarning(e.message));
 try{makeWorker();addCategory();}catch(e){status('Could not start local processing. Use current Chrome/Edge.\n'+e.message,'error');}
 </script>
 </body></html>
