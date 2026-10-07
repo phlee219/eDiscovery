@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; worker-src blob:; connect-src 'none'; img-src data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Production Relationship Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23102440'/%3E%3Cpath d='M16 6v9M7 25v-8h18v8' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{font:15px system-ui,'Segoe UI',sans-serif;color:#17283e;background:#edf2f8;--line:#d4deea;--muted:#56677b;--blue:#174edb}*{box-sizing:border-box}body{margin:0}header{background:#102440;color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:24px;margin:0}h2{font-size:18px;margin:0 0 12px}main{max-width:1740px;margin:auto;padding:22px 28px}p{line-height:1.6}button,input,select{font:inherit}button{cursor:pointer;background:white;border:1px solid #acbdd2;border-radius:6px;padding:8px 13px;color:#17283e;font-weight:600}button:disabled{opacity:.45;cursor:default}.primary{background:var(--blue);color:#fff;border-color:var(--blue)}input[type=text],select{border:1px solid #a9b7c9;border-radius:5px;padding:8px;background:white;width:100%}input[type=file]{max-width:100%}label{display:block;font-weight:600;font-size:13px;margin:12px 0 5px}fieldset{border:0;margin:0;padding:0;min-width:0}.panel{background:#fff;border:1px solid var(--line);border-radius:9px;padding:20px;margin-bottom:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.small,.muted{color:var(--muted);font-size:13px;line-height:1.6}.credit{font-size:12px;color:#c4d7ee;white-space:nowrap}.check{display:flex;align-items:flex-start;gap:8px;font-weight:400;line-height:1.6}.check input{margin-top:5px;accent-color:var(--blue)}.status{white-space:pre-line;padding:15px 18px;border-left:4px solid #7186a1;background:#fff;border-radius:5px;margin:12px 0;line-height:1.6;overflow-wrap:anywhere}.status.error{border-color:#b02836;color:#942333}.status.ok{border-color:#13836c;color:#08614c}.status.warn{border-color:#d28b20;color:#815100}.facts{white-space:pre-line;overflow-wrap:anywhere;font-size:13px;color:var(--muted);line-height:1.6;margin-top:12px}.alert{background:#fff6e7;padding:12px;border:1px solid #f0d8aa;border-radius:6px;color:#6c4a18;font-size:13px;line-height:1.6}.tablewrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:6px;margin:12px 0}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:9px;vertical-align:top;text-align:left}th{background:#eff4fb;position:sticky;top:0;z-index:1}td.value{min-width:180px;max-width:380px;white-space:pre-wrap;overflow-wrap:anywhere}#columnRows input[type=text]{min-width:180px}#columnRows td:first-child{width:48px}#columnRows td:last-child{min-width:170px;white-space:nowrap}.generated{background:#edf4ff}.stats{display:flex;gap:25px;flex-wrap:wrap;margin:15px 0}.stat{font-size:13px;color:var(--muted)}.stat strong{display:block;font-size:24px;color:#17283e}.badge{font-size:13px;border:1px solid #607b9c;border-radius:5px;padding:6px 10px}[hidden]{display:none!important}:focus-visible{outline:3px solid #83b2ff;outline-offset:2px}@media(max-width:900px){.two,.three{grid-template-columns:1fr}header,main{padding:18px}.badge{display:none}}
+</style></head><body>
+<header><div><h1>Production Relationship Builder <span style="font-size:13px;color:#c4d7ee">v0.1.0</span></h1><span class="credit">이현수 · HYUNSOO LEE</span></div><span class="badge">Local processing · No uploads</span></header>
+<main><p class="muted">Generate ChildID on parents and ParentID on children. Choose the output field names, column order and fields to omit. Standalone documents have neither value.</p>
+<fieldset id="sourceControls"><section class="panel"><h2>1 · Source DAT</h2><div class="three"><div><label for="sourceFile">DAT file · þ / DC4</label><input id="sourceFile" type="file" accept=".dat,.txt"></div><div><label for="inputEncoding">Input encoding</label><select id="inputEncoding"><option value="auto">Auto · Unicode BOM / strict UTF-8</option><option value="utf-8">UTF-8</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option><option value="windows-1252">Windows-1252 · explicit</option></select></div><div class="bar" style="align-self:end"><button id="load" class="primary" disabled>Read header</button><button id="clear">Clear file &amp; temporary index</button></div></div><div id="facts" class="facts">No file loaded.</div></section></fieldset>
+<fieldset id="settingsControls" disabled>
+<section class="panel"><h2>2 · Relationship fields</h2><div class="three"><div><label for="mode">Relationship source</label><select id="mode"><option value="family">Production BegAttach · family grouping</option><option value="explicit">Explicit parent ID · direct links</option></select></div><div><label for="idField">Document ID · production Begin Bates</label><select id="idField"></select></div><div><label id="linkLabel" for="linkField">Production BegAttach field</label><select id="linkField"></select></div></div>
+<div id="familyOptions"><div class="alert" style="margin-top:12px">BegAttach groups a family. Use this mode only when BegAttach equals the actual parent's Begin Bates. If the true parent was withheld or the group starts with a child, choose an explicit parent field. EndAttach is a family range boundary; it does not enumerate child documents.</div><div class="two"><div><label for="blank">Blank BegAttach values</label><select id="blank"><option value="error">Stop · blank relationship is unresolved</option><option value="standalone">Treat blank as standalone · explicit choice</option></select></div><label class="check"><input id="confirmFamily" type="checkbox"><span>I confirmed that every nonblank BegAttach identifies the actual parent in this DAT.</span></label></div></div>
+<div class="three"><div><label for="separator">ChildID separator</label><input id="separator" type="text" value=";" maxlength="256"></div><div><label for="sort">ChildID list order</label><select id="sort"><option value="input">Source DAT record order</option><option value="id">Exact ID order · no numeric conversion</option></select></div><div><label for="outputEncoding">Output encoding</label><select id="outputEncoding"><option value="preserve">Preserve source encoding &amp; BOM</option><option value="utf-8">UTF-8 with BOM</option><option value="utf-16le">UTF-16 LE with BOM</option><option value="utf-16be">UTF-16 BE with BOM</option></select></div></div><p class="small">IDs are compared exactly, including leading zeroes and letter case. Parent records must be present and unique. Nested or contradictory relationships stop the full check. Record order and each source line ending are preserved.</p></section>
+<section class="panel"><h2>3 · Output columns</h2><p class="small">Uncheck any field to omit it. Edit the output name. Move rows with the arrows or drag a row to change column order. To replace an existing ParentID / ChildID field, omit its source column first.</p><div class="bar"><button id="allFields">Include all source fields</button><button id="onlyGenerated">Generated fields only</button></div><div class="tablewrap"><table><thead><tr><th>Use</th><th>Source / generated value</th><th>Output field name</th><th>Order</th></tr></thead><tbody id="columnRows"></tbody></table></div></section>
+<section class="panel"><h2>4 · Check &amp; save</h2><div class="two"><div><label for="outputName">New output filename</label><input id="outputName" type="text" value="production_relationships.dat"></div><div class="small" style="align-self:center">Large files use a 1 MiB stream and a temporary IndexedDB disk index. No document-count or file-size cap. Individual source records: 32 Mi characters; fields: 2,000; IDs: 4,096 characters. Temporary storage quota failures stop processing.</div></div><div class="bar" style="margin-top:15px"><button id="check" class="primary">Run full check</button><button id="save" class="primary" disabled>Save new DAT + verify</button><button id="audit" disabled>Save verified audit</button></div><label class="check"><input id="reviewed" type="checkbox"><span>I reviewed the relationship assumptions, full check, output column names/order and preview.</span></label><p class="small">Use a normal Chrome or Edge profile for multi-GB files. Incognito / InPrivate storage is outside the large-data validation scope. Always choose a new filename in the save dialog; confirming replacement can affect an existing file before the tool receives its handle. Saved content is re-read completely before PASS. The download fallback is limited to 64 MiB and requires re-selecting the saved file.</p></section>
+</fieldset><div class="bar"><button id="cancel" disabled>Cancel current operation</button><span id="progress" class="small" role="status"></span></div><div id="status" class="status" role="status" aria-live="polite">Load a DAT, select its relationship fields, then choose output columns.</div><div id="stats" class="stats"></div><section id="previewPanel" class="panel" hidden><h2>Checked output preview · first 5 records</h2><p class="small">Screen values are shortened; generated DAT values are complete. Large child lists stream from the disk index.</p><div class="tablewrap"><table><thead id="previewHead"></thead><tbody id="previewRows"></tbody></table></div></section>
+<div id="verification" class="status" role="status">No saved output has been verified.</div><section id="manualPanel" class="panel" hidden><label for="savedFile">Select the downloaded DAT for full saved-file verification</label><input id="savedFile" type="file" accept=".dat"><button id="verify" disabled>Verify saved file</button></section><footer class="small">Temporary indexes contain document IDs and family links only. Clear the loaded job to remove its index. All processing stays in this browser. A PASS confirms file bytes and the checked configuration; your production specification establishes whether BegAttach identifies the true parent.</footer>
+</main>
+<script id="relationship-core">'use strict';
+// Integration boundary for a future Delivery Work task: index + stream methods.
+function createRelationshipCore(options={}){
+  const VERSION='0.1.0',FE='þ',SEP='\u0014',CHUNK=options.chunkBytes||1024*1024,MAX_RECORD=options.maxRecord||32*1024*1024,MAX_FIELDS=2000;
+  const progress=options.progress||(()=>{}),fail=m=>{throw new Error(m);};let legacyMap=null;
+  // Streaming I/O copied once from the existing DAT tools; no whole-file buffers.
+  function hash() {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w = new Uint32Array(64), buf = new Uint8Array(64);
+    let used = 0, total = 0, done = false;
+    const rr = (x,n) => (x >>> n) | (x << (32-n));
+    function compress(b) {
+      for(let i=0;i<16;i++) { const j=i*4; w[i]=((b[j]<<24)|(b[j+1]<<16)|(b[j+2]<<8)|b[j+3])>>>0; }
+      for(let i=16;i<64;i++) w[i]=(w[i-16]+(rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3))+w[i-7]+(rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10)))>>>0;
+      let [a,b0,c,d,e,f,g,z]=h;
+      for(let i=0;i<64;i++) {
+        const t1=(z+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+        const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b0)^(a&c)^(b0&c)))>>>0;
+        z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b0;b0=a;a=(t1+t2)>>>0;
+      }
+      [a,b0,c,d,e,f,g,z].forEach((v,i)=>{h[i]=(h[i]+v)>>>0;});
+    }
+    return {
+      update(bytes) {
+        if(done) fail('Hash already finalized.');
+        total+=bytes.length; let i=0;
+        if(used) {const take=Math.min(64-used,bytes.length);buf.set(bytes.subarray(0,take),used);used+=take;i=take;if(used===64){compress(buf);used=0;}}
+        while(i+64<=bytes.length){compress(bytes.subarray(i,i+64));i+=64;}
+        if(i<bytes.length){buf.set(bytes.subarray(i));used=bytes.length-i;}
+      },
+      hex() {
+        if(done) fail('Hash already finalized.'); done=true;
+        const tail=new Uint8Array(used<56?64:128);tail.set(buf.subarray(0,used));tail[used]=128;
+        const dv=new DataView(tail.buffer);dv.setUint32(tail.length-8,Math.floor(total/0x20000000));dv.setUint32(tail.length-4,(total%0x20000000)*8);
+        for(let i=0;i<tail.length;i+=64)compress(tail.subarray(i,i+64));
+        return Array.from(h,v=>v.toString(16).padStart(8,'0')).join('');
+      }
+    };
+  }
+  async function metadata(file) {
+    if(!file || !file.size) fail('Empty files cannot be used.');
+    const b=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    if(b[0]===0xff&&b[1]===0xfe&&b[2]===0&&b[3]===0 || b[0]===0&&b[1]===0&&b[2]===0xfe&&b[3]===0xff) fail('UTF-32 is not supported. Export UTF-8 or UTF-16 instead.');
+    let encoding='utf-8',bom=[];
+    if(b[0]===0xef&&b[1]===0xbb&&b[2]===0xbf) bom=[0xef,0xbb,0xbf];
+    else if(b[0]===0xff&&b[1]===0xfe){encoding='utf-16le';bom=[0xff,0xfe];}
+    else if(b[0]===0xfe&&b[1]===0xff){encoding='utf-16be';bom=[0xfe,0xff];}
+    const choice=options.encoding||'auto';
+    if(!['auto','utf-8','utf-16le','utf-16be','windows-1252'].includes(choice))fail('Unsupported input encoding.');
+    if(choice!=='auto'){if(bom.length&&choice!==encoding)fail('Encoding conflicts with source BOM.');encoding=choice;}
+    if(encoding==='utf-8'&&b.includes(0)) fail('Unsupported encoding or UTF-16 without a BOM. Use UTF-8 or UTF-16 with a BOM.');
+    return {encoding,bom};
+  }
+  async function textReader(file) {
+    const meta=await metadata(file),hasher=hash(),reader={meta,digest:null};
+    reader.chunks=async function*() {
+      const dec=new TextDecoder(meta.encoding,{fatal:true,ignoreBOM:true});
+      try {
+        for(let offset=0;offset<file.size;offset+=CHUNK) {
+          const end=Math.min(offset+CHUNK,file.size),bytes=new Uint8Array(await file.slice(offset,end).arrayBuffer());
+          if(bytes.length!==end-offset)fail('Incomplete file read: '+file.name);
+          hasher.update(bytes);
+          const skip=Math.min(bytes.length,Math.max(0,meta.bom.length-offset));
+          const text=dec.decode(bytes.subarray(skip),{stream:true});
+          if(text)yield text;
+          progress(file.name||'File',end/file.size);
+        }
+        const end=dec.decode();if(end)yield end;reader.digest=hasher.hex();
+      } catch(e) {
+        if(e instanceof TypeError)fail('Invalid encoding or unreadable file: '+file.name+' (only UTF-8/UTF-16 are supported)');
+        throw e;
+      }
+    };
+    return reader;
+  }
+  function splitDAT(raw,line=0) {
+    if(raw.length>MAX_RECORD)fail('DAT row '+line+' exceeds the record size limit.');
+    if(!raw.startsWith(FE)||!raw.endsWith(FE)||raw.length<2)fail('DAT row '+line+': invalid enclosing þ qualifiers.');
+    let count=1;for(const c of raw)if(c===SEP&&++count>MAX_FIELDS)fail('DAT exceeds the 2,000-field limit.');
+    return raw.split(SEP).map((col,i)=>{
+      if(col.length<2||!col.startsWith(FE)||!col.endsWith(FE))fail('DAT row '+line+' / column '+(i+1)+': invalid field qualifiers.');
+      const value=col.slice(1,-1);
+      if(value.includes(FE)||/[\r\n\u0000]/.test(value))fail('DAT row '+line+' / column '+(i+1)+': unsupported literal þ, NUL or raw line break inside a field.');
+      return value;
+    });
+  }
+  async function datReader(file) {
+    const r=await textReader(file);
+    r.records=async function*() {
+      let pending='',line=0,scanned=0;
+      for await(const chunk of r.chunks()) {
+        pending+=chunk;let start=0;const re=/\r\n|\r|\n/g;re.lastIndex=Math.max(0,scanned-1);let m;
+        while((m=re.exec(pending))) {
+          if(m[0]==='\r'&&m.index===pending.length-1)break;
+          const raw=pending.slice(start,m.index);start=m.index+m[0].length;
+          yield {raw,eol:m[0],values:splitDAT(raw,++line),line};
+        }
+        pending=pending.slice(start);scanned=pending.length;if(pending.length>MAX_RECORD)fail('DAT row '+(line+1)+' exceeds the 32 Mi-character record size limit.');
+      }
+      if(pending) {
+        const eol=pending.endsWith('\r')?'\r':'';
+        const raw=eol?pending.slice(0,-1):pending;
+        yield {raw,eol,values:splitDAT(raw,++line),line};
+      }
+    };
+    return r;
+  }
+  function encode(text,encoding) {
+    if(encoding==='utf-8')return new TextEncoder().encode(text);
+    if(encoding==='windows-1252'){if(!legacyMap){legacyMap=new Map();const d=new TextDecoder('windows-1252');for(let i=0;i<256;i++)legacyMap.set(d.decode(new Uint8Array([i])),i);}const b=new Uint8Array(text.length);for(let i=0;i<text.length;i++){const v=legacyMap.get(text[i]);if(v===undefined)fail('Output contains a character unavailable in Windows-1252. Choose Unicode output.');b[i]=v;}return b;}
+    if(!['utf-16le','utf-16be'].includes(encoding))fail('Unsupported output encoding.');
+    const bytes=new Uint8Array(text.length*2),view=new DataView(bytes.buffer),le=encoding==='utf-16le';
+    for(let i=0;i<text.length;i++)view.setUint16(i*2,text.charCodeAt(i),le);return bytes;
+  }
+
+  function safe(v){if(typeof v!=='string'||/[þ\u0014\r\n\0]/.test(v))fail('DAT values cannot contain þ, DC4, raw line breaks or NUL.');for(let i=0;i<v.length;i++){const n=v.charCodeAt(i);if(n>=0xd800&&n<=0xdbff){const next=v.charCodeAt(++i);if(!(next>=0xdc00&&next<=0xdfff))fail('Unpaired Unicode character.');}else if(n>=0xdc00&&n<=0xdfff)fail('Unpaired Unicode character.');}return v;}
+  function headersCheck(h){const seen=new Set();for(const v of h){if(!v.trim())fail('Blank field name.');if(seen.has(v))fail('Duplicate field name: '+v);seen.add(v);}}
+  function outputColumns(headers,columns){if(!Array.isArray(columns)||columns.length>MAX_FIELDS+2)fail('Invalid output columns.');const selected=columns.filter(c=>c.include),seen=new Set();if(!selected.length||selected.length>MAX_FIELDS)fail('Select between 1 and 2,000 output fields.');for(const c of selected){if(!['source','parent','child'].includes(c.kind))fail('Invalid output field type.');safe(c.name);if(!c.name.trim()||c.name!==c.name.trim())fail('Output names must be nonblank with no surrounding whitespace.');if(seen.has(c.name))fail('Duplicate output name: '+c.name+'. Omit the old field or rename the new one.');seen.add(c.name);if(c.kind==='source'&&!headers.includes(c.source))fail('Source field is missing: '+c.source);}for(const kind of ['parent','child'])if(selected.filter(c=>c.kind===kind).length>1)fail('Repeated generated field: '+kind);return selected.map(c=>({...c,index:c.kind==='source'?headers.indexOf(c.source):-1}));}
+  function settingCheck(headers,p){if(!['family','explicit'].includes(p.mode)||!['input','id'].includes(p.sort)||!['error','standalone'].includes(p.blank))fail('Invalid relationship setting.');const id=headers.indexOf(p.id),link=headers.indexOf(p.link);if(id<0||link<0||id===link)fail('Choose distinct document ID and relationship fields.');if(p.mode==='family'&&!p.confirm)fail('Confirm that BegAttach is the actual parent ID, including families with withheld parents.');safe(p.separator);if(!p.separator||p.separator.length>256)fail('ChildID separator must contain 1–256 characters.');return {id,link};}
+  function doc(values,line,cols,p,usesChild){const id=values[cols.id],group=values[cols.link];if(!id.trim()||id!==id.trim()||id.length>4096)fail('DAT row '+line+': blank/whitespace ID or ID longer than 4,096 characters.');if(group!==group.trim()||group.length>4096)fail('DAT row '+line+': relationship ID has surrounding whitespace or exceeds 4,096 characters.');if(usesChild&&id.includes(p.separator))fail('DAT row '+line+': ID contains the ChildID separator. Choose a different separator.');if(p.mode==='family'&&!group&&p.blank!=='standalone')fail('DAT row '+line+': blank BegAttach. Explicitly choose blank = standalone only if correct.');if(p.mode==='explicit'&&group===id)fail('DAT row '+line+': document is its own parent.');return {id,group,parent:p.mode==='family'&&group===id?'':group,row:line};}
+  async function inspect(file){const r=await datReader(file);for await(const rec of r.records()){headersCheck(rec.values);return {headers:rec.values,meta:r.meta,file:{name:file.name,size:file.size,lastModified:file.lastModified}};}fail('No header.');}
+  async function preflight(file,p,columns,index){await index.open();try{const r=await datReader(file);let headers,cols,selected,rows=0,children=0,batch=[],batchChars=0;const samples=[];
+    for await(const rec of r.records()){if(!headers){headers=rec.values;headersCheck(headers);cols=settingCheck(headers,p);selected=outputColumns(headers,columns);continue;}if(rec.values.length!==headers.length)fail('DAT row '+rec.line+': column count differs from the header.');const d=doc(rec.values,rec.line,cols,p,selected.some(c=>c.kind==='child'));rows++;if(d.parent)children++;batch.push(d);batchChars+=d.id.length+d.group.length;if(samples.length<5)samples.push({row:rec.line,id:d.id,parent:d.parent,values:rec.values.map(v=>v.length>160?v.slice(0,160)+'…':v)});if(batch.length>=512||batchChars>=1024*1024){await index.add(batch);batch=[];batchChars=0;}}
+    if(batch.length)await index.add(batch);if(!headers)fail('No DAT header.');if(!rows)fail('No document records.');let examined=0;
+    for await(const group of index.all()){const refs=[...new Set(group.filter(x=>x.parent).map(x=>x.parent))],parents=await index.getMany(refs),map=new Map(refs.map((id,i)=>[id,parents[i]]));for(const d of group){if(d.parent){const root=map.get(d.parent);if(!root)fail('DAT row '+d.row+': parent '+d.parent+' is absent. No parent is inferred from the first available child.');if(root.parent||(p.mode==='family'&&root.group!==root.id))fail('DAT row '+d.row+': contradictory or nested relationship for '+d.id+'. This tool requires flat parent/child families.');}examined++;}progress('Validating disk index',examined/rows);}
+    const parents=await index.parentCount(),preview=[];for(const s of samples){const ids=[];if(!s.parent){for await(const list of index.children(s.id,p.sort)){for(const c of list){ids.push(c.id);if(ids.length===20)break;}break;}}const total=s.parent?0:await index.childCount(s.id);const child=ids.join(p.separator)+(total>ids.length?' … ('+total+' children)':'');preview.push({row:s.row,id:s.id,parent:s.parent,child,values:selected.map(c=>c.kind==='source'?s.values[c.index]:c.kind==='parent'?s.parent:child)});}
+    return {file,source:{name:file.name,size:file.size,lastModified:file.lastModified,sha256:r.digest},headers,meta:r.meta,p:structuredClone(p),columns:structuredClone(columns),selected,summary:{records:rows,parents,children,standalone:rows-parents-children},preview,index};
+  }catch(e){await index.close();throw e;}}
+  function publicPlan(plan){return {version:VERSION,source:plan.source,headers:plan.headers,meta:plan.meta,settings:plan.p,columns:plan.columns,summary:plan.summary,preview:plan.preview};}
+  async function transform(plan,emit){const r=await datReader(plan.file),p=plan.p,selected=outputColumns(plan.headers,plan.columns),cols=settingCheck(plan.headers,p),out=hash();let bytes=0,rows=0,pieces=[],size=0;const meta=p.encoding==='preserve'?r.meta:{encoding:p.encoding,bom:p.encoding==='utf-8'?[239,187,191]:p.encoding==='utf-16le'?[255,254]:p.encoding==='utf-16be'?[254,255]:fail('Invalid output encoding.')};
+    async function flush(){if(!size)return;const b=new Uint8Array(size);let at=0;for(const a of pieces){b.set(a,at);at+=a.length;}pieces=[];size=0;await emit(b);}
+    async function raw(b){out.update(b);bytes+=b.length;pieces.push(b);size+=b.length;if(size>=CHUNK)await flush();}
+    let textBuffer='';
+    async function text(v,final=false){textBuffer+=v;while(textBuffer.length>=65536||final&&textBuffer.length){let end=Math.min(textBuffer.length,65536);const n=textBuffer.charCodeAt(end-1);if(end<textBuffer.length&&n>=0xd800&&n<=0xdbff)end--;await raw(encode(textBuffer.slice(0,end),meta.encoding));textBuffer=textBuffer.slice(end);}}
+    if(meta.bom.length)await raw(new Uint8Array(meta.bom));
+    let batch=[],chars=0;
+    async function take(records){const docs=records.map(rec=>doc(rec.values,rec.line,cols,p,selected.some(c=>c.kind==='child'))),savedDocs=await plan.index.getMany(docs.map(d=>d.id));for(let ri=0;ri<records.length;ri++){const rec=records[ri],d=docs[ri],saved=savedDocs[ri];if(!saved||saved.row!==d.row||saved.group!==d.group||saved.parent!==d.parent)fail('Source or temporary index changed; run the full check again.');rows++;
+      if(!saved.hasChildren){await text(selected.map(c=>FE+(c.kind==='source'?rec.values[c.index]:c.kind==='parent'?d.parent:'')+FE).join(SEP)+rec.eol);continue;}
+      for(let i=0;i<selected.length;i++){const c=selected[i];if(i)await text(SEP);await text(FE);if(c.kind==='source')await text(rec.values[c.index]);else if(c.kind==='parent')await text(d.parent);else{let first=true;for await(const list of plan.index.children(d.id,p.sort)){for(const child of list){await text((first?'':p.separator)+child.id);first=false;}}}await text(FE);}await text(rec.eol);
+    }}
+    for await(const rec of r.records()){if(rec.line===1){if(JSON.stringify(rec.values)!==JSON.stringify(plan.headers))fail('Source headers changed.');await text(selected.map(c=>FE+c.name+FE).join(SEP)+rec.eol);continue;}if(rec.values.length!==plan.headers.length)fail('Source row width changed.');batch.push(rec);chars+=rec.raw.length;if(batch.length>=512||chars>=1024*1024){await take(batch);batch=[];chars=0;}}
+    if(batch.length)await take(batch);if(r.digest!==plan.source.sha256||rows!==plan.summary.records)fail('Source changed during save; output must be aborted.');await text('',true);await flush();return {sha256:out.hex(),bytes,records:rows,headers:selected.map(c=>c.name),meta,sourceHash:r.digest};
+  }
+  async function digestFile(file){const h=hash();for(let offset=0;offset<file.size;offset+=CHUNK){const end=Math.min(file.size,offset+CHUNK),b=new Uint8Array(await file.slice(offset,end).arrayBuffer());if(b.length!==end-offset)fail('Incomplete saved-file read.');h.update(b);progress('Verifying saved file',end/file.size);}return h.hex();}
+  async function verify(file,expected){if(!expected||file.size!==expected.bytes)fail('Saved file size differs from expected output.');const digest=await digestFile(file);if(digest!==expected.sha256)fail('Saved file SHA-256 differs from generated output.');return {status:'PASS',scope:'Complete saved-file byte stream, size and SHA-256; exact generated schema, values and record order',sha256:digest,bytes:file.size,records:expected.records,fields:expected.headers.length,savedFile:{name:file.name,size:file.size,lastModified:file.lastModified},verifiedAt:new Date().toISOString()};}
+  function selfTest(){const h=hash();h.update(new TextEncoder().encode('abc'));if(h.hex()!=='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')fail('SHA-256 self-test failed.');}
+  return {VERSION,inspect,preflight,publicPlan,transform,verify,digestFile,hash,datReader,splitDAT,safe,encode,selfTest};
+}
+if(typeof module!=='undefined')module.exports=createRelationshipCore;
+</script>
+<script id="relationship-index">'use strict';
+// Disk-backed relationship index. Transactions and reads have bounded batches.
+function createRelationshipIndex(options={}){
+  let db=null,name='';const PAGE=512;
+  const request=q=>new Promise((resolve,reject)=>{q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
+  const complete=t=>new Promise((resolve,reject)=>{t.oncomplete=resolve;t.onabort=()=>reject(t.error||new Error('Index transaction aborted.'));t.onerror=()=>{};});
+  async function close(){if(db){db.close();db=null;}if(name){const old=name;name='';await request(indexedDB.deleteDatabase(old));}}
+  async function open(){await close();name='production-relationships-'+crypto.randomUUID();const q=indexedDB.open(name,1);q.onupgradeneeded=()=>{const s=q.result.createObjectStore('docs',{keyPath:'id'});s.createIndex('order',['parent','row']);s.createIndex('ids',['parent','id']);q.result.createObjectStore('parents',{keyPath:'id'});};db=await request(q);db.onversionchange=()=>db.close();if(options.created)options.created(name);}
+  async function add(rows){const t=db.transaction(['docs','parents'],'readwrite'),done=complete(t),s=t.objectStore('docs');let failed='';for(const row of rows){const q=s.add(row);q.onerror=()=>{if(q.error?.name!=='AbortError'&&!failed)failed='Duplicate document ID or disk index write failure at DAT row '+row.row+': '+row.id;};}for(const id of new Set(rows.map(r=>r.parent).filter(Boolean)))t.objectStore('parents').put({id});try{await done;}catch(e){throw new Error(e.name==='QuotaExceededError'?'Browser temporary disk quota exhausted. No output can be approved. Free storage, clear this job and retry.':failed||e.message);}}
+  async function getMany(ids){const t=db.transaction('docs','readonly'),done=complete(t),s=t.objectStore('docs'),pending=ids.map(id=>request(s.get(id)));const values=await Promise.all(pending);await done;return values;}
+  async function* all(){let last;while(true){const t=db.transaction('docs','readonly'),done=complete(t),q=t.objectStore('docs').getAll(last===undefined?null:IDBKeyRange.lowerBound(last,true),PAGE),rows=await request(q);await done;if(!rows.length)return;yield rows;last=rows[rows.length-1].id;}}
+  async function* children(parent,sort='input'){let last;const order=sort==='id'?'ids':'order',upper=[parent,[]];while(true){const low=last||[parent],t=db.transaction('docs','readonly'),done=complete(t),rows=await request(t.objectStore('docs').index(order).getAll(IDBKeyRange.bound(low,upper,!!last,false),PAGE));await done;if(!rows.length)return;yield rows;const x=rows[rows.length-1];last=[parent,sort==='id'?x.id:x.row];}}
+  async function childCount(parent){const t=db.transaction('docs','readonly'),done=complete(t),value=await request(t.objectStore('docs').index('order').count(IDBKeyRange.bound([parent],[parent,[]])));await done;return value;}
+  async function parentCount(){let last,count=0;while(true){const t=db.transaction('parents','readonly'),done=complete(t),parents=await request(t.objectStore('parents').getAll(last===undefined?null:IDBKeyRange.lowerBound(last,true),PAGE));await done;if(!parents.length)return count;const roots=await getMany(parents.map(p=>p.id));if(roots.some(r=>!r))throw new Error('Missing parent in disk index.');const write=db.transaction('docs','readwrite'),saved=complete(write),s=write.objectStore('docs');for(const root of roots)s.put({...root,hasChildren:true});await saved;count+=parents.length;last=parents[parents.length-1].id;if(options.progress)options.progress('Counting parent groups',count);}}
+  return {open,close,add,getMany,all,children,childCount,parentCount,get name(){return name;},pageSize:PAGE};
+}
+if(typeof module!=='undefined')module.exports=createRelationshipIndex;
+</script>
+<script id="relationship-worker">'use strict';
+function relationshipWorker(){
+  let core=null,plan=null,expected=null,working=false,serial=0,activeId=0;const index=createRelationshipIndex({created:name=>self.postMessage({indexName:name})}),acks=new Map();
+  const newCore=encoding=>createRelationshipCore({encoding,progress:(phase,fraction)=>self.postMessage({progress:true,id:activeId,phase,fraction})});
+  self.onmessage=async e=>{const m=e.data;if(m.ack){const p=acks.get(m.ack);if(p){acks.delete(m.ack);m.error?p.reject(new Error(m.error)):p.resolve();}return;}if(working){self.postMessage({id:m.id,error:'Another worker operation is active.'});return;}working=true;
+    activeId=m.id;
+    try{let value;if(m.op==='inspect'){core=newCore(m.encoding);core.selfTest();value=await core.inspect(m.file);}
+      else if(m.op==='check'){core=newCore(m.encoding);core.selfTest();plan=null;expected=null;plan=await core.preflight(m.file,m.settings,m.columns,index);value=core.publicPlan(plan);}
+      else if(m.op==='transform'){if(!plan)throw new Error('Run the full check first.');expected=null;expected=await core.transform(plan,b=>new Promise((resolve,reject)=>{const token=++serial;acks.set(token,{resolve,reject});self.postMessage({id:m.id,chunk:token,buffer:b.buffer},[b.buffer]);}));value=expected;}
+      else if(m.op==='verify'){if(!plan||!expected)throw new Error('Build an output first.');value=await core.verify(m.file,expected);}
+      else if(m.op==='close'){plan=null;expected=null;await index.close();value=true;}
+      else throw new Error('Unknown operation.');self.postMessage({id:m.id,value});
+    }catch(e){if(m.op==='transform')expected=null;if(m.op==='check')plan=null;self.postMessage({id:m.id,error:e.message});}finally{working=false;}
+  };
+}
+</script>
+<script id="relationship-ui">'use strict';
+const $=id=>document.getElementById(id),node=(tag,text='')=>{const n=document.createElement(tag);n.textContent=text;return n;};
+let worker=null,serial=0,revision=0,busy=false,info=null,loadedFile=null,loadedEncoding='',checked=null,checkSig='',built=null,verified=null,savedHandle=null,verifiedFile=null,buildSig='',columns=[],dragKey='';
+const pending=new Map(),indexes=new Set(),FALLBACK=64*1024*1024;
+function status(text,kind=''){const n=$('status');n.textContent=text;n.className='status '+kind;}
+function verification(text,kind=''){const n=$('verification');n.textContent=text;n.className='status '+kind;}
+function file(){return $('sourceFile').files[0];}
+function settings(){return {mode:$('mode').value,id:$('idField').value,link:$('linkField').value,blank:$('blank').value,confirm:$('confirmFamily').checked,separator:$('separator').value,sort:$('sort').value,encoding:$('outputEncoding').value};}
+function readColumns(){return [...$('columnRows').children].map(tr=>({key:tr.dataset.key,kind:tr.dataset.kind,source:tr.dataset.source,include:tr.querySelector('input[type=checkbox]').checked,name:tr.querySelector('input[type=text]').value}));}
+function signature(){return JSON.stringify([$('inputEncoding').value,settings(),readColumns(),$('outputName').value]);}
+function sourceCurrent(){return !!info&&file()===loadedFile&&$('inputEncoding').value===loadedEncoding;}
+function checkedCurrent(){return sourceCurrent()&&!!checked&&checkSig===signature();}
+function requireChecked(){if(!checkedCurrent()){const message='Source or configuration changed. Read the file / run the full check again.';changed();status(message,'error');throw new Error(message);}}
+function clearOutput(){built=verified=savedHandle=verifiedFile=null;buildSig='';$('savedFile').value='';$('manualPanel').hidden=true;verification('No saved output has been verified.');}
+function changed(){revision++;checked=null;checkSig='';$('reviewed').checked=false;$('previewPanel').hidden=true;$('stats').replaceChildren();clearOutput();if(busy){stopWorker();busy=false;}buttons();}
+async function cleanup(){for(const name of [...indexes]){try{await new Promise((resolve,reject)=>{const q=indexedDB.deleteDatabase(name);q.onsuccess=resolve;q.onerror=()=>reject(q.error);});indexes.delete(name);}catch(e){status('Temporary disk index cleanup failed: '+e.message,'error');}}}
+function stopWorker(){if(worker)worker.terminate();worker=null;for(const p of pending.values())p.reject(new Error('Operation cancelled; result discarded.'));pending.clear();cleanup();}
+function sourceChanged(){changed();stopWorker();info=loadedFile=null;columns=[];$('columnRows').replaceChildren();$('idField').replaceChildren();$('linkField').replaceChildren();$('facts').textContent='Read the new DAT header.';$('confirmFamily').checked=false;buttons();}
+function initWorker(){const code=createRelationshipCore.toString()+'\n'+createRelationshipIndex.toString()+'\n('+relationshipWorker.toString()+')();',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),instance=new Worker(url);URL.revokeObjectURL(url);worker=instance;instance.onmessage=async e=>{if(worker!==instance)return;const m=e.data;if(m.indexName){indexes.add(m.indexName);return;}const job=pending.get(m.id);if(!job)return;if(m.progress){$('progress').textContent=m.phase+' · '+Math.round(m.fraction*100)+'%';return;}if(m.chunk){try{await job.emit(new Uint8Array(m.buffer));if(worker===instance)instance.postMessage({ack:m.chunk});}catch(e){if(worker===instance)instance.postMessage({ack:m.chunk,error:e.message});}return;}pending.delete(m.id);m.error?job.reject(new Error(m.error)):job.resolve(m.value);};instance.onerror=e=>{stopWorker();changed();busy=false;info=null;buttons();status('Local worker failed. Read the DAT again. '+(e.message||''),'error');};}
+function request(op,payload={},emit){if(!worker)initWorker();return new Promise((resolve,reject)=>{const id=++serial;pending.set(id,{resolve,reject,emit});worker.postMessage({id,op,...payload});});}
+async function run(fn){if(busy)return;busy=true;const r=revision;buttons();const guard=()=>{if(r!==revision)throw new Error('Inputs changed; stale result discarded.');};try{await fn(guard);}catch(e){if(r===revision){clearOutput();status(e.message,'error');}}finally{if(r===revision){busy=false;$('progress').textContent='';buttons();}}}
+function buttons(){$('sourceControls').disabled=busy;$('settingsControls').disabled=busy||!info;$('cancel').disabled=!busy;$('load').disabled=busy||!file();$('clear').disabled=busy;const good=checkedCurrent();$('save').disabled=busy||!good||!$('reviewed').checked;$('audit').disabled=busy||!verified||!built||buildSig!==signature()||!$('reviewed').checked;$('savedFile').disabled=busy;$('verify').disabled=busy||!built||!$('savedFile').files[0]||!good||!$('reviewed').checked;}
+function fill(select,headers){select.replaceChildren();const empty=node('option','Select a field');empty.value='';select.append(empty);for(const h of headers){const n=node('option',h);n.value=h;select.append(n);}}
+function suggest(headers,kind){const fold=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'');const names=kind==='id'?['productionbeginbates','productionbegbates','prodbegbates','beginbates','begbates']:kind==='family'?['productionbegattach','prodbegattach','begattach','beginattachment']:['parentid','parentbates','parentdocumentid'];for(const name of names){const found=headers.filter(h=>fold(h)===name);if(found.length===1)return found[0];}return '';}
+function modeChanged(){const family=$('mode').value==='family';$('familyOptions').hidden=!family;$('linkLabel').textContent=family?'Production BegAttach field':'Explicit parent ID field';if(info)$('linkField').value=suggest(info.headers,family?'family':'explicit');$('confirmFamily').checked=false;changed();}
+function renderColumns(){$('columnRows').replaceChildren();for(const c of columns){const tr=node('tr');tr.dataset.key=c.key;tr.dataset.kind=c.kind;tr.dataset.source=c.source||'';tr.draggable=true;if(c.kind!=='source')tr.className='generated';const used=node('input');used.type='checkbox';used.checked=c.include;used.setAttribute('aria-label','Include '+(c.source||c.kind));used.onchange=()=>{columns=readColumns();changed();};const name=node('input');name.type='text';name.value=c.name;name.setAttribute('aria-label','Output name for '+(c.source||c.kind));name.oninput=()=>{columns=readColumns();changed();};const useTd=node('td');useTd.append(used);const nameTd=node('td');nameTd.append(name);const order=node('td');for(const [text,to]of [['↑',-1],['↓',1],['Top','top'],['End','end']]){const b=node('button',text);b.type='button';b.setAttribute('aria-label',text+' '+(c.source||c.kind));b.onclick=()=>{columns=readColumns();const at=columns.findIndex(x=>x.key===c.key),target=to==='top'?0:to==='end'?columns.length-1:Math.max(0,Math.min(columns.length-1,at+to));const [x]=columns.splice(at,1);columns.splice(target,0,x);renderColumns();changed();};order.append(b);}tr.append(useTd,node('td',c.kind==='source'?c.source:c.kind==='parent'?'Generated · ParentID':'Generated · ChildID'),nameTd,order);tr.ondragstart=e=>{if(busy){e.preventDefault();return;}dragKey=c.key;e.dataTransfer.setData('text/plain',dragKey);};tr.ondragover=e=>e.preventDefault();tr.ondrop=e=>{e.preventDefault();if(busy)return;columns=readColumns();const from=columns.findIndex(x=>x.key===dragKey),to=columns.findIndex(x=>x.key===c.key);if(from<0||to<0)return;const [x]=columns.splice(from,1);columns.splice(to,0,x);renderColumns();changed();};$('columnRows').append(tr);}}
+function showPlan(p){$('stats').replaceChildren();for(const [label,value]of Object.entries(p.summary)){const n=node('div',label);n.className='stat';n.append(node('strong',value.toLocaleString()));$('stats').append(n);}$('previewHead').replaceChildren();const header=node('tr');header.append(node('th','Source row'));for(const c of p.columns.filter(x=>x.include))header.append(node('th',c.name));$('previewHead').append(header);$('previewRows').replaceChildren();for(const row of p.preview){const tr=node('tr');tr.append(node('td',String(row.row)));for(const v of row.values){const td=node('td',v.length>240?v.slice(0,240)+'…':v);td.className='value';td.title=v;tr.append(td);}$('previewRows').append(tr);}$('previewPanel').hidden=false;$('facts').textContent=p.source.name+'\n'+p.source.size.toLocaleString()+' bytes · '+p.summary.records.toLocaleString()+' records\n'+p.meta.encoding+' · '+(p.meta.bom.length?'BOM':'no BOM')+'\nSource SHA-256: '+p.source.sha256;}
+function outputName(){const name=$('outputName').value;if(name!==name.trim()||!/^[^<>:"/\\|?*\x00-\x1f]+\.dat$/i.test(name)||/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(name))throw new Error('Enter a valid new .dat filename.');if(name.toLowerCase()===loadedFile.name.toLowerCase())throw new Error('Output filename must differ from the source filename.');return name;}
+function download(blob,name){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+$('sourceFile').onchange=$('inputEncoding').onchange=sourceChanged;
+$('load').onclick=()=>{sourceChanged();run(async guard=>{const f=file(),encoding=$('inputEncoding').value;if(!f)throw new Error('Choose a DAT.');status('Reading header. The full file will be hashed and indexed during the full check.');const x=await request('inspect',{file:f,encoding});guard();if(file()!==f||$('inputEncoding').value!==encoding)throw new Error('Source changed during header read.');info=x;loadedFile=f;loadedEncoding=encoding;fill($('idField'),x.headers);fill($('linkField'),x.headers);$('idField').value=suggest(x.headers,'id');$('linkField').value=suggest(x.headers,$('mode').value==='family'?'family':'explicit');columns=x.headers.map((h,i)=>({key:'s'+i,kind:'source',source:h,name:h,include:true})).concat([{key:'parent',kind:'parent',name:'ParentID',include:true},{key:'child',kind:'child',name:'ChildID',include:true}]);renderColumns();$('outputName').value=f.name.replace(/\.[^.]*$/,'')+'_relationships.dat';$('facts').textContent=f.name+'\n'+f.size.toLocaleString()+' bytes · '+x.headers.length+' source fields · '+x.meta.encoding;status('Header read. Confirm the relationship fields, output columns and family assumption.');});};
+$('clear').onclick=async()=>{sourceChanged();$('sourceFile').value='';await cleanup();$('facts').textContent='No file loaded.';status('Loaded file and this page’s temporary indexes cleared.');buttons();};
+$('mode').onchange=modeChanged;for(const id of ['idField','linkField','blank','confirmFamily','separator','sort','outputEncoding','outputName']){$(id).addEventListener(id==='separator'||id==='outputName'?'input':'change',changed);}
+$('allFields').onclick=()=>{columns=readColumns();for(const c of columns)if(c.kind==='source')c.include=true;renderColumns();changed();};$('onlyGenerated').onclick=()=>{columns=readColumns();for(const c of columns)c.include=c.kind!=='source';renderColumns();changed();};
+$('reviewed').onchange=()=>{if(!$('reviewed').checked)clearOutput();buttons();};
+$('check').onclick=()=>{if(!sourceCurrent()){sourceChanged();status('Read the current DAT header again.','error');return;}changed();run(async guard=>{const f=loadedFile,sig=signature(),p=settings(),cs=readColumns();outputName();status('Scanning the complete DAT and building the temporary disk index.');const x=await request('check',{file:f,encoding:loadedEncoding,settings:p,columns:cs});guard();if(!sourceCurrent()||sig!==signature())throw new Error('Source/configuration changed during the check.');checked=x;checkSig=sig;showPlan(x);status('Full check passed. Review the preview and output columns, then check the approval box.','ok');});};
+$('save').onclick=()=>run(async guard=>{requireChecked();if(!$('reviewed').checked)throw new Error('Review the checked plan first.');const sig=signature(),name=outputName();clearOutput();buildSig=sig;const current=()=>{guard();requireChecked();if(sig!==signature()||!$('reviewed').checked)throw new Error('Approval or configuration changed during save.');};let writer=null,committed=false;
+  try{if(typeof window.showSaveFilePicker==='function'){const handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:'DAT load file',accept:{'application/octet-stream':['.dat']}}]});current();const previous=await handle.getFile();current();if(previous.size||handle.name.toLowerCase()===loadedFile.name.toLowerCase())throw new Error('Choose a new empty output file. An existing nonempty destination is rejected.');writer=await handle.createWritable({keepExistingData:false});current();status('Streaming the new DAT to disk.');built=await request('transform',{},async b=>{current();await writer.write(b);current();});current();await writer.close();committed=true;writer=null;savedHandle=handle;verification('Saved. Re-reading the complete file before PASS.','warn');const actual=await handle.getFile();current();verified=await request('verify',{file:actual});current();verifiedFile=actual;verification('PASS · Complete saved file re-read; size and SHA-256 match the generated byte stream.','ok');status('Saved-file verification passed. The audit is ready.','ok');}
+    else{if(loadedFile.size>FALLBACK)throw new Error('Multi-GB output requires Chrome/Edge’s native file saving. This download fallback is limited to 64 MiB.');const pieces=[];let bytes=0;built=await request('transform',{},b=>{current();bytes+=b.length;if(bytes>FALLBACK)throw new Error('Download fallback exceeds 64 MiB. Use native saving in Chrome or Edge.');pieces.push(b);});current();const blob=new Blob(pieces,{type:'application/octet-stream'});await request('verify',{file:new File([blob],name)});current();download(blob,name);$('manualPanel').hidden=false;verification('Download requested · saved-file verification pending. Re-select the downloaded DAT.','warn');status('Generated bytes checked. Select the saved file below to complete verification.','warn');}
+  }catch(e){if(writer){try{await writer.abort();}catch{}}if(committed){verification('Saved-file verification failed · do not deliver this file. The saved file is preserved for review.','error');e.message+=' The already saved file was left in place.';}throw e;}
+});
+$('savedFile').onchange=()=>{verified=null;verifiedFile=null;verification('Selected saved file is not verified yet.','warn');buttons();};
+$('verify').onclick=()=>run(async guard=>{requireChecked();if(!built||buildSig!==signature()||!$('reviewed').checked)throw new Error('Build the current approved output first.');const f=$('savedFile').files[0],sig=signature();verified=null;verifiedFile=null;verification('Re-reading the complete saved file.','warn');const v=await request('verify',{file:f});guard();requireChecked();if(f!==$('savedFile').files[0]||sig!==signature()||!$('reviewed').checked)throw new Error('Saved file or approval changed during verification.');verified=v;verifiedFile=f;verification('PASS · Complete saved file re-read; size and SHA-256 match.','ok');status('Saved-file verification passed.','ok');});
+$('audit').onclick=()=>run(async guard=>{requireChecked();if(!verified||!built||buildSig!==signature()||!$('reviewed').checked)throw new Error('Verify the current approved output first.');const sig=signature(),f=savedHandle?await savedHandle.getFile():$('savedFile').files[0];if(!f||!savedHandle&&f!==verifiedFile)throw new Error('Verified saved file selection changed.');const v=await request('verify',{file:f});guard();requireChecked();if(sig!==signature()||!$('reviewed').checked)throw new Error('Configuration or approval changed.');verified=v;const report={tool:'Production Relationship Builder',version:'0.1.0',source:checked.source,encoding:checked.meta,settings:checked.settings,columns:checked.columns,summary:checked.summary,output:built,verification:v,assumption:checked.settings.mode==='family'?'User confirmed BegAttach denotes the actual parent. BegAttach alone cannot prove this.':'Explicit flat parent IDs; every referenced parent is present.'};download(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),$('outputName').value.replace(/\.dat$/i,'.audit.json'));status('Verified audit saved.','ok');});
+$('cancel').onclick=()=>{changed();sourceChanged();status('Cancelled. Read the DAT header and check again. No stale output is approved.','warn');};
+window.addEventListener('beforeunload',()=>{if(worker)worker.terminate();for(const name of indexes)indexedDB.deleteDatabase(name);});
+createRelationshipCore().selfTest();buttons();
+</script>
+</body></html>
