@@ -840,8 +840,8 @@ CUSTODIAN	Custodian
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const TOOL_VERSION = '2.18.6';
-const TOOL_BUILD = '2026-10-07-review1';
+const TOOL_VERSION = '2.18.7';
+const TOOL_BUILD = '2026-10-07-report1';
 // R1: set by the startup pure-core self-test. When false, saving & validation
 // are disabled (fail-closed) so a regression in the core splitters/parsers can
 // never cause a silent bad delivery.
@@ -4310,6 +4310,7 @@ function cancelCurrentValidation(reason, publish){
   validationOperationToken++;
   if(publish){
     valReportText = '';
+    valCompletedSnapshot = null;
     valSetBadge(VALIDATION_STATUS.CANCELLED, 'warn-b');
     if(val.reportPre) val.reportPre.textContent = op.reason;
     if(val.dlBtn) val.dlBtn.disabled = true;
@@ -4332,6 +4333,60 @@ const VALIDATION_STATUS = Object.freeze({
   ERROR: 'ERROR'
 });
 let validationActive = false;
+let valCompletedSnapshot = null;
+
+function validatorReportSignature(){
+  return JSON.stringify({mapping:validator.mapping,tiers:validator.mappingTiers,
+    blanks:[...validator.expectedBlank].sort((a,b)=>a-b),mappingSource:validator.mappingSource,
+    mapText:validator.mappingSource==='pasted'?val.mapText.value:null,
+    srcFmt:validator.srcFmt,outFmt:validator.outFmt,srcMeta:validator.srcMeta,outMeta:validator.outMeta,
+    srcHdr:validator.srcHdr,outHdr:validator.outHdr,
+    srcHash:validator.srcInfo && validator.srcInfo.byteHash,outHash:validator.outInfo && validator.outInfo.byteHash,
+    identity:$('#valIdentityField').value,identityApproved:$('#valApproveIdentity').checked,
+    t2Approved:$('#valApproveT2').checked,identityApprovalUtc,validatorT2ApprovalUtc});
+}
+
+async function downloadValidatedReport(){
+  if(validationActive || saveOperationActive || savedValidationPreparing || state.parsing) return;
+  if(!pastedMapIsCurrent()){valClearMappingSummary('Pasted map edited. Apply and validate again.');return;}
+  if(!valReportText) return;
+  const snapshot=valCompletedSnapshot;
+  const current=()=>snapshot && snapshot===valCompletedSnapshot && snapshot.src===validator.src &&
+    snapshot.out===validator.out && snapshot.text===valReportText && snapshot.settings===validatorReportSignature();
+  if(snapshot && !current()){valInvalidateResult('Files or approved settings changed. Validate again before exporting.');return;}
+  if(!snapshot || !snapshot.pass){
+    if(val.statusBadge.textContent.includes('PASS')){valInvalidateResult('Completed byte snapshot unavailable. Validate again.');return;}
+    downloadTextFile(timestampedDownloadName('delivery_validation','txt'),valReportText);return;
+  }
+  const operation={id:validationOperationToken,cancelled:false,reason:null,done:false,
+    busyOwner:newBusyOwner('report-verification'),cancelHooks:new Set()};
+  currentValidationOperation=operation;validationActive=true;val.dlBtn.disabled=true;
+  const cancelBtn=$('#btnCancelValidation');cancelBtn.disabled=false;
+  valSetBadge('RECHECKING REPORT','gray');val.reportPre.textContent='Re-reading source and saved output before report export…';
+  setBusy('Rechecking report…','Reading complete source and output bytes.',operation.busyOwner);
+  const guard=()=>{checkOperation(operation);if(!current())throw new Error('Files or approved settings changed during report verification.');};
+  try{
+    guard();const sourceHash=await hashFileBytes(snapshot.src,operation);guard();
+    const output=snapshot.handle?await snapshot.handle.getFile():snapshot.out;guard();
+    if(!output || output.name!==snapshot.out.name || output.size!==snapshot.out.size)throw new Error('Saved output changed after validation.');
+    const outputHash=await hashFileBytes(output,operation);guard();
+    if(sourceHash!==snapshot.srcHash || outputHash!==snapshot.outHash)throw new Error('Source or saved output bytes changed after validation.');
+    const text=snapshot.text+'\nReport byte recheck UTC: '+new Date().toISOString()+'\n';
+    valSetBadge(snapshot.status,'ok');val.reportPre.textContent=text;
+    downloadTextFile(timestampedDownloadName('delivery_validation','txt'),text);
+  }catch(err){
+    valCompletedSnapshot=null;valReportText='';
+    valSetBadge(operation.cancelled?VALIDATION_STATUS.CANCELLED:VALIDATION_STATUS.UNVERIFIED,'warn-b');
+    val.reportPre.textContent='Report blocked: '+(err.message || String(err))+'. Re-select/revalidate the actual files before delivery.';
+    if(val.sumBox){val.sumBox.classList.add('hidden');val.sumBox.innerHTML='';}
+    if(!operation.cancelled)reportOperationError('validator-report',err,snapshot.out);
+    toast('Report blocked — saved-file PASS is no longer current.');
+  }finally{
+    operation.done=true;clearBusy(operation.busyOwner);
+    if(currentValidationOperation===operation){currentValidationOperation=null;validationActive=false;cancelBtn.disabled=true;}
+    val.dlBtn.disabled=!valReportText;
+  }
+}
 
 function valSetBadge(text, cls){
   if(!val.statusBadge) return;
@@ -4379,6 +4434,7 @@ function valInvalidateResult(note){
   cancelCurrentValidation(note || 'Validation cancelled because settings changed.', false);
   validationOperationToken++;
   valReportText = '';
+  valCompletedSnapshot = null;
   valSetBadge(VALIDATION_STATUS.UNVERIFIED, 'gray');
   if(val.reportPre) val.reportPre.textContent = note || 'Files or mapping changed — validation must be run again.';
   if(val.sumBox){ val.sumBox.classList.add('hidden'); val.sumBox.innerHTML = ''; }
@@ -5092,6 +5148,9 @@ async function valRunValidateCore(validationToken, operation){
   }
 
   valShowResult(status, stat, { srcRec, outRec, recMatch, headerCountMatch, srcSkip, outSkip });
+  valCompletedSnapshot={src:validator.src,out:validator.out,srcHash:srcReadHash,outHash:outReadHash,
+    handle:validator.out===lastSavedOutput?lastSavedHandle:null,settings:validatorReportSignature(),
+    text:valReportText,status,pass:!failed};
   toast('✅ Validation complete — ' + status + (stat.expected ? ` (${stat.expected} expected cleansing)` : ''));
   // The owning wrapper clears the busy state in finally.
 }
@@ -5102,6 +5161,7 @@ function valBuildReportText({ stat, srcRec, outRec, recMatch, headerCountMatch, 
   A('DAT FIELD REORDER — POST-SAVE PARSED-VALUE VALIDATOR (re-read of actual files)');
   A('==================================================================');
   A('Generated (UTC)  : ', new Date().toISOString());
+  A('Tool version     : ', TOOL_VERSION, ' (build ', TOOL_BUILD, ')');
   A('Original         : ', validator.src ? validator.src.name : '—', '  ', validator.src && validator.srcMeta ? validator.srcMeta.label + ' · ' + FORMATS[validator.srcFmt].label : '');
   A('Output           : ', validator.out ? validator.out.name : '—', '  ', validator.out && validator.outMeta ? validator.outMeta.label + ' · ' + FORMATS[validator.outFmt].label : '');
   A('Scope            : This report RE-READS the two files on disk and compares');
@@ -5293,10 +5353,7 @@ function bindValidator(){
   $('#btnCancelValidation').addEventListener('click', ()=>{
     if(cancelCurrentValidation('Validation cancelled by operator.', true)) toast('Validation cancelled. No PASS/FAIL report was produced.');
   });
-  val.dlBtn.addEventListener('click', ()=>{
-    if(!pastedMapIsCurrent()){valClearMappingSummary('Pasted map edited. Apply and validate again.');return;}
-    if(valReportText) downloadTextFile(timestampedDownloadName('delivery_validation', 'txt'), valReportText);
-  });
+  val.dlBtn.addEventListener('click', downloadValidatedReport);
 }
 
 bindValidator();
