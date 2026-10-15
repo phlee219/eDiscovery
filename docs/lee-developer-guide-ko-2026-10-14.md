@@ -2,15 +2,15 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 # LEE를 설명하고, 코드에서 원인을 찾는 법
 
-메뉴를 아는 수준에서 한 단계 더 나아가, 데이터가 어디에서 읽히고 어떻게 바뀌며 무엇을 검증하는지 이해하기 위한 안내서입니다. 핵심 용어와 실무 설명 문장을 영어로 함께 적어, 영어 질문과 설명에도 활용할 수 있게 했습니다.
+데이터를 읽고 바꾸고 검증하는 원리부터, 코드에서 문제의 원인을 찾는 순서까지 정리했습니다. 핵심 용어와 실무 설명에는 영어를 병기했습니다.
 
 한국어 + English · 개발자 / Delivery Engineer
 
-배포 파일 확인: 3.1.6
+배포 파일 확인: 3.3.3
 
-읽은 소스의 버전 표시: 3.1.7
+확인한 개발 소스: 3.3.3
 
-2026-10-14 · 미동부 기준
+최신 갱신: 2026-10-15 · 미동부 기준
 
 - [다른 사람에게는 이렇게 설명하면 됩니다 · Product overview](#overview)
 - [무슨 언어로 만들었고 어떻게 실행되나요? · Technology and startup](#stack)
@@ -31,7 +31,7 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 > **In English**
 >
-> LEE is a local Windows tool for examining and editing eDiscovery load files. It compares records by exact document ID, updates metadata, runs production QC, and exports new files. It uses disk-based indexes for large load files and verifies generated output and the actual saved file.
+> LEE is a local Windows tool for examining and editing eDiscovery load files. It compares records by exact document ID, updates metadata, runs production QC, and creates verified exports, delivery packages, and file manifests. It uses disk-based indexes for large load files and verifies generated output and the actual saved file.
 
 > LEE는 eDiscovery 로드파일을 로컬에서 읽고, 문서 ID 기준 비교·메타데이터 수정·납품 QC·새 파일 내보내기를 수행하는 Windows 도구입니다. 큰 파일 전체를 표로 메모리에 올리는 대신 원본 위치를 인덱싱하고, 처리 결과와 실제 저장된 파일을 검증합니다.
 
@@ -45,14 +45,16 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 
 파일 파서, 디스크 인덱스, 데이터 뷰, 작업 엔진, 검증·출력 엔진 위에 WinForms 화면을 얹은 구조입니다. 기능 대부분이 같은 데이터 접근 규약을 공유합니다.
 
-### 이 문서의 기준
+### 이 문서의 기준 · Version snapshot
 
-현재 로컬 `LEE.exe`와 `LEE.html`은 파일 버전 **3.1.6.0**이며 SHA-256이 같습니다. 읽은 개발 소스의 `WorkspaceEngine.Version`에는 **3.1.7**이 적혀 있습니다. 소스의 번호만으로 3.1.7이 배포됐다고 판단하면 안 됩니다.
+2026-10-15에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **3.3.3.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **3.3.3**입니다. 해당 제품 배포 커밋은 `a08a0a5`입니다. 문서 파일명의 2026-10-14는 최초 작성일이며, 기존 북마크와 Git 링크를 보존하기 위해 유지했습니다.
 
 확인한 배포본 SHA-256:
-3818581610EFF248FCC76BF07F335771EF540EA4976B3554D7646153B672E52A
+F67F0467A82787341874D6BE4B8CBD552401E156DE1A0C7FB81F2E19E2A6885C
 
-이번 작업은 읽기와 안내서 작성입니다. 프로그램 소스·버전·설정·체크포인트를 수정하거나 빌드·제품 테스트·배포하지 않았습니다. 코드 위치는 조사 당시 기준이며, 이후 다른 AI의 변경으로 달라질 수 있습니다.
+> **이전 노트를 읽었다면:** 05의 OPT 페이지 수·납품 도구, 07의 새 코드 위치, 08·09의 재개/매니페스트/보고서 비교, 10·11의 현재 검증·개발 상태를 먼저 보십시오. 핵심 개념과 설명 문장은 영어를 함께 적었습니다.
+
+이번 갱신은 소스와 기존 검증 기록을 읽고 학습 문서만 수정한 작업입니다. 제품 소스·실행 파일·사용자 설정을 수정하거나 빌드·제품 테스트를 재실행하지 않았습니다. 문서 자체의 구조·검색·표시와 Git 게시 파일은 별도로 확인합니다. 개발 체크포인트에는 문서 작업의 임시 절전 방지 상태만 기록합니다.
 
 <a id="stack"></a>
 
@@ -167,6 +169,7 @@ abstract string Provenance { get; }      // 어디에서 온 데이터인가
 | `MetadataDelta` | 변경한 셀 값만 디스크에 보관 | Overlay, 특정 셀/필드 업데이트 |
 | `VolumeSetView` | 여러 입력을 선택한 순서대로 연결 | VOL001 + VOL002 + VOL003 |
 | `SelectionMergeView` | 선택한 부분의 변경을 전체 데이터로 반영 | 필터된 100행만 수정하고 나머지는 유지 |
+| `VolumeLinkView327` | 병합된 볼륨의 상대 링크에 승인한 접두어 적용 | 공통 루트 아래 `VOL001\NATIVES\A.pdf`로 연결 |
 
 ### 수정 적용과 Undo/Redo · Applying edits and history
 
@@ -241,13 +244,18 @@ Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니
 
 이미지 경로와 볼륨을 그대로 보존한다는 것은, 파일을 다른 폴더로 옮긴 뒤 상대경로가 자동으로 맞춰진다는 뜻이 아닙니다. 합치기 자체는 실제 이미지 존재나 대상 플랫폼 import를 보장하지 않습니다.
 
-### ⑤ PAGECOUNT 채우기 · Page count from Bates metadata
+### ⑤ PAGECOUNT의 두 경로 · Bates-derived vs OPT-derived counts
 
 > **In English**
 >
-> In the documented 3.1.6 release, Populate page count calculates counts from Bates beginning and ending values. It does not count pages inside TIFF or PDF files, or populate counts from OPT.
+> LEE has two page-count workflows. Bates-derived counts use the beginning and ending metadata. OPT-derived counts match the exact first-page ID and count OPT page records within each document. Neither workflow decodes every page inside TIFF or PDF files.
 
-3.1.6의 `PageCount316`은 유효한 Beg/End 번호에서 페이지 수를 계산합니다. 예를 들어 같은 접두어의 ABC0001–ABC0004라면 4입니다. 먼저 모든 오류를 검사하며 오류가 있으면 일부만 적용하지 않고 중단합니다. **이 기능은 PDF/TIFF의 실제 내부 페이지를 세는 기능도, OPT에서 값을 채우는 기능도 아닙니다.**
+| 경로 / Workflow | 계산과 매칭 | 확인할 한계 |
+| --- | --- | --- |
+| Edit → Populate page count… · `PageCount316` | Beg/End의 접두어·번호 범위를 검사하고 계산. `ABC0001–ABC0004` → 4. | 메타데이터 범위가 올바르다는 전제. 구조/범위 오류는 전체 중단. |
+| Edit → Populate page count from OPT… · `PageCountOpt327` | OPT의 Y 시작부터 다음 Y 전까지 페이지 행을 센 뒤, 첫 페이지 ID와 DAT image-begin 필드를 정확히 연결해 새 필드를 만듦. | 구조·선언 페이지 수 불일치·중복 시작·동일 시작값의 중복 할당은 ERROR로 전체 중단. 공백은 공백, 미일치는 REVIEW 후 선택적으로 적용. |
+
+예: DAT의 IMAGEBEG가 `IMG0001`이고 OPT의 Y 시작 `IMG0001`에 페이지 행이 세 개면 3을 채웁니다. `IMG001`을 같은 ID로 추측하지 않습니다. 기존 값은 보존하고 새 필드로 추가하며 Undo가 가능합니다. **3.1.6 노트의 “OPT에서 채우는 기능은 없다”는 설명은 현재 버전에 해당하지 않습니다.**
 
 ### ⑥ Export · DAT, CSV and XLSX outputs
 
@@ -260,6 +268,49 @@ Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니
 - **CSV split:** 선택 범위·필드 순서·헤더를 유지하면서 지정한 레코드 수로 나누고, 각 part에 헤더를 반복합니다. 50만 건은 사용자 관측을 반영한 출발점이며 플랫폼의 보편적 상한이 아닙니다.
 - **XLSX:** CX 보고서 용도가 중심입니다. 문자열 셀로 ID/앞자리 0을 보존하고, 큰 결과는 시트로 나눕니다. 지원 한계를 넘으면 값 절단 대신 중단합니다.
 - **Legacy CSV encoding loss:** 표현 불가능한 문자가 있으면 자세한 위치·원본/제안 값의 증거와 해당 export의 새 승인이 필요합니다. `WITH ENCODING LOSS`는 무손실 PASS가 아닙니다.
+
+**가족 유지 분할 · Family-preserving split:** Workspace Setup의 BegAtt 역할이 유효하면 Export의 `Keep families`로 같은 비어 있지 않은 가족 값의 연속 레코드를 같은 part에 둡니다. 그 결과 part가 지정 건수를 넘을 수 있습니다. 비연속 가족은 쓰기 전에 중단하며 자동 정렬하지 않습니다. 필드 값별 분할(`Split export by field value`)과는 다른 기준입니다.
+
+### ⑦ 3.1.7 이후의 실무 도구 · Delivery workflows
+
+> **In English**
+>
+> A delivery package is built from the current view into a new folder. A manifest records relative paths, byte counts, and hashes. QC-report comparison tracks issues before and after fixes; it is different from comparing document metadata by ID.
+
+| 작업 / UI action | 처리 원리와 결과 | 개발자가 확인할 점 |
+| --- | --- | --- |
+| Populate from linked files (size, hashes)… | 선택한 파일의 바이트 크기·MD5/SHA-1/SHA-256과 링크의 확장자를 새 필드로 채움. | 파일 읽기 엔진 `LinkedFileValues317`와 root·선택 필드를 함께 추적. 파일명만으로 내용 해시를 계산한 것으로 말하지 않음. |
+| UTF-8 text copies / OPT from Bates ranges | 엄격하게 읽은 텍스트를 새 UTF-8 사본으로 저장. Bates 이미지 범위에서 새 OPT를 만들거나 Check only. | 원본을 덮어쓰지 않음. 이미지 누락·중복과 변환 불가를 구분. 실제 이미지 내부 페이지 해석과는 별도. |
+| Near-duplicate values / Use most common spelling | 대소문자·공백만 다른 표기 그룹을 보고하고, 승인 후 가장 많이 쓰인 표기로 통일. | 보고서 확인과 실제 값 변경을 구분. 정규화 규칙을 ID 매칭에 자동 적용하지 않음. |
+| Populate links from a folder by ID… / Repair broken links by file name… | ID와 같은 파일 stem으로 새 링크 생성, 또는 선택한 여러 링크 필드의 깨진 링크를 유일한 파일명 후보로 복구. | 중복 후보는 추측하지 않음. 검토 후 적용·Undo. 3.3.3 새 필드명 제안은 대소문자 구분 없는 중복 검사를 먼저 함. |
+| Open and merge files · Volume folders | 각 볼륨의 상대 링크에 승인한 볼륨 접두어를 적용해 하나의 공통 root에서 해석. | 표본은 루트 제안일 뿐 전체 검증이 아님. 공백·절대경로는 유지. 원본 DAT와 실제 파일 위치는 그대로. |
+| Copy linked files / Build delivery package (current view)… | 현재 보기의 연결 파일을 새 폴더로 검증 복사. 패키지 도구는 DAT, 선택한 OPT 문서의 이미지와 OPT 부분집합, 요약, 외부 매니페스트를 묶음. | 패키지 DAT는 전체/그리드 표시 필드를 선택. 데이터 순서·상대경로를 유지. 누락·안전하지 않은 링크·패키지 자체 점검 실패는 INCOMPLETE. |
+| Create delivery manifest… / Verify delivery against manifest… | 생성은 폴더 안 모든 파일의 상대경로·크기·SHA-256을 폴더 밖 DAT로 기록. 확인은 복사본을 OK / CHANGED / MISSING / EXTRA로 분류. | OK 행 저장은 선택(기본 OFF), 검사 범위를 줄이는 옵션이 아님. 수동 출력 경로를 보존. 저장 audit의 manifest hash가 어떤 기준 목록인지 식별. |
+| Compare QC reports (before / after)… | 같은 필드·순서의 보고서를 선택한 구별 필드의 정확한 값으로 비교. 중복된 동일 키는 등장 횟수로 대응해 NEW / STILL PRESENT / RESOLVED로 분류. | 레코드 번호는 기본 키에서 제외. 3.3.3은 메뉴와 결과창 바로가기에서 같은 키 선택·기억을 사용. 보고서끼리 비교하며 DAT 자체를 수정하지 않음. |
+
+### 납품 패키지의 파일 구조 · Package layout
+
+```text
+ClientPackage/
+  NATIVES/... / TEXT/... / IMAGES/...   선택한 파일의 원래 상대경로
+  DATA/ClientPackage.dat               현재 보기의 선택한 메타데이터
+  DATA/ClientPackage.opt               OPT를 선택한 경우 문서 부분집합
+  DATA/00_LEE_package_summary.dat      COMPLETE / INCOMPLETE 및 구성별 결과
+  ...copy reports and audit files...
+ClientPackage_LEE_manifest.dat         패키지 폴더 밖에 둔 전체 파일 목록
+```
+
+폴더와 필드 이름은 예시입니다. 모든 패키지에 세 종류의 파일이 반드시 들어가는 것은 아닙니다. 선택한 구성과 생략한 검사를 요약에서 확인합니다. 패키지의 `COMPLETE`는 *설정한 구성의 도구 점검*이 끝났다는 의미이며 고객 SOW 전체 승인이나 플랫폼 가져오기를 대신하지 않습니다.
+
+### ⑧ QC 재개와 날짜·시간 · Resume and date/time formatting
+
+**QC 재개:** 취소/실패한 Package QC의 파일 단위 결과를 로컬 로그에 보관합니다. root·읽기 설정에 맞는 로그에서 검사 모드·경로·볼륨 ID·파일 ID·크기·최종 수정 시각이 같은 항목만 재사용합니다. DAT·OPT·각 레코드와 보고서는 현재 입력으로 다시 구성합니다. `RESUMED`는 그 파일을 이번 실행에서 다시 읽거나 재해시하지 않았다는 표시입니다. 완료 시 로그를 정리하고 손상된 로그 행은 재사용하지 않습니다. Batch Delivery QC도 같은 재개 선택을 사용합니다.
+
+> **In English**
+>
+> Resume reuses eligible file-level results from an interrupted Package QC run. A reused result is marked RESUMED and is not a fresh file read or hash in the current run. The report is rebuilt against the current dataset and configured checks.
+
+**날짜·시간:** `Format date / time…`의 출력 형식은 처음에 전부 빈칸입니다. 지정한 필드만 변환하며 시간만 있는 `00:00:00`을 `hh:mm:ss tt`로 바꾸면 `12:00:00 AM`입니다. 시간만 있는 값에 날짜를 임의로 보충하지 않습니다. 이 기능을 시간대 변환(time-zone conversion)으로 설명하지 마십시오.
 
 <a id="integrity"></a>
 
@@ -346,6 +397,17 @@ SETUP · 설정 상태 · REVIEW · 검토 필요 · ERROR · 오류/차단 · N
 | 작업 세션·자동 복구 | `src/eDML/SessionStorage.cs`   `src/eDML/AutomaticRecovery.cs` | SessionGraph, dependencies, Save/Load, original hashes |
 | Audit 내용·도구 버전 | `src/eDML/WorkspaceEngine.cs`   `src/Properties/AssemblyInfo.cs` | Version, Audit, AssemblyVersion, AssemblyFileVersion |
 | 화면 색·글꼴·영/한 도움말 | `src/eDML/ThemePalette308.cs`   `src/eDML/HelpKorean299.cs`   `src/eDML/WorkbenchDialogs.cs` | Theme, Help; 데이터 변환과 분리해서 보기 |
+| OPT에서 PAGECOUNT | `src/eDML/PageCountOpt327.cs`   `src/eDML/DataWorkbench.Pages327.cs` | Build, OPT Y markers, exact image-begin, ERROR/REVIEW, MetadataDelta |
+| 병합 볼륨의 상대 링크 | `src/eDML/VolumeLinks327.cs`   `src/eDML/DataWorkbench.VolumeLinks327.cs` | VolumeLinkView327, FindRoot, CommonRoot, Prefixed, sample vs authority |
+| 중단된 Package QC 재개 | `src/eDML/PackageResume327.cs`   `src/eDML/DataWorkbench.Resume327.cs` | Fingerprint, Wrap, StatOf, Reused, RESUMED, log cleanup |
+| QC 보고서 전후 비교·구별 키 | `src/eDML/QcDiff328.cs`   `src/eDML/DataWorkbench.Delivery328.cs`   `src/eDML/ResultViewer.Compare329.cs`   `src/eDML/DeliverySetup333.cs` | DefaultKey, Run, ChooseQcKey333, CreateQcKeyDialog333, occurrence count |
+| 매니페스트 생성·대조·OK 보고서 | `src/eDML/DeliveryManifest328.cs`   `src/eDML/DataWorkbench.Delivery328.cs`   `src/eDML/DeliverySetup333.cs` | Create, Verify, includeOk, ManifestSuggestion333, ShowManifestVerification333 |
+| 납품 패키지·자체 점검 | `src/eDML/DeliveryPackage329.cs`   `src/eDML/DataWorkbench.Package329.cs`   `src/eDML/DeliverySetup333.cs` | Build, Fields, SelfCheckMissing, Complete, PackageDestinationProblem |
+| 폴더 링크·값별 분할·검증 복사 | `src/eDML/Practical324.cs`   `src/eDML/DataWorkbench.Practical324.cs` | NewFieldProblem, LinksFromFolder, SplitByValue, CopyLinked, CopyWorkers331, source read + destination reread |
+| 깨진 링크의 유일한 후보 | `src/eDML/LinkRepair329.cs`   `src/eDML/DataWorkbench.Package329.cs` | Build, AMBIGUOUS, reviewed MetadataDelta, multiple fields, Undo |
+| CSV part에서 가족 유지 | `src/eDML/ExportFamily328.cs`   `src/eDML/ExportSplit304.cs` | KeepTogether328, SetFamilyField328, BegAtt, non-adjacent families |
+| 연결 파일 값·UTF-8 텍스트·새 OPT | `src/eDML/LinkedFileValues317.cs`   `src/eDML/TextUtf8318.cs`   `src/eDML/OptFromBates319.cs` | file readers, strict decoding, fresh output, missing/duplicate images |
+| 표기 흔들림·마지막 설정·명령 찾기 | `src/eDML/NearDuplicates322.cs`   `src/eDML/DataWorkbench.Repeat323.cs`   `src/eDML/CommandKeywords325.cs`   `src/eDML/QuickGuideSearch326.cs` | review vs apply, RememberLast/RestoreLast, valid header layout, keyword search |
 
 > `partial class DataWorkbench`는 “하나의 클래스가 여러 파일로 나뉜 것”입니다. `Pages316`, `SourceApproval312`, `…305` 등의 숫자는 기능을 처음 추가한 버전의 흔적일 수 있습니다. 파일명만 보고 구버전이라 삭제하거나, 그 파일 하나만 현재 코드라고 판단하면 안 됩니다.
 
@@ -373,6 +435,8 @@ C:\Coding\Tools\
 ### 설정과 데이터 파일은 다릅니다
 
 현재 기본 사용자 환경설정은 `%LOCALAPPDATA%\LEE\ui-preferences.xml`, 필드 레이아웃은 같은 LEE 폴더의 `header-layouts`, 자동 복구는 `%LOCALAPPDATA%\LEE\Recovery`를 사용합니다. 파일을 닫아도 설정이 남는 이유와, 원본 DAT의 메타데이터가 바뀌는 이유를 혼동하지 마십시오.
+
+**새 도구를 따라갈 때:** `DataWorkbench.*`는 입력·상태·승인을 담당하고 `PageCountOpt327 / DeliveryPackage329 / QcDiff328` 같은 별도 클래스가 데이터를 처리합니다. `DeliverySetup333`는 설정과 결과창을 공유하는 도우미로, 새 데이터 처리 엔진을 하나 더 만든 파일이 아닙니다. 설정 제안(Setup suggestion), 계산(Engine), 적용(Apply), 저장 검증(Save/Verify)의 책임을 나누어 읽으십시오.
 
 <a id="debug"></a>
 
@@ -455,6 +519,33 @@ UI label과 실제 source header가 다를 수 있습니다. 이름의 대소문
 
 DAT/CSV 파서부터 수정하지 않습니다. MDB 경로, 읽기 권한, 파일 자체 상태, Jet provider와 실제 프로세스 환경을 확인합니다. 이 기능의 환경 의존성을 일반 DAT 작업의 필요 설치 항목으로 확대하지 않습니다.
 
+### 새 도구의 문제 추적 예시 · Recent troubleshooting cases
+
+#### 사례 I · 재개했는데 진행 수·해시 읽기가 다름 · Resume reuse vs fresh checks
+
+화면의 RESUMED 수와 `PackageResume327.Fingerprint / Wrap / StatOf`를 확인합니다. 파일 ID·크기·수정 시각 또는 모드가 달라지면 새로 읽는 것이 정상입니다. 보고서의 재사용 표시는 오류가 아니라 검사 출처입니다. “로그가 있으니 기존 PASS를 그대로 복원했다”고 설명하지 마십시오.
+
+#### 사례 J · 모두 일치했는데 상세 보고서가 없음 · Matching-file report option
+
+3.3.3 Verify 창의 `Include matching files (OK) in the saved report`가 OFF면 모두 일치할 때 간단한 결과 안내만 나옵니다. ON이면 OK를 포함한 전체 보고서를 저장할 수 있습니다. `includeOk → DeliveryManifest328.Verify → ShowManifestVerification333 → ResultViewer`를 추적합니다. 옵션은 읽기 검사를 생략하지 않습니다.
+
+#### 사례 K · 고친 문제가 NEW/RESOLVED로 달라 보임 · QC issue identity
+
+두 보고서가 같은 검사·필드 순서인지, 선택한 구별 키가 업무상 같은 문제를 뜻하는지 확인합니다. Record/Row를 키에 넣으면 행 이동이 문제의 변화로 보일 수 있습니다. `ChooseQcKey333 → QcDiff328.Key / Run`을 따라가고, 실제 선택 키와 동일 키 중복의 횟수를 확인합니다. 이는 정확한 Document ID 비교 엔진 `IdComparison`과 다른 작업입니다.
+
+### 한 흐름을 코드로 읽는 연습 · Trace one workflow
+
+```text
+메뉴: Edit → Populate page count from OPT…
+DataWorkbench.Pages327.cs: CreateOptPagesDialog327 / PopulateOptPages327
+  → PageCountOpt327.Build: OPT 문서 검사 → 정확한 시작 ID 매칭 → MetadataDelta
+  → ERROR면 전체 중단 / REVIEW면 보고서에서 사용자 결정
+  → ApplyCreatingFields: 현재 view가 같은지 확인 → 변경 활성화 → Undo
+  → 기존 Export 경로: 원본 의존성 확인 → 새 파일 → 저장본 재검증 → audit
+```
+
+합성 예제로 DAT 두 행 `IMG0001 / IMG0004`과 3페이지·2페이지 OPT를 준비했다고 가정하면 기대값은 `3 / 2`입니다. 선언 페이지 수를 틀리게 한 변형은 전체 차단, 시작 ID가 없는 변형은 REVIEW가 되어야 합니다. 이 안내서 갱신에서는 이 예제를 제품에 다시 실행하지 않았습니다. 관련 검증 코드는 `workbench-tests/Next327Tests.cs`를 출발점으로 확인합니다.
+
 <a id="questions"></a>
 
 ## 동료나 고객이 물으면 어떻게 답하나요? · Questions and answers
@@ -519,9 +610,9 @@ OPT의 페이지 행을 합치는 것입니다. 실제 TIFF/PDF를 합치거나 
 
 #### Q. PAGECOUNT는 실제 이미지 페이지 수인가요? · Q. Does PAGECOUNT reflect the actual number of image pages?
 
-현재 Populate page count는 Bates Beg/End 메타데이터에서 계산한 값입니다. Package QC의 OPT 페이지 대조와도 구분합니다. 실제 다중 페이지 TIFF/PDF 내부의 페이지 수를 모두 읽었다고 말하면 안 됩니다.
+Bates Beg/End로 계산하는 기능과 OPT의 문서별 페이지 행을 세는 기능이 모두 있습니다. 전자는 메타데이터 범위, 후자는 검증한 OPT의 Y 경계·정확한 첫 페이지 ID가 기준입니다. 어느 쪽도 TIFF/PDF 내부 페이지를 전부 디코딩한 수라고 설명하면 안 됩니다.
 
-> **In English:** The documented Populate page count feature calculates from Bates beginning and ending metadata. It does not inspect every page inside TIFF or PDF files.
+> **In English:** LEE supports both Bates-derived counts and OPT-derived counts. The former uses metadata ranges; the latter counts OPT page records after exact first-page matching. Neither decodes every page inside TIFF or PDF files.
 
 #### Q. XLSX를 쓰면 Excel 설치가 필요한가요? · Q. Does XLSX export require Microsoft Excel?
 
@@ -547,6 +638,30 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 
 > **In English:** Not necessarily. Many filenames record when a feature was introduced. If the current project includes the file and the current handler calls it, it may still be active code. Confirm the shipped version from the tested artifact and release evidence.
 
+#### Q. 매니페스트가 모두 일치하면 납품 전체가 승인된 건가요? · Q. Does a matching manifest mean the delivery is fully approved?
+
+기준 매니페스트에 기록된 파일과 대조했다는 뜻입니다. 잘못된 기준 폴더로 만든 매니페스트도 그 폴더와는 일치할 수 있습니다. 고객/SOW 기준의 완결성·업무 의미·대상 시스템 import는 별도 확인합니다. 3.3.3에서는 OK 행 저장을 선택하고 audit의 manifest SHA-256으로 기준 목록을 식별할 수 있습니다.
+
+> **In English:** A match establishes the file comparison against that manifest. It does not prove that the manifest represents the correct complete production or that a target-platform import will succeed. The report audit identifies the exact manifest hash.
+
+#### Q. QC 재개는 검사를 생략해도 안전하다는 뜻인가요? · Q. What does RESUMED mean in Package QC?
+
+같은 root·읽기 설정 아래 파일 ID·크기·수정 시각과 모드가 일치한 파일 결과를 이전 중단 실행에서 재사용했다는 뜻입니다. 보고서는 현재 데이터로 재구성합니다. RESUMED를 이번 실행의 새 파일 해시 검사라고 말하지 않으며, 새로 읽기가 필요한 업무라면 재사용하지 않고 시작하는 선택을 합니다.
+
+> **In English:** RESUMED identifies a file-level result reused from an interrupted run under the eligibility checks. It is not a fresh read or hash in the current run. The report is rebuilt from the current dataset; start without reuse when the job requires fresh reads.
+
+#### Q. QC 보고서 비교와 DAT 비교는 같은 건가요? · Q. Is QC-report comparison the same as DAT comparison?
+
+DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비교는 사용자가 선택한 구별 필드로 문제를 대응해 NEW/STILL PRESENT/RESOLVED를 보여줍니다. 3.3.3에서는 Tools 메뉴와 QC 결과 바로가기 모두 같은 구별 필드 선택과 기억을 사용합니다.
+
+> **In English:** DAT comparison matches document metadata by exact ID. QC-report comparison matches issue rows using chosen identifying fields and occurrence counts, then reports NEW, STILL PRESENT, or RESOLVED issues.
+
+#### Q. CSV를 50만 건으로 나누면 aiR에서 반드시 열리나요? · Q. Is 500,000 records a guaranteed aiR limit?
+
+50만 건은 사용자가 실제로 열어본 경험을 반영한 시작점입니다. 레코드 길이·파일 바이트·필드 수·처리 환경과 대상 플랫폼에 따라 달라집니다. 가족 유지를 선택하면 part는 지정 건수를 넘을 수 있습니다. 실제 part 건수·바이트와 대상 환경에서의 결과를 확인합니다.
+
+> **In English:** No. It is a user-observed starting point, not a universal platform limit. Record size, fields, environment, and family-preserving splits affect the actual parts. Validate the produced files in the real target workflow.
+
 <a id="limits"></a>
 
 ## 설계 목표, 코드 한계, 실제 시험을 분리하기 · Limits and measured scale
@@ -566,12 +681,19 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 | 붙여넣기 | 16Mi문자·50,000행·100,000셀 한계. 구조 오류나 범위 초과는 부분 적용하지 않음 |
 | OPT 합치기 | 2–1,024개 OPT 파일. 페이지 행·ID·문서 경계를 검사하며 실제 image files/import는 별도 |
 | 공용 대용량 시험 | 합성2,000,000레코드 / 2,471,194,958바이트 DAT. 작은 native/text companions 두 개 포함 |
-| 배포3.1.6 기록 | 집중18·전체583·Export24·연습2·대용량2 통과 기록, 메인 제어배율/실제 시작 확인. 이번 안내서 작업에서 재실행한 것은 아님 |
+| 배포3.3.3 기록 | 집중27·전체642·Export24·연습2·공용200만 입력2·실제2만 파일 상세보고서2 통과. 실제 빈 창 시작4회·제어배율100/125/150% 확인. 이번 문서 작업에서 제품 검사를 재실행한 것은 아님 |
+| 3.3.3 실제 물리 파일 측정 | 합성20,000파일의 전체 OK 보고서: 1.683초, 해당 테스트 프로세스 최대56.9MB. 모든 경로·크기·해시를 독립 기대값과 대조. NAS 또는 수백만 물리 파일 성능 주장이 아님 |
 | 미확인 영역 | 수백만 개의 서로 다른 물리 파일, 모든 NAS/권한/보안 정책, 실제 per-monitor DPI, 모든 대상 플랫폼 import, 실 TIFF/PDF 내부 페이지 완전성 |
 
 2GB 넘는 하나의 DAT를 읽은 시험과, 수십만~수백만 개의 native 파일을 실제 파일 시스템에서 검사한 시험은 다른 시험입니다. “큰 데이터 시험이 통과했으니 모든 규모/저장장치에서 준비 완료”라고 일반화하지 않습니다.
 
 > **좋은 설명:** “주요 엔진은 bounded-memory 방식이고, 합성200만 건/약2.47GB를 검증한 기록이 있습니다. 물리 파일 수와 대상 시스템 import는 그 기록의 범위와 별도로 봐야 합니다.”
+
+### 속도를 올리는 방식 · Safe performance improvements
+
+작업은 UI 스레드 밖에서 실행하고 파일 읽기·복사를 제한된 수로 병렬 처리합니다. 현재 연결 파일 값·UTF-8 텍스트·매니페스트 읽기와 복사는 8개 작업자로 제한되며 Package QC 읽기는 4개를 유지합니다. 무조건 병렬 수를 높이는 설정이 아니라 기존 출력과 같은지 비교한 결과입니다.
+
+복사는 원본을 읽으면서 해시를 만들고 저장한 사본 전체를 다시 읽어 대조합니다. 화면 필드 검색·표시 변경은 기존 인덱스를 사용하며 전체 원본을 매번 재해시하는 입력 이벤트를 만들면 안 됩니다. OPT 페이지 수 200만 건 약53초, 복사2만 개 42.1→30.8초 등은 이전 버전에서 측정한 별도의 로컬 기록입니다. 이 문서가 현재 환경에서 다시 측정한 수치가 아니며 서로 다른 작업 시간을 직접 비교하지 않습니다.
 
 <a id="plan"></a>
 
@@ -579,7 +701,7 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 
 > **In English**
 >
-> A planned feature is not a shipped feature. Check the current checkpoint, release notes, tested build hash, and published artifact. Group at least three useful improvements into a verified release without removing integrity checks.
+> A planned feature is not a shipped feature. Check the current checkpoint, release notes, tested build hash, and published artifact. Group at least three substantive improvements, or at least five minor improvements, into one verified release without removing integrity checks.
 
 1. `docs/lee-current-checkpoint.md` 맨 위: 현재 소유/진행·완료·중단 상태. 아래 오래된 기록을 현재 상태로 읽지 않습니다.
 2. `README.md`와 `docs/lee-development-overview-ko.md` 맨 위: 현재 배포본과 사용자가 체감할 변경.
@@ -587,13 +709,25 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 4. 해당 `…release…md`와 `test-results/<작업>/`: 실제 통과한 빌드·해시·실패/수정·검증 근거.
 5. canonical source와 실행 파일 버전/해시: 문서와 코드가 같은 결과를 설명하는지.
 
-### 현재 남은 계획은 “확정 기능”이 아닙니다
+### 3.1.7–3.3.3에서 무엇이 바뀌었나요? · Shipped evolution
 
-읽은 3.1.7 후보 문서에는 Full Package QC의 제한된 병렬 해싱, 병합된 볼륨별 linked-file root, OPT에서 PAGECOUNT 채우기가 있습니다. 각각 저장장치 실측, 명시적인 root authority, 데이터/Undo/세션의 수명 검증이 필요합니다. 최신 체크포인트는 이 후보들을 실사용 피드백 항목으로 남긴 중단 기록을 포함합니다. 사용자께서 다른 AI의 작업을 알렸으므로, 이 기록만으로 다른 작업이 없다고 가정하지 않았습니다.
+| 구간 | 현행 코드에서 알아둘 변화 |
+| --- | --- |
+| 3.1.7–3.1.9 | 연결 파일 값 채우기, 정규식 Replace, UTF-8 텍스트 사본, Bates 이미지 범위로 OPT, 제한된 병렬 QC. |
+| 3.2.0–3.2.3 | 루트/ID 사전 확인, 빠른 QC 경로, 표기 흔들림과 range 규칙, 마지막 설정·최근 검사 재사용. |
+| 3.2.4–3.2.6 | 폴더 ID 링크, 값별 분할, 검증 복사, 명령/도움말 검색과 설정 상태 안내. |
+| 3.2.7 | OPT 페이지 수, 병합 볼륨별 상대 링크, Package QC 재개. 과거 후보 문서를 현재의 미구현 목록으로 읽지 않음. |
+| 3.2.8–3.2.9 | QC 보고서 전후 비교, 매니페스트, 가족 유지 CSV 분할, 패키지 생성, 깨진 링크 복구. |
+| 3.3.0–3.3.2 | 원본1회 복사/해시, batch 재개, 마지막 설정, 패키지 자체 점검·필드 선택, 여러 링크 복구, 비교 키 기억, 병렬 처리 실측, 날짜·시간 안전한 기본값. |
+| 3.3.3 | 새 링크 필드명 사전 검증, 매니페스트 경로 제안 갱신/수동 입력 보존, 패키지 경로 오류 조기 수정, 선택적 OK 상세 보고서, QC 비교 두 진입점의 공통 키 선택. |
+
+### 현재 상태 · Current status
+
+3.3.3은 검증·게시가 끝났고 추가 핵심 묶음이 확정되지 않아 제품 개선 작업을 마무리했습니다. `lee-3.3.3-follow-up-review-2026-10-15.md`가 검토한 흐름과 중단 근거를 설명합니다. 피드백은 이미 설계·검증 가능한 기능의 개발 선행 조건이 아닙니다. 다음 작업은 재현 가능한 실제 문제나 명확한 실무 이점이 있을 때 시작하고, 새 체크포인트에서 동시 작업 소유자를 먼저 확인합니다.
 
 ### 변경 원칙
 
-우선순위는 편의성·직관성·입력 최소화·실수 예방, 데이터 완결성을 유지한 속도입니다. 이름 힌트를 권한 있는 매핑으로 바꾸거나, 검증을 지워서 속도를 높이면 안 됩니다. 확정한 유용한 개선을 최소3개 이상 묶어 한 버전으로 검증·배포합니다. 하나의 기능의 setup/preview/export를 억지로3개로 세지 않습니다.
+우선순위는 편의성·직관성·입력 최소화·실수 예방, 데이터 완결성을 유지한 속도입니다. 이름 힌트를 권한 있는 매핑으로 바꾸거나, 검증을 지워서 속도를 높이면 안 됩니다. 큰 개선은 최소3개, 자잘한 개선만으로 구성한 배치는 최소5개를 묶어 한 버전으로 검증·배포합니다. 하나의 기능의 setup/preview/export를 억지로3개로 세지 않습니다.
 
 ### 테스트는 어디에 있나요?
 
@@ -605,6 +739,14 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 
 개발 폴더와 공개 배포 체크아웃은 분리되어 있습니다. 검증된 실행 파일은 로컬 root·버전별 OLD·승인된 Git 배포 파일의 SHA-256을 맞춰 게시합니다. 현재 회사 배포 전 지침은 난독화 없이 `LEE.exe`와 동일 바이트 `LEE.html`만 게시하고, 소스·테스트·설정·고객 자료는 공개하지 않는 것입니다.
 
+### 버전을 바꿀 때 함께 확인할 위치 · Version and compatibility checklist
+
+`WorkspaceEngine.Version`, `AssemblyInfo.cs`의 AssemblyVersion/AssemblyFileVersion, `HeaderLayoutStore.cs`의 현재 버전·이전 설정 허용 목록, `Compatibility250Tests.cs`의 미래 버전 거부 probe를 함께 확인합니다. 숫자 하나만 바꾸면 이전 필드 설정이 사라지는 회귀가 생길 수 있습니다. `3.3.9 → 3.4.0`처럼 각 자리는 한 자리입니다.
+
+제품 변경은 실제 화면/코드 재현 → 범위가 정해진 계획 → 구현 → 동결 빌드 검사 → OLD 보존·root/Git 해시 일치 → 게시·인계 순서입니다. 기존 검사의 실패를 건너뛰고 배포하지 않습니다. 3.3.3 기록의 `Path/PATH` 중복은 테스트 자식 프로세스 환경 생성 문제였고, 제품 코드를 바꾸지 않은 같은 빌드의 재검사로 구분했습니다. 문서 변경은 문서 구조·검색·화면·동일 바이트 게시만 검증하며 제품 버전을 올리지 않습니다.
+
+개발 중 임시 `SYSTEM_REQUIRED + DISPLAY_REQUIRED` 요청과 heartbeat를 유지하고 실제 마무리 직전에 해제·프로세스 종료·idle reset을 확인합니다. 영구 전원 정책을 바꾸지 않으며 다른 작업의 helper를 종료하지 않습니다.
+
 <a id="learning"></a>
 
 ## 어디까지 공부하면 질문에 대답할 수 있나요? · Learning path and terminology
@@ -615,7 +757,7 @@ Export는 고객에게 전달할 DAT/CSV/XLSX 같은 결과 파일입니다. 세
 
 ### 첫 번째 · 업무 설명
 
-이 문서의 01·05·06·09를 읽습니다. 각 기능의 입력/범위/출력, Quick와 Full, metadata page count와 실제 image page count, saved verification과 import acceptance를 구분해 설명합니다.
+이 문서의 01·05·06·09를 읽습니다. 각 기능의 입력/범위/출력, Quick와 Full·RESUMED, Bates/OPT page count와 실제 image page count, manifest match와 납품 승인, saved verification과 import acceptance를 구분해 설명합니다.
 
 ### 두 번째 · 데이터 흐름
 
@@ -663,6 +805,14 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 | 무진척 감시 | No-progress watchdog | 타이머가 아니라 실제 읽기·파싱·처리량 진척을 감시 |
 | 인코딩 손실 | Encoding loss | 출력 문자셋에 표현 불가능한 값. 해당 export의 명시적 승인 필요 |
 | 회귀 테스트 / 재현 | Regression test / Reproduction | 수정한 실패가 다시 발생하지 않는지 독립 기대값으로 확인 |
+| 납품 파일 목록 | Delivery manifest | 상대경로·크기·SHA-256의 기준 목록. 업무상 올바른 생산물인지의 승인은 별도 |
+| 납품 묶음 / 자체 점검 | Delivery package / Package self-check | 선택한 파일·DAT·OPT·요약을 새 폴더로 구성하고 그 안의 링크를 확인 |
+| 문제 식별 기준 | Issue identity / Identifying fields | QC 보고서에서 같은 문제를 대응시키는 필드 조합. Document ID 키와 구분 |
+| 새 문제 / 남은 문제 / 해결 | NEW / STILL PRESENT / RESOLVED | 두 QC 보고서와 선택한 키 기준의 분류 |
+| 재개 / 재사용 결과 | Resume / RESUMED result | 이전 중단 실행의 적격 파일 결과를 재사용. 이번 실행의 fresh hash가 아님 |
+| 가족 유지 분할 | Family-preserving split | 연속한 같은 가족을 part 사이에서 나누지 않아 건수가 목표를 넘을 수 있음 |
+| 볼륨별 경로 접두어 | Per-volume link prefix | 병합된 원본마다 상대 링크를 공통 root 아래에 연결 |
+| 완성 / 미완성 | COMPLETE / INCOMPLETE | 패키지 도구가 설정한 구성의 결과. 고객 최종 승인과 구분 |
 
 ### C#에서 우선 읽을 문법 · C# reading essentials
 
@@ -680,4 +830,4 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 
 > 목표는 모든 파일을 암기하는 것이 아닙니다. **무엇을 입력으로 잡았는지, 어느 범위를 읽었는지, 어떤 규칙을 적용했는지, 무엇을 다시 검증했는지**를 설명하고, 그 책임을 가진 메서드까지 찾아갈 수 있으면 됩니다.
 
-조사 근거: 로컬 csproj, MyApplication, DataWorkbench, LoadFileReader, DatWorkspace, ProgressStatus, OperationWindow, IndexingWatch, DiskOperations, IdComparison, 출력/QC/세션 엔진 및 현재 README·배포/후보 기록. 제품 동작 재실행 없이 읽은 구조 설명입니다. 조사·검증 원자료는 개발 폴더에 보존합니다. 공유하는 이 안내서에는 소스 파일이나 고객 데이터가 포함되지 않습니다.
+최신 갱신 2026-10-15 · 제품/소스 3.3.3. 근거: 현재 csproj·시작/워크스페이스·파서·출력/QC·3.1.7–3.3.3 기능 엔진, README·체크포인트, 3.3.3 동결 빌드의 저장된 검사·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 문서 자체의 구조·검색·표시는 별도 확인했습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
