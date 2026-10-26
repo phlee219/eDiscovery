@@ -70,8 +70,8 @@ F67F0467A82787341874D6BE4B8CBD552401E156DE1A0C7FB81F2E19E2A6885C
 | 화면 | Windows Forms / WinForms | `Form`, `Button`, `DataGridView`, `ComboBox` 같은 Windows 컨트롤을 사용합니다. 웹 UI가 아닙니다. |
 | 실행 환경 | .NET Framework 4.5 대상 · `net45` | C# 14는 컴파일러가 이해하는 문법이고, net45는 실행 API의 대상입니다. 문법 버전이 높아도 최신 .NET API를 모두 쓸 수 있다는 뜻은 아닙니다. |
 | 프로세스 설정 | `WinExe`, `Prefer32Bit=true` | 32비트 선호 설정입니다. 대용량 데이터를 RAM에 모두 올리지 않는 설계가 특히 중요합니다. 이를 “64비트 대용량 엔진”이라고 설명하지 마십시오. |
-| 오래된 이름 | `eDML` 네임스페이스·클래스·일부 폼 | LEE로 이름을 바꾼 뒤에도 내부 이름을 유지합니다. 현재 프로그램 이름과 코드 안의 이름이 다를 수 있습니다. |
-| 시작 부분 | `eDML.My/MyApplication.cs` | C# 코드에서 Visual Basic의 WindowsFormsApplicationBase를 사용합니다. 기존 애플리케이션 구조의 흔적입니다. 전체가 VB 프로그램이라는 뜻은 아닙니다. |
+| 이름 | 네임스페이스·프로젝트·폴더 모두 `LEE` (4.0.5) | 4.0.4 이전 버전이 쓴 파일 이름(`.edmlsession`, `.edml-view.xml` 등, 설정 폴더 `eDML_Enhanced`)은 `LegacyNames405.cs`에서만 읽기 호환으로 다룹니다. |
+| 시작 부분 | `LEE.My/MyApplication.cs` | C# 코드에서 Visual Basic의 WindowsFormsApplicationBase를 사용합니다. 기존 애플리케이션 구조의 흔적입니다. 전체가 VB 프로그램이라는 뜻은 아닙니다. |
 | XLSX | ZIP + XML 직접 스트리밍 작성 | 핵심 XLSX 내보내기는 Excel을 자동 조작하지 않고 파일 구조를 직접 씁니다. 셀 값은 텍스트로 저장합니다. |
 | MDB | 선택적 기존 데이터베이스 입력 · Jet OLE DB | 주요 DAT 처리 엔진의 저장소가 MDB인 것은 아닙니다. MDB 입력 오류는 별도의 provider/실행 환경 문제일 수 있습니다. |
 | 개발 보조 | PowerShell, Python, 커스텀 C# 테스트 실행 파일 | 빌드·패키징·해시 확인·독립 검사에 사용합니다. 이 언어들로 프로그램 전체를 만든 것은 아닙니다. |
@@ -368,46 +368,46 @@ SETUP · 설정 상태 · REVIEW · 검토 필요 · ERROR · 오류/차단 · N
 >
 > Start with the menu handler in DataWorkbench, follow the inputs into the operation engine, and then inspect validation and saving. The filenames below refer to the private development tree; the source files are not included in this guide.
 
-아래 경로는 `C:\Coding\Tools\edml-analysis\` 기준입니다. 모든 파일을 처음부터 읽는 대신 기능으로 검색하고, 메서드 하나씩 아래 방향으로 따라갑니다.
+아래 경로는 `C:\Coding\Tools\lee\` 기준입니다. 모든 파일을 처음부터 읽는 대신 기능으로 검색하고, 메서드 하나씩 아래 방향으로 따라갑니다.
 
 | 증상 / 역할 | 우선 읽을 파일 | 찾을 단서 |
 | --- | --- | --- |
-| 프로그램 시작·명령행 파일 | `src/eDML.My/MyApplication.cs` | Main, OnCreateMainForm, startupPath |
-| 메뉴/버튼·현재 데이터·수정·Undo | `src/eDML/DataWorkbench.cs` | Add, Execute, Apply, master, view, HistoryState, verified |
-| 인코딩·구분자·필드 수·읽기 오류 | `src/eDML/LoadFileReader.cs` | StrictEncoding, Read, ParseRecord, VerifyUnchanged |
-| 파일 열기·행 인덱스·원본 변경 | `src/eDML/DatWorkspace.cs` | OpenCore, RecordText, Verify, SourceLock, ExactIndex |
-| 원본 재해시가 반복됨·검증 정책 | `src/eDML/ProgressStatus.cs` | SourceVerification, Operation, Covered, Early |
-| 타이머만 돌고 Indexing이 진전 없음 | `src/eDML/IndexingWatch.cs`   `src/eDML/OperationWindow.cs` | IdleLimitSeconds, bytes/records/characters, Task.Run, CancellationToken |
-| 화면의 긴 값 축약·셀 표시 | `src/eDML/GridPreviewCache.cs`   `src/eDML/DataWorkbench.cs` | PreviewCharacters, Row, CellValueNeeded, PageSize |
-| 필터·정렬·디스크 변경값 | `src/eDML/DiskOperations.cs`   `src/eDML/DatWorkspace.cs` | Sort, DerivedValues, RowMapView, SelectionMergeView |
-| Replace·ATT·기존 데이터 변환 | `src/eDML/LegacyOperations.cs`   `src/eDML/DataWorkbench.cs` | UI의 Replace부터 실제 변환 메서드로 이동 |
-| Overlay·입력 donor·변경 셀 | `src/eDML/LoadFileIntegration.cs`   `src/eDML/DataWorkbench.cs` | MetadataDelta, Overlay, 원본+donor Verify |
-| 정확한 ID 비교 | `src/eDML/IdComparison.cs` | Run, keyA/keyB, ComparePair, SideTable, ExactIndex |
-| 비교 화면·재사용/오래된 결과 | `src/eDML/ComparisonOutput306.cs`   `src/eDML/CompareSource297.cs` | 입력/설정 snapshot, 현재 결과 활성화 조건 |
-| Side-by-side·Original/Updated 헤더 | `src/eDML/ComparisonWide.cs`   `src/eDML/ComparisonLabels305.cs` | ColumnLabels, Fill, 값 그룹·헤더·저장본 검증 |
-| Package QC·OPT·native/text·Quick | `src/eDML/PackageQc.cs`   `src/eDML/AdditionalDialogs.cs` | PackageOptions, Quick, OpenImages, actual decoding, NOT CHECKED |
-| Bates·PAGECOUNT | `src/eDML/BatesQc.cs`   `src/eDML/PageCount316.cs`   `src/eDML/DataWorkbench.Pages316.cs` | Beg/End, 전체 레코드 검증, RuleView, blocking report |
-| QC 규칙 입력·제안 | `src/eDML/FieldRules.cs`   `src/eDML/RulesInput314.cs`   `src/eDML/RuleSuggest314.cs` | 필드·규칙·인수, 제안 선택과 실행 규칙을 구분 |
-| DAT/CSV 출력·저장 검증 | `src/eDML/NativeOperations.cs` | Save, VerifyOutput, AfterMoveForTests, 실제 저장 pin |
-| XLSX·CSV 인코딩 손실·분할 | `src/eDML/ExcelExport304.cs`   `src/eDML/CsvOutputPolicy304.cs`   `src/eDML/ExportSplit304.cs` | CellLimit, SheetRecords, encoding loss, part counts |
-| OPT 합치기·다중 파일 병합 | `src/eDML/OptCombine313.cs`   `src/eDML/VolumeMerge.cs`   `src/eDML/DataWorkbench.Merge.cs` | Open, Save, 문서 경계, 정확한 ID, 입력 순서 |
-| Native 물리 파일 이름 변경·복구 | `src/eDML/NativeFileOperations.cs`   `src/eDML/DataWorkbench.RenameRecovery.cs` | RenamePlan, RenameTransaction, 충돌·바이트·rollback |
-| 필드 설정·필드 찾기·인코딩 인식 | `src/eDML/WorkspaceSetup.cs`   `src/eDML/OptEncodingPolicy.cs`   `src/eDML/HeaderLayoutStore.cs` | Suggest, Probe, explicit override, header schema |
-| 승인 버튼 비활성·입력칸 안내 | `src/eDML/WorkbenchDialogs.cs`   `src/eDML/DialogUsability.cs` | ParameterDialog, Fields, Validation, SetupProblem |
-| 작업 세션·자동 복구 | `src/eDML/SessionStorage.cs`   `src/eDML/AutomaticRecovery.cs` | SessionGraph, dependencies, Save/Load, original hashes |
-| Audit 내용·도구 버전 | `src/eDML/WorkspaceEngine.cs`   `src/Properties/AssemblyInfo.cs` | Version, Audit, AssemblyVersion, AssemblyFileVersion |
-| 화면 색·글꼴·영/한 도움말 | `src/eDML/ThemePalette308.cs`   `src/eDML/HelpKorean299.cs`   `src/eDML/WorkbenchDialogs.cs` | Theme, Help; 데이터 변환과 분리해서 보기 |
-| OPT에서 PAGECOUNT | `src/eDML/PageCountOpt327.cs`   `src/eDML/DataWorkbench.Pages327.cs` | Build, OPT Y markers, exact image-begin, ERROR/REVIEW, MetadataDelta |
-| 병합 볼륨의 상대 링크 | `src/eDML/VolumeLinks327.cs`   `src/eDML/DataWorkbench.VolumeLinks327.cs` | VolumeLinkView327, FindRoot, CommonRoot, Prefixed, sample vs authority |
-| 중단된 Package QC 재개 | `src/eDML/PackageResume327.cs`   `src/eDML/DataWorkbench.Resume327.cs` | Fingerprint, Wrap, StatOf, Reused, RESUMED, log cleanup |
-| QC 보고서 전후 비교·구별 키 | `src/eDML/QcDiff328.cs`   `src/eDML/DataWorkbench.Delivery328.cs`   `src/eDML/ResultViewer.Compare329.cs`   `src/eDML/DeliverySetup333.cs` | DefaultKey, Run, ChooseQcKey333, CreateQcKeyDialog333, occurrence count |
-| 매니페스트 생성·대조·OK 보고서 | `src/eDML/DeliveryManifest328.cs`   `src/eDML/DataWorkbench.Delivery328.cs`   `src/eDML/DeliverySetup333.cs` | Create, Verify, includeOk, ManifestSuggestion333, ShowManifestVerification333 |
-| 납품 패키지·자체 점검 | `src/eDML/DeliveryPackage329.cs`   `src/eDML/DataWorkbench.Package329.cs`   `src/eDML/DeliverySetup333.cs` | Build, Fields, SelfCheckMissing, Complete, PackageDestinationProblem |
-| 폴더 링크·값별 분할·검증 복사 | `src/eDML/Practical324.cs`   `src/eDML/DataWorkbench.Practical324.cs` | NewFieldProblem, LinksFromFolder, SplitByValue, CopyLinked, CopyWorkers331, source read + destination reread |
-| 깨진 링크의 유일한 후보 | `src/eDML/LinkRepair329.cs`   `src/eDML/DataWorkbench.Package329.cs` | Build, AMBIGUOUS, reviewed MetadataDelta, multiple fields, Undo |
-| CSV part에서 가족 유지 | `src/eDML/ExportFamily328.cs`   `src/eDML/ExportSplit304.cs` | KeepTogether328, SetFamilyField328, BegAtt, non-adjacent families |
-| 연결 파일 값·UTF-8 텍스트·새 OPT | `src/eDML/LinkedFileValues317.cs`   `src/eDML/TextUtf8318.cs`   `src/eDML/OptFromBates319.cs` | file readers, strict decoding, fresh output, missing/duplicate images |
-| 표기 흔들림·마지막 설정·명령 찾기 | `src/eDML/NearDuplicates322.cs`   `src/eDML/DataWorkbench.Repeat323.cs`   `src/eDML/CommandKeywords325.cs`   `src/eDML/QuickGuideSearch326.cs` | review vs apply, RememberLast/RestoreLast, valid header layout, keyword search |
+| 프로그램 시작·명령행 파일 | `src/LEE.My/MyApplication.cs` | Main, OnCreateMainForm, startupPath |
+| 메뉴/버튼·현재 데이터·수정·Undo | `src/LEE/DataWorkbench.cs` | Add, Execute, Apply, master, view, HistoryState, verified |
+| 인코딩·구분자·필드 수·읽기 오류 | `src/LEE/LoadFileReader.cs` | StrictEncoding, Read, ParseRecord, VerifyUnchanged |
+| 파일 열기·행 인덱스·원본 변경 | `src/LEE/DatWorkspace.cs` | OpenCore, RecordText, Verify, SourceLock, ExactIndex |
+| 원본 재해시가 반복됨·검증 정책 | `src/LEE/ProgressStatus.cs` | SourceVerification, Operation, Covered, Early |
+| 타이머만 돌고 Indexing이 진전 없음 | `src/LEE/IndexingWatch.cs`   `src/LEE/OperationWindow.cs` | IdleLimitSeconds, bytes/records/characters, Task.Run, CancellationToken |
+| 화면의 긴 값 축약·셀 표시 | `src/LEE/GridPreviewCache.cs`   `src/LEE/DataWorkbench.cs` | PreviewCharacters, Row, CellValueNeeded, PageSize |
+| 필터·정렬·디스크 변경값 | `src/LEE/DiskOperations.cs`   `src/LEE/DatWorkspace.cs` | Sort, DerivedValues, RowMapView, SelectionMergeView |
+| Replace·ATT·기존 데이터 변환 | `src/LEE/LegacyOperations.cs`   `src/LEE/DataWorkbench.cs` | UI의 Replace부터 실제 변환 메서드로 이동 |
+| Overlay·입력 donor·변경 셀 | `src/LEE/LoadFileIntegration.cs`   `src/LEE/DataWorkbench.cs` | MetadataDelta, Overlay, 원본+donor Verify |
+| 정확한 ID 비교 | `src/LEE/IdComparison.cs` | Run, keyA/keyB, ComparePair, SideTable, ExactIndex |
+| 비교 화면·재사용/오래된 결과 | `src/LEE/ComparisonOutput306.cs`   `src/LEE/CompareSource297.cs` | 입력/설정 snapshot, 현재 결과 활성화 조건 |
+| Side-by-side·Original/Updated 헤더 | `src/LEE/ComparisonWide.cs`   `src/LEE/ComparisonLabels305.cs` | ColumnLabels, Fill, 값 그룹·헤더·저장본 검증 |
+| Package QC·OPT·native/text·Quick | `src/LEE/PackageQc.cs`   `src/LEE/AdditionalDialogs.cs` | PackageOptions, Quick, OpenImages, actual decoding, NOT CHECKED |
+| Bates·PAGECOUNT | `src/LEE/BatesQc.cs`   `src/LEE/PageCount316.cs`   `src/LEE/DataWorkbench.Pages316.cs` | Beg/End, 전체 레코드 검증, RuleView, blocking report |
+| QC 규칙 입력·제안 | `src/LEE/FieldRules.cs`   `src/LEE/RulesInput314.cs`   `src/LEE/RuleSuggest314.cs` | 필드·규칙·인수, 제안 선택과 실행 규칙을 구분 |
+| DAT/CSV 출력·저장 검증 | `src/LEE/NativeOperations.cs` | Save, VerifyOutput, AfterMoveForTests, 실제 저장 pin |
+| XLSX·CSV 인코딩 손실·분할 | `src/LEE/ExcelExport304.cs`   `src/LEE/CsvOutputPolicy304.cs`   `src/LEE/ExportSplit304.cs` | CellLimit, SheetRecords, encoding loss, part counts |
+| OPT 합치기·다중 파일 병합 | `src/LEE/OptCombine313.cs`   `src/LEE/VolumeMerge.cs`   `src/LEE/DataWorkbench.Merge.cs` | Open, Save, 문서 경계, 정확한 ID, 입력 순서 |
+| Native 물리 파일 이름 변경·복구 | `src/LEE/NativeFileOperations.cs`   `src/LEE/DataWorkbench.RenameRecovery.cs` | RenamePlan, RenameTransaction, 충돌·바이트·rollback |
+| 필드 설정·필드 찾기·인코딩 인식 | `src/LEE/WorkspaceSetup.cs`   `src/LEE/OptEncodingPolicy.cs`   `src/LEE/HeaderLayoutStore.cs` | Suggest, Probe, explicit override, header schema |
+| 승인 버튼 비활성·입력칸 안내 | `src/LEE/WorkbenchDialogs.cs`   `src/LEE/DialogUsability.cs` | ParameterDialog, Fields, Validation, SetupProblem |
+| 작업 세션·자동 복구 | `src/LEE/SessionStorage.cs`   `src/LEE/AutomaticRecovery.cs` | SessionGraph, dependencies, Save/Load, original hashes |
+| Audit 내용·도구 버전 | `src/LEE/WorkspaceEngine.cs`   `src/Properties/AssemblyInfo.cs` | Version, Audit, AssemblyVersion, AssemblyFileVersion |
+| 화면 색·글꼴·영/한 도움말 | `src/LEE/ThemePalette308.cs`   `src/LEE/HelpKorean299.cs`   `src/LEE/WorkbenchDialogs.cs` | Theme, Help; 데이터 변환과 분리해서 보기 |
+| OPT에서 PAGECOUNT | `src/LEE/PageCountOpt327.cs`   `src/LEE/DataWorkbench.Pages327.cs` | Build, OPT Y markers, exact image-begin, ERROR/REVIEW, MetadataDelta |
+| 병합 볼륨의 상대 링크 | `src/LEE/VolumeLinks327.cs`   `src/LEE/DataWorkbench.VolumeLinks327.cs` | VolumeLinkView327, FindRoot, CommonRoot, Prefixed, sample vs authority |
+| 중단된 Package QC 재개 | `src/LEE/PackageResume327.cs`   `src/LEE/DataWorkbench.Resume327.cs` | Fingerprint, Wrap, StatOf, Reused, RESUMED, log cleanup |
+| QC 보고서 전후 비교·구별 키 | `src/LEE/QcDiff328.cs`   `src/LEE/DataWorkbench.Delivery328.cs`   `src/LEE/ResultViewer.Compare329.cs`   `src/LEE/DeliverySetup333.cs` | DefaultKey, Run, ChooseQcKey333, CreateQcKeyDialog333, occurrence count |
+| 매니페스트 생성·대조·OK 보고서 | `src/LEE/DeliveryManifest328.cs`   `src/LEE/DataWorkbench.Delivery328.cs`   `src/LEE/DeliverySetup333.cs` | Create, Verify, includeOk, ManifestSuggestion333, ShowManifestVerification333 |
+| 납품 패키지·자체 점검 | `src/LEE/DeliveryPackage329.cs`   `src/LEE/DataWorkbench.Package329.cs`   `src/LEE/DeliverySetup333.cs` | Build, Fields, SelfCheckMissing, Complete, PackageDestinationProblem |
+| 폴더 링크·값별 분할·검증 복사 | `src/LEE/Practical324.cs`   `src/LEE/DataWorkbench.Practical324.cs` | NewFieldProblem, LinksFromFolder, SplitByValue, CopyLinked, CopyWorkers331, source read + destination reread |
+| 깨진 링크의 유일한 후보 | `src/LEE/LinkRepair329.cs`   `src/LEE/DataWorkbench.Package329.cs` | Build, AMBIGUOUS, reviewed MetadataDelta, multiple fields, Undo |
+| CSV part에서 가족 유지 | `src/LEE/ExportFamily328.cs`   `src/LEE/ExportSplit304.cs` | KeepTogether328, SetFamilyField328, BegAtt, non-adjacent families |
+| 연결 파일 값·UTF-8 텍스트·새 OPT | `src/LEE/LinkedFileValues317.cs`   `src/LEE/TextUtf8318.cs`   `src/LEE/OptFromBates319.cs` | file readers, strict decoding, fresh output, missing/duplicate images |
+| 표기 흔들림·마지막 설정·명령 찾기 | `src/LEE/NearDuplicates322.cs`   `src/LEE/DataWorkbench.Repeat323.cs`   `src/LEE/CommandKeywords325.cs`   `src/LEE/QuickGuideSearch326.cs` | review vs apply, RememberLast/RestoreLast, valid header layout, keyword search |
 
 > `partial class DataWorkbench`는 “하나의 클래스가 여러 파일로 나뉜 것”입니다. `Pages316`, `SourceApproval312`, `…305` 등의 숫자는 기능을 처음 추가한 버전의 흔적일 수 있습니다. 파일명만 보고 구버전이라 삭제하거나, 그 파일 하나만 현재 코드라고 판단하면 안 됩니다.
 
@@ -418,10 +418,10 @@ C:\Coding\Tools\
   LEE.exe / LEE.html              현재 배포 파일
   LEE.exe.config                 로컬 런타임 설정
   OLD\LEE_<version>.exe          검증된 이전 실행 파일 보존
-  edml-analysis\
-    src\eDML.csproj              개발 프로젝트
-    src\eDML\                   핵심 화면 + 처리 엔진
-    src\eDML.My\                시작/기존 앱 구조
+  lee\
+    src\LEE.csproj              개발 프로젝트
+    src\LEE\                   핵심 화면 + 처리 엔진
+    src\LEE.My\                시작/기존 앱 구조
     src\Properties\AssemblyInfo.cs
     workbench-tests\             기능·실제 WinForms 테스트
     tests\                       Export 테스트 프로젝트
@@ -454,9 +454,9 @@ C:\Coding\Tools\
 
 ```text
 # 읽기/검색용 예시. 문서 작성 중 실제 빌드나 제품 테스트는 실행하지 않았습니다.
-rg -n "private void Replace|ReplaceTask" C:\Coding\Tools\edml-analysis\src\eDML
-rg -n "Source bytes changed" C:\Coding\Tools\edml-analysis\src
-rg -n "duplicate exact identifier" C:\Coding\Tools\edml-analysis\src
+rg -n "private void Replace|ReplaceTask" C:\Coding\Tools\lee\src\LEE
+rg -n "Source bytes changed" C:\Coding\Tools\lee\src
+rg -n "duplicate exact identifier" C:\Coding\Tools\lee\src
 ```
 
 ### 읽는 순서: Replace 예
