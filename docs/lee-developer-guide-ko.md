@@ -6,11 +6,11 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 한국어 + English · 개발자 / Delivery Engineer
 
-배포 파일 확인: 3.3.3
+배포 파일 확인: 4.0.6
 
-확인한 개발 소스: 3.3.3
+확인한 개발 소스: 4.0.6
 
-최신 갱신: 2026-10-15 · 미동부 기준
+최신 갱신: 2026-10-27 · 미동부 기준
 
 - [다른 사람에게는 이렇게 설명하면 됩니다 · Product overview](#overview)
 - [무슨 언어로 만들었고 어떻게 실행되나요? · Technology and startup](#stack)
@@ -47,14 +47,14 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 
 ### 이 문서의 기준 · Version snapshot
 
-2026-10-15에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **3.3.3.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **3.3.3**입니다. 해당 제품 배포 커밋은 `a08a0a5`입니다. 문서 파일명의 2026-10-14는 최초 작성일이며, 기존 북마크와 Git 링크를 보존하기 위해 유지했습니다.
+2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.6.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.6**입니다. 해당 제품 배포 커밋은 `47472ff`입니다(4.0.6: Save가 화면에 보이는 필드를 보이는 순서대로 씀). 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
 
-확인한 배포본 SHA-256:
-F67F0467A82787341874D6BE4B8CBD552401E156DE1A0C7FB81F2E19E2A6885C
+확인한 배포본 SHA-256 (서명된 파일):
+0340435C00049A6DA4CE256A4B80701E94F57F9C81AE1CC19E96464751F548FE
 
-> **이전 노트를 읽었다면:** 05의 OPT 페이지 수·납품 도구, 07의 새 코드 위치, 08·09의 재개/매니페스트/보고서 비교, 10·11의 현재 검증·개발 상태를 먼저 보십시오. 핵심 개념과 설명 문장은 영어를 함께 적었습니다.
+> **3.3.3 기준 노트를 읽었다면:** 02의 64비트·서명·이름 변경, 04의 저장/미내보내기 변경 관리, 05의 바뀐 표와 새 작업(⑦의 새 행, ⑨·⑩), 07의 새 코드 위치, 10의 바뀐 한계와 측정값, 11의 현재 배포 절차를 먼저 보십시오. 3.3.4부터 4.0.5까지 약 60개 버전의 변경을 반영했습니다.
 
-이번 갱신은 소스와 기존 검증 기록을 읽고 학습 문서만 수정한 작업입니다. 제품 소스·실행 파일·사용자 설정을 수정하거나 빌드·제품 테스트를 재실행하지 않았습니다. 문서 자체의 구조·검색·표시와 Git 게시 파일은 별도로 확인합니다. 개발 체크포인트에는 문서 작업의 임시 절전 방지 상태만 기록합니다.
+이번 갱신은 소스와 기존 검증·배포 기록을 읽고 학습 문서만 수정한 작업입니다. 제품 소스·실행 파일·사용자 설정을 수정하거나 빌드·제품 테스트를 재실행하지 않았습니다. 버전별 세부 내용은 `docs/lee-version-history.md`와 각 release 문서에 있습니다.
 
 <a id="stack"></a>
 
@@ -69,11 +69,13 @@ F67F0467A82787341874D6BE4B8CBD552401E156DE1A0C7FB81F2E19E2A6885C
 | 주요 언어 | C# · 프로젝트 `LangVersion 14.0` | 클래스, 메서드, 이벤트, 예외, 람다, `using`을 읽을 수 있으면 핵심 흐름을 따라갈 수 있습니다. |
 | 화면 | Windows Forms / WinForms | `Form`, `Button`, `DataGridView`, `ComboBox` 같은 Windows 컨트롤을 사용합니다. 웹 UI가 아닙니다. |
 | 실행 환경 | .NET Framework 4.5 대상 · `net45` | C# 14는 컴파일러가 이해하는 문법이고, net45는 실행 API의 대상입니다. 문법 버전이 높아도 최신 .NET API를 모두 쓸 수 있다는 뜻은 아닙니다. |
-| 프로세스 설정 | `WinExe`, `Prefer32Bit=true` | 32비트 선호 설정입니다. 대용량 데이터를 RAM에 모두 올리지 않는 설계가 특히 중요합니다. 이를 “64비트 대용량 엔진”이라고 설명하지 마십시오. |
-| 이름 | 네임스페이스·프로젝트·폴더 모두 `LEE` (4.0.5) | 4.0.4 이전 버전이 쓴 파일 이름(`.edmlsession`, `.edml-view.xml` 등, 설정 폴더 `eDML_Enhanced`)은 `LegacyNames405.cs`에서만 읽기 호환으로 다룹니다. |
-| 시작 부분 | `LEE.My/MyApplication.cs` | C# 코드에서 Visual Basic의 WindowsFormsApplicationBase를 사용합니다. 기존 애플리케이션 구조의 흔적입니다. 전체가 VB 프로그램이라는 뜻은 아닙니다. |
+| 프로세스 설정 | `WinExe`, `Prefer32Bit=false` (3.7.8부터) | 64비트 Windows에서는 64비트 프로세스로 실행됩니다. 4.0.3은 이를 이용해 정렬 묶음을 키웠습니다. 그래도 설계의 중심은 “RAM에 모두 올리지 않는 처리”입니다. 64비트라서 파일 전체를 메모리에 올린다고 설명하지 마십시오. 실행 비트 수는 About·Help → Check this computer에 표시됩니다. |
+| 이름 | 네임스페이스·프로젝트·폴더 모두 `LEE` (4.0.5) | 4.0.4 이전 버전이 쓴 파일 이름(`.edmlsession`, `.edml-view.xml` 등, 설정 폴더 `eDML_Enhanced`)은 `LegacyNames405.cs`에서만 읽기 호환으로 다룹니다. 새로 쓰는 파일은 `.leesession`, `.lee-view.xml`, `.lee-export.xml` 등 LEE 이름입니다. |
+| 시작 부분 | `LEE.My/MyApplication.cs` | C# 코드에서 Visual Basic의 WindowsFormsApplicationBase를 사용합니다. 기존 애플리케이션 구조의 흔적입니다. 전체가 VB 프로그램이라는 뜻은 아닙니다. 처리되지 않은 화면 예외는 여기서 LEE의 Unexpected error 창(`UnexpectedError386`)으로 보냅니다. |
 | XLSX | ZIP + XML 직접 스트리밍 작성 | 핵심 XLSX 내보내기는 Excel을 자동 조작하지 않고 파일 구조를 직접 씁니다. 셀 값은 텍스트로 저장합니다. |
-| MDB | 선택적 기존 데이터베이스 입력 · Jet OLE DB | 주요 DAT 처리 엔진의 저장소가 MDB인 것은 아닙니다. MDB 입력 오류는 별도의 provider/실행 환경 문제일 수 있습니다. |
+| MDB | 옛 Access 데이터베이스 입력 · Jet OLE DB 4.0 | Jet 4.0 provider는 32비트 전용이라 64비트 LEE에서는 사실상 열리지 않습니다. 사용자가 .mdb 가져오기가 필요 없다고 결정해(3.7.8) 64비트로 전환했고, “32-bit/Jet”은 수용한 한계입니다. 주요 DAT 처리 엔진의 저장소가 MDB인 것은 아닙니다. |
+| 서명 | 자체 서명 Authenticode (3.8.5부터) | 배포 바이트가 바뀌지 않았는지 확인하는 용도입니다. 공인 CA 인증서가 아니므로 Windows가 “신뢰된 게시자”로 표시한다는 뜻은 아닙니다. |
+| 화면 언어 | 영어 기본 · 한국어 메뉴 선택 (Options, 3.8.3/3.8.6) | 메인 메뉴·툴바·우클릭 메뉴 이름만 한국어로 바꾸는 표시 기능입니다. 명령·단축키·handler는 같고, 툴팁·Find command·Help에는 영어 이름이 남습니다. 대화상자·데이터·필드명·보고서는 영어입니다(`MenuLanguage384`). |
 | 개발 보조 | PowerShell, Python, 커스텀 C# 테스트 실행 파일 | 빌드·패키징·해시 확인·독립 검사에 사용합니다. 이 언어들로 프로그램 전체를 만든 것은 아닙니다. |
 
 > **LEE.html은 웹 앱인가?**
@@ -128,9 +130,11 @@ MyApplication.Main(args)
 ### 필터와 정렬도 원본 파일을 다시 쓰지 않습니다
 
 - **필터 (Filtering):** 표시할 원본 행 번호의 목록을 보관하는 `RowMapView`를 만듭니다.
-- **정렬 (External sorting):** 작은 묶음으로 키와 행 번호를 정렬해 디스크에 쓴 뒤 병합합니다. 결과 역시 “행 번호 순서표”입니다.
-- **ID 찾기/매칭 (Exact ID lookup / matching):** `ExactIndex`가 정확한 문자열 ID를 찾습니다. 큰 항목은 디스크에 저장하고 제한된 크기의 버킷을 RAM에 둡니다.
-- **파싱 (Parsing):** 한 번에 전체 파일을 문자열로 만들지 않고 스트림에서 레코드를 읽습니다. 인코딩·구조 오류는 무시하고 넘어가지 않습니다.
+- **정렬 (External sorting):** 묶음 단위로 키와 행 번호를 정렬해 디스크에 쓴 뒤 병합합니다. 결과 역시 “행 번호 순서표”입니다. 64비트 프로세스의 묶음은 최대 500,000개 키 또는 32Mi 문자입니다(4.0.3, `DiskOperations.SortRunItems403`). 32비트로 실행되면 예전 크기 5,000개 / 2Mi 문자를 씁니다.
+- **ID 찾기/매칭 (Exact ID lookup / matching):** `ExactIndex`가 정확한 문자열 ID를 찾습니다. 큰 항목은 디스크에 저장하고, 인덱스마다 최대 4 MiB의 페이지 캐시만 RAM에 둡니다(3.7.0). Go to ID(3.9.8)도 같은 인덱스를 캐시해 반복 이동 때 다시 만들지 않습니다.
+- **파싱 (Parsing):** 한 번에 전체 파일을 문자열로 만들지 않고 스트림에서 레코드를 읽습니다. 인코딩·구조 오류는 무시하고 넘어가지 않습니다. 3.9.5부터 문자 하나씩 읽지 않고 디코딩한 블록을 직접 훑어 열기가 약 4.7배 빨라졌습니다. 규칙·오류 메시지·바이트 범위는 그대로입니다.
+- **해시 (Hashing):** 전체 SHA-256은 `HashPipe396`의 별도 스레드에서 계산합니다(3.9.6). 파싱·쓰기와 동시에 진행할 뿐, 같은 바이트를 같은 순서로 해시하므로 결과는 같습니다.
+- **블록 읽기 (Block reads):** 순차 스캔은 행 위치 인덱스를 4,096개씩(3.9.5), 필터·정렬 결과의 행 번호표를 8,192개씩(4.0.3) 묶어 읽습니다. 임의의 한 행으로 이동할 때는 여전히 그 항목만 읽습니다.
 
 <a id="views"></a>
 
@@ -165,7 +169,7 @@ abstract string Provenance { get; }      // 어디에서 온 데이터인가
 | --- | --- | --- |
 | `DatWorkspace` | 실제 입력 파일과 행 위치 인덱스 | 원본 DAT를 직접 읽는 기반 |
 | `RuleView` | 원본 행을 읽을 때 규칙을 적용해 새 값 반환 | 지정한 값 치환, 계산된 PAGECOUNT |
-| `RowMapView` | 다른 행 번호로 연결 | 필터 결과, 정렬 순서 |
+| `RowMapView` | 다른 행 번호로 연결 (보관한 행당 8바이트) | 필터 결과, 정렬 순서, 선택한 레코드만 보기/숨기기(3.9.2) |
 | `MetadataDelta` | 변경한 셀 값만 디스크에 보관 | Overlay, 특정 셀/필드 업데이트 |
 | `VolumeSetView` | 여러 입력을 선택한 순서대로 연결 | VOL001 + VOL002 + VOL003 |
 | `SelectionMergeView` | 선택한 부분의 변경을 전체 데이터로 반영 | 필터된 100행만 수정하고 나머지는 유지 |
@@ -175,7 +179,21 @@ abstract string Provenance { get; }      // 어디에서 온 데이터인가
 
 `DataWorkbench.Apply`는 기존 상태를 잡고, 작업 결과를 만들고, 잠긴 필드와 전체 레코드를 검증한 뒤 새 상태를 활성화합니다. 필터된 부분을 바꾸면 해당 변경을 전체 master로 다시 연결합니다.
 
-Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니라, 데이터 뷰·화면 상태·관련 자원을 포함한 `HistoryState`를 관리합니다. 새 편집이 적용되면 이전 Redo 경로가 끊깁니다.
+Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니라, 데이터 뷰·화면 상태·관련 자원을 포함한 `HistoryState`를 관리합니다. 새 편집이 적용되면 이전 Redo 경로가 끊깁니다. Tools의 작업 이력 창(3.6.5, `OperationHistory365`)에서 특정 단계까지 되돌리거나 그 단계부터 레시피로 저장할 수 있습니다.
+
+**보기 단계 되돌리기 · Back to previous view (3.9.9):** 필터·빠른 필터·정렬·선택 레코드 보기/숨기기·Clear filter는 바꾸기 전의 view를 기억합니다(`ViewSteps399`, 최대 20단계, Alt+Left). 데이터 변경이 아니므로 Undo 이력과 별도이고, 데이터 변경·Undo/Redo·저장·열기·병합·복원 때 이 목록을 지웁니다.
+
+### 내보내지 않은 변경 · Unexported changes and Save
+
+> **In English**
+>
+> LEE tracks whether the current changes are covered by a verified export. Leaving the workspace with uncovered changes opens one window whose default is Cancel. Save (Ctrl+S) writes every record with the fields as shown (displayed order, hidden fields left out) back to the opened file after moving the previous file to a backup folder.
+
+- **한 번의 Enter로 작업을 잃지 않음 (3.8.7, `UnexportedChanges387`):** 닫기, 다른 파일 열기(최근 파일·드롭·연습 데이터 포함), 병합/OPT 열기, 세션 복원 전에 *Unexported changes* 창이 뜹니다. Export… / Save session… / Discard changes / Cancel 중 기본값은 Cancel입니다. 제목 표시줄 앞의 `• `는 아직 내보내지 않은 변경이 있다는 표시입니다.
+- **어떤 Export가 변경을 덮는가 (4.0.2, `ExportCoverage402`):** 첫 미내보내기 변경 직전의 데이터를 기준으로 두고, 검증된 Export마다 데이터·레코드·필드를 기록합니다. 바뀐 모든 셀이 이 데이터의 검증된 Export(여러 번 합산 가능)에 포함된 필드·레코드 안에 있으면 표시와 질문이 사라집니다. 필드 삭제/이름 변경, 레코드 수 변화, 인코딩 경고, 실패·취소된 확인은 질문을 유지합니다.
+- **File → Save (Ctrl+S, 3.9.8, `Save398`):** 열었던 DAT/CSV에 모든 레코드를 **화면에 보이는 필드 그대로**(표시 순서, 이름 변경·삭제 반영, 숨긴 필드는 쓰지 않음, 4.0.6) 원래 이름·인코딩·구분자·qualifier로 다시 씁니다. 쓰지 않은 숨긴 필드는 안내와 save audit에 이름을 남기고, 이전 파일(그 필드 포함)은 백업에 있습니다. 4.0.5까지는 데이터 순서로 숨긴 필드까지 써서, 화면에서 바꾼 순서·숨김이 저장 파일에 반영되지 않았습니다. Export와 같은 검증 경로를 거치며 확인 질문은 없습니다. 이전 파일은 납품 폴더 밖 `%LOCALAPPDATA%\LEE\SaveBackups\<이름>-<경로 해시>\`로 옮기고 파일당 최신 3개를 보관합니다. 다른 프로그램이 원본을 잡고 있으면 원본은 그대로 두고 옆에 `name_LEE_saved_<time>`를 만들어 엽니다. 병합/복원 데이터·OPT·UTF-16 BE에는 제공하지 않습니다(Export 사용). UTF-8 원본은 BOM과 함께 씁니다.
+
+> **Save는 “원본을 덮어쓰지 않는다”는 규칙의 명시적 예외입니다.** 사용자가 직접 고른 명령이고, 이전 파일을 백업으로 옮긴 다음 검증된 새 파일을 같은 이름으로 둡니다. Export는 여전히 새 파일만 만듭니다.
 
 > **물리 파일 이름 변경 (Physical file renaming)은 예외입니다.** 메타데이터 편집은 원본 DAT를 덮어쓰지 않지만, 승인한 Bulk rename은 실제 native 파일 이름/위치를 바꿀 수 있습니다. 이 경우 Undo는 실제 파일의 바이트와 충돌까지 검사하는 거래/복구 작업이며, 외부에서 파일이 바뀌면 차단될 수 있습니다.
 
@@ -190,6 +208,8 @@ Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니
 > **In English**
 >
 > ID comparison matches exact string identifiers. Replace transforms selected field values, while Overlay brings in values from another source by ID. Always confirm the selected fields, input sources, and record scope.
+
+> **메뉴 경로 읽는 법:** 3.8.2부터 Edit와 Tools의 명령은 Clipboard·Fields·Records·Dates and values·Populate·Files and links, Checks·Compare and update·Text tools·Files and packages 같은 하위 메뉴로 묶였습니다(`MenuGroups382`). 이 문서의 “Edit → 명령” 표기는 명령 이름으로 읽고, 위치가 헷갈리면 Find command(Ctrl+Shift+K)로 찾습니다.
 
 ### ① DAT 비교 · Exact ID comparison
 
@@ -217,6 +237,14 @@ Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니
 
 연속된 작업은 현재 데이터에 이미 적용된 결과를 읽을 수 있습니다. “모든 단계가 최초 원본만 읽는다”고 일반화하지 마십시오. 규칙/Recipe의 순서와 해당 엔진이 원본·중간 결과 중 무엇을 사용하는지 확인합니다.
 
+| Replace 기능 / 버전 | 동작 | 확인할 점 |
+| --- | --- | --- |
+| 여러 대상 필드 · *Fields to update* (3.5.1, `ReplaceTargets349`) | 검색 가능한 체크 목록 하나. 그리드에서 선택한 필드만 처음 체크되고, 예전 대상은 복원하지 않음. 두 개 이상이면 적용 전에 번호 목록으로 확인(3.5.2). | 원본 필드 값을 쓰는 작업은 대상마다 **각 레코드의 원래 원본값**을 읽습니다. 잠긴 필드는 차단. |
+| Skip blank targets | 비었거나 ASCII 공백만 있는 대상 값을 건너뜀. OFF면 예전과 같음. | 기억되는 것은 작업·옵션뿐이고 대상 필드·입력한 치환 문자열은 기억하지 않음(3.7.4 기억 정책). |
+| Change case / Trim / Pad / Map values (3.6.3) | invariant 대·소·Title, Space/Tab/NBSP 정리(CR/LF 보존), 고정 폭 채우기(긴 값은 자르지 않고 전체 차단), 2열 표 매핑(최대 10만 쌍, 중복 키 차단). | Map values의 새 값은 literal입니다. 미일치는 유지·집계 또는 전체 차단 중 선택. |
+| Replace by pattern (3.1.8) | 대소문자 구분 .NET 정규식, 값당 1초 시간 제한. | 시간 초과는 부분 적용하지 않고 실패로 보고. |
+| Repair mojibake (reversible only) (3.7.2) | strict Windows-1252 → strict UTF-8 왕복이 정확한 값만 고침. | 추측 수정이 아닙니다. 확인되지 않는 값은 그대로 둡니다. |
+
 ### ③ QC · Check scope and evidence
 
 > **In English**
@@ -231,8 +259,14 @@ Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니
 | Package QC Full | 선택한 linked file의 읽기/크기/해시 및 설정된 부가 검사 | 패키지가 나중에도 그대로라는 보장, 플랫폼 import 성공 |
 | Package QC Quick | 존재·크기·읽기 가능 여부의 빠른 확인 | 해시 검증, native 중복 내용/선택 hash-field 비교 완료 |
 | Delivery QC batch | 설정한 검사들을 묶어 실행하고 단계별 결과를 정리 | 한 단계의 성공을 실패/생략한 단계까지 포함한 전체 PASS로 해석 |
+| 파일 서명·TIFF (3.6.4) | 8KiB 헤더 서명, classic TIFF IFD 체인, 문서별 OPT 페이지 수와 실제 TIFF 페이지 비교 | PDF 등 모든 형식의 내부 페이지를 완전히 해석했다는 주장 |
+| 경로·이름 (3.6.4) | 긴/끝 공백 이름 REVIEW, 금지 문자·예약 이름 ERROR, 폴더별 파일 수 | 대상 시스템이 그 경로를 받아들인다는 보장 |
+| 헤더 유사 이름 (3.6.1) · Text quality (3.7.2) | 대소문자·NBSP·제어문자만 다른 필드명, 셀의 대체 문자·mojibake 의심·숨은 문자 | 자동 수정. 둘 다 REVIEW 보고입니다. |
+| Compare productions (3.7.2) | 두 프로덕션의 레코드(정확한 ID)·OPT 페이지·파일 SHA-256·문서 페이지 수를 비교한 DAT 보고서 4개 | 입력이 한쪽에 없는 범주는 `NOT CHECKED`이며 “차이 없음”이 아님 |
 
 Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니다. 생략한 해시 관련 검사는 `NOT CHECKED`로 이해해야 합니다. Full의 검사 범위를 유지한 단순 최적화와 구분합니다.
+
+**결과 수준 선택 · Result levels (3.7.9, 3.9.4):** Package QC의 *Hash mismatch* / *Size mismatch* 결과는 기본이 **Not reported**입니다. 프로덕션은 native를 다시 만들거나 변환하므로 DAT의 값과 정당하게 다른 경우가 많기 때문입니다. 비교 자체는 실행하고 숨긴 건수를 요약에 표시합니다. 누락 파일·안전하지 않은 경로·이미지/텍스트 구조·OPT 대응 같은 무결성 검사는 수준을 바꿀 수 없습니다(`PackageLevels379`).
 
 ### ④ OPT 합치기 · Combining OPT page records
 
@@ -263,7 +297,8 @@ Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니
 >
 > DAT is the default load-file output. CSV is an explicit option using UTF-8 BOM in this Excel workflow, and split export repeats the header in each part. XLSX is mainly for CX reports and writes text cells to preserve identifiers.
 
-- **DAT 기본:** Concordance용 thorn `þ / U+00FE` qualifier와 `DC4 / U+0014` separator, Unicode 기본. 화면에서 DC4를 ¶처럼 표시하더라도 실제 문자 ¶와는 다릅니다.
+- **DAT 기본:** Concordance용 thorn `þ / U+00FE` qualifier와 `DC4 / U+0014` separator. 일반 Export의 기본 인코딩은 UTF-8이고, UTF-16으로 확인된 원본을 DAT로 내보내면 UTF-16을 유지합니다(3.6.0). 명시적 수동/프로필 설정이 우선합니다. 화면에서 DC4를 ¶처럼 표시하더라도 실제 문자 ¶와는 다릅니다.
+- **필드 순서와 SOW 이름:** Export는 화면에 표시한 필드 순서로 시작하고(3.7.7), SOW 필드명 매핑 표를 붙여넣을 수 있습니다(3.7.9).
 - **CSV:** 명시적 선택. 해당 워크플로에서 UTF-8 BOM + comma + CSV quotes를 사용합니다. UTF-16 입력은 지원하지만 이 Excel 워크플로의 UTF-16 CSV 출력은 차단합니다. CSV 형식 자체가 UTF-16을 금지한다는 뜻은 아닙니다.
 - **CSV split:** 선택 범위·필드 순서·헤더를 유지하면서 지정한 레코드 수로 나누고, 각 part에 헤더를 반복합니다. 50만 건은 사용자 관측을 반영한 출발점이며 플랫폼의 보편적 상한이 아닙니다.
 - **XLSX:** CX 보고서 용도가 중심입니다. 문자열 셀로 ID/앞자리 0을 보존하고, 큰 결과는 시트로 나눕니다. 지원 한계를 넘으면 값 절단 대신 중단합니다.
@@ -271,7 +306,9 @@ Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니
 
 **가족 유지 분할 · Family-preserving split:** Workspace Setup의 BegAtt 역할이 유효하면 Export의 `Keep families`로 같은 비어 있지 않은 가족 값의 연속 레코드를 같은 part에 둡니다. 그 결과 part가 지정 건수를 넘을 수 있습니다. 비연속 가족은 쓰기 전에 중단하며 자동 정렬하지 않습니다. 필드 값별 분할(`Split export by field value`)과는 다른 기준입니다.
 
-### ⑦ 3.1.7 이후의 실무 도구 · Delivery workflows
+**가족 전체 포함 · Include whole families (3.6.7, `WholeFamilies367`):** 현재 view의 Export·ID 추출·연결 파일 복사·납품 패키지에서 선택하는 옵션입니다(기본 OFF). 승인된 BegAtt → 비어 있지 않은 Parent ID → 자기 Document ID 순서로 가족 키를 정하고, ON이면 view에 일부만 있던 가족의 나머지 레코드를 전체 데이터 순서대로 추가합니다. 원래/추가/합계 건수를 보여 주고 audit·복사 보고서·패키지 요약에 확장 사실을 남깁니다. 위의 CSV part 가족 유지와는 다른 기능입니다.
+
+### ⑦ 납품·파일 도구 · Delivery and file workflows
 
 > **In English**
 >
@@ -286,7 +323,12 @@ Quick는 속도를 위해 *검사 범위를 명시적으로 줄인 모드*입니
 | Open and merge files · Volume folders | 각 볼륨의 상대 링크에 승인한 볼륨 접두어를 적용해 하나의 공통 root에서 해석. | 표본은 루트 제안일 뿐 전체 검증이 아님. 공백·절대경로는 유지. 원본 DAT와 실제 파일 위치는 그대로. |
 | Copy linked files / Build delivery package (current view)… | 현재 보기의 연결 파일을 새 폴더로 검증 복사. 패키지 도구는 DAT, 선택한 OPT 문서의 이미지와 OPT 부분집합, 요약, 외부 매니페스트를 묶음. | 패키지 DAT는 전체/그리드 표시 필드를 선택. 데이터 순서·상대경로를 유지. 누락·안전하지 않은 링크·패키지 자체 점검 실패는 INCOMPLETE. |
 | Create delivery manifest… / Verify delivery against manifest… | 생성은 폴더 안 모든 파일의 상대경로·크기·SHA-256을 폴더 밖 DAT로 기록. 확인은 복사본을 OK / CHANGED / MISSING / EXTRA로 분류. | OK 행 저장은 선택(기본 OFF), 검사 범위를 줄이는 옵션이 아님. 수동 출력 경로를 보존. 저장 audit의 manifest hash가 어떤 기준 목록인지 식별. |
-| Compare QC reports (before / after)… | 같은 필드·순서의 보고서를 선택한 구별 필드의 정확한 값으로 비교. 중복된 동일 키는 등장 횟수로 대응해 NEW / STILL PRESENT / RESOLVED로 분류. | 레코드 번호는 기본 키에서 제외. 3.3.3은 메뉴와 결과창 바로가기에서 같은 키 선택·기억을 사용. 보고서끼리 비교하며 DAT 자체를 수정하지 않음. |
+| Compare QC reports (before / after)… | 같은 필드·순서의 보고서를 선택한 구별 필드의 정확한 값으로 비교. 중복된 동일 키는 등장 횟수로 대응해 NEW / STILL PRESENT / RESOLVED로 분류. | 레코드 번호는 기본 키에서 제외. 3.3.3은 메뉴와 결과창 바로가기에서 같은 키 선택·기억을 사용. 보고서끼리 비교하며 DAT 자체를 수정하지 않음. 3.4.8부터 필드 경계를 길이 접두어로 보존해 다른 문제가 같은 키로 합쳐지지 않음(`ExactTuple348`). |
+| Build delivery package → Standard volume folders (3.7.2) | 기본 `Keep relative paths`와 별도로, 서로 다른 파일을 한 번씩 `<볼륨>\NATIVES\0001\<원래 이름>`(TEXT·IMAGES도 같은 구조)에 복사(기본 VOL001, 폴더당 1,000개). | 이름을 바꾸지 않고, 같은 이름이 있으면 다음 폴더로. 패키지 DAT 링크와 OPT 이미지 경로를 다시 쓰고 OPT 볼륨 값은 유지. `DATA\`로 시작하는 링크는 시작 전에 거부(3.7.6). |
+| Renumber production (3.7.3, `Renumber373`) | 전체 데이터를 로드파일 순서로 새 control number를 매긴 **새 패키지**를 만듦. OPT가 있으면 페이지마다, 없으면 문서마다 번호. | 원래 위치에서 이름을 바꾸지 않음. 매번 새 확인 필요. 빈 Beg, OPT 페이지 없는 레코드, 중복 페이지 ID 등은 폴더를 만들기 전에 거부. |
+| Text tools (3.6.6, `TextTools366`) | OPT 순서로 페이지 텍스트를 문서 텍스트로 합치기, 텍스트 필드 ↔ `<ID>.txt` 파일 쓰기/읽기, 연결 텍스트 용어 검색. | 빠진 페이지는 기본 중단(선택 시 빈 페이지로 기록하고 manifest에 집계). 안전하지 않은/대소문자만 다른 중복 ID는 아무것도 쓰지 않고 중단. 정규식은 1초 제한. |
+| Copy folder with shorter names (Relativity load file) (4.0.0, `ShortCopy400`) | 깊은 폴더·긴 이름의 제3자 자료를 `\\?\` 경로로 읽어 새 폴더에 짧은 이름으로 복사하고 이름 대응표·Relativity용 로드파일을 만듦. | 원본은 바꾸지 않음. 제한(폴더 40·파일 60자, 경로 240)을 넘는 이름만 줄이고 앞부분과 확장자를 유지, 충돌은 `~2`. 파일마다 복사 중 SHA-256 → 사본 재읽기 비교. 실패가 있으면 `_INCOMPLETE` 폴더와 ERROR 행. 4.0.4부터 대상 폴더 `<드라이브>\LEE_SHORT\…`를 제안. |
+| File tree → Number records (DocID) (4.0.1) | 새 필드에 접두어 + 0으로 채운 순번을 현재 view 순서로 기록. | 기존 필드는 모든 레코드가 비었을 때만 사용(덮어쓰지 않음). 자릿수를 넘으면 차단. 순서는 view 속성이라 레시피에 기록하지 않음. |
 
 ### 납품 패키지의 파일 구조 · Package layout
 
@@ -310,7 +352,41 @@ ClientPackage_LEE_manifest.dat         패키지 폴더 밖에 둔 전체 파일
 >
 > Resume reuses eligible file-level results from an interrupted Package QC run. A reused result is marked RESUMED and is not a fresh file read or hash in the current run. The report is rebuilt against the current dataset and configured checks.
 
-**날짜·시간:** `Format date / time…`의 출력 형식은 처음에 전부 빈칸입니다. 지정한 필드만 변환하며 시간만 있는 `00:00:00`을 `hh:mm:ss tt`로 바꾸면 `12:00:00 AM`입니다. 시간만 있는 값에 날짜를 임의로 보충하지 않습니다. 이 기능을 시간대 변환(time-zone conversion)으로 설명하지 마십시오.
+**날짜·시간:** `Format date / time…`의 출력 형식은 새 작업마다 처음에 전부 빈칸입니다. 같은 필드 구성의 입력 형식은 기억하고, 지난 출력 형식은 `Reuse last output formats`를 눌렀을 때만 채웁니다(3.7.6). 지정한 필드만 변환하며 시간만 있는 `00:00:00`을 `hh:mm:ss tt`로 바꾸면 `12:00:00 AM`입니다. 시간만 있는 값에 날짜를 임의로 보충하지 않습니다. 이 기능을 시간대 변환(time-zone conversion)으로 설명하지 마십시오.
+
+| 날짜 기능 / 버전 | 동작 | 지키는 규칙 |
+| --- | --- | --- |
+| 토큰 인식 날짜 검사 (3.3.5) | 표준 형식 `F`처럼 날짜가 숨은 형식과 `'Updated'` 같은 따옴표 리터럴을 구분. | 시간만 있는 값을 날짜 형식으로 바꾸면 차단. 파서가 넣는 “오늘 날짜”를 결과로 받지 않음. |
+| 월/일 순서 보호 (3.6.0, `DayMonthOrder360`) | 기존 전체 검증 스캔에서 필드별 월/일 순서 증거를 모음. | 모순은 Apply/Split/레시피 차단, 애매하면 검토 안내. 추가 스캔 없음. |
+| Split date / time (3.5.1, `SplitDateTime351`) | 필드 제목/셀 우클릭으로 날짜·시간 두 새 필드를 원본 옆에 만듦. | 빈 값은 건너뜀. 날짜만/시간만 있는 값은 보고하되 차단하지 않고, 없는 쪽은 빈칸. 자정·날짜를 만들어 넣지 않음. |
+| Convert time zone (3.6.4, `TimeZone364`) | 명시적 From/To Windows 시간대 ID, DST 공백은 Stop, 중복 시각은 Stop/earlier/later 선택. | 날짜와 시간이 모두 있는 값만. 전체 레코드 검증·Undo·레시피. **Format date / time과는 다른 명령**입니다. |
+| 잘못된 날짜 지우기 (3.7.8, `InvalidDates378`) | 기준일 이전, 추천 자리표시 날짜, 사용자가 추가한 날짜를 빈칸으로. | 검토 후 적용·Undo. 다른 값은 바꾸지 않음. |
+
+### ⑨ 그리드와 우클릭 바로가기 · Grid and context shortcuts
+
+> **In English**
+>
+> Most daily actions start from the grid: field-heading and row-number menus open the usual dialogs with the clicked field or selected records already chosen. They are shortcuts into the same engines, reviews and Undo, not separate code paths.
+
+| 위치 | 바로가기 (버전) | 엔진 관점 |
+| --- | --- | --- |
+| 필드 제목 | 더블클릭 정렬, 다시 더블클릭하면 반대 방향(3.9.9, 한 번 클릭은 정렬하지 않음). 우클릭 Sort ascending/descending, Rename, Replace·날짜·Filter·Tally, Blank X, Copy values of X, Remove duplicates by X, Split export by X value, Filter: X is blank / not blank, Copy shown/all field names, 열 고정(3.5.8–3.9.1) | 기존 대화상자에 필드를 미리 채울 뿐입니다. 잠긴 필드는 바뀌는 항목이 비활성화되고, 확인 단계는 그대로 남습니다(`HeaderActions361`, `FieldNavigation358`). |
+| 셀 선택 | 한 필드의 여러 셀 → *is one of N selected values* / *is not one of …* 필터(3.8.9). 선택한 빈 셀 포함(3.9.9). | 화면 축약값이 아닌 전체 저장값으로 정확·대소문자 구분 비교. 줄바꿈 값이 있으면 비활성. |
+| 행 번호 | Show only / Hide the N selected records, Clear filter(3.9.2), 레코드 복사(3.9.0) | `RowMapView`로 표현하므로 데이터·이력·미내보내기 상태는 그대로입니다. |
+| View 메뉴 | Hide empty fields(3.9.3: 모든 레코드가 정확히 `""`인 필드), Back to previous view(3.9.9), Go to ID(3.9.8) | 빈 필드 숨기기는 한 번의 순차 스캔이며 모든 필드에 값이 나오면 일찍 멈춥니다. |
+| 파일 드롭 | 열린 작업 공간에 DAT/CSV/TXT/TSV 하나를 놓으면 Open instead / Compare by ID / Overlay / Import / Cancel 선택(3.8.9, `DropChooser389`) | 각 기능은 같은 strict reader·형식 확인·매핑·검토를 씁니다. Enter는 예전 동작(열기)입니다. |
+| 페이지 | 1,000행 페이지의 끝/처음에서 아래/위 키가 다음/이전 페이지로(3.8.7) | 표시 방식만 바뀌고 처리 범위는 바뀌지 않습니다. |
+| Tally / Sum 결과 | Tally의 *Show records with this value*, Sum 제외 행의 *Go to source record*(3.9.9, `Drill399`) | 집계했던 **같은 view**를 그룹의 정확한 저장값(빈 값 포함)으로 거르고, 표시 건수가 그룹 건수와 같은지 확인합니다. view가 바뀌었으면 거부합니다. 보고서는 원본 해시·필드·범위에 묶여 있습니다(3.3.6 `SourceBoundReport336`). |
+
+Fields to display의 **Order and names**(3.7.7, `FieldOrderNames377`)는 순서 조정, 새 이름 붙여넣기/불러오기, 숨긴 필드 삭제(3.8.8)를 한 번의 검토와 하나의 Undo로 처리합니다. 설정 화면의 막힌 입력은 굵은 빨간 제목과 연한 빨간 띠로 표시됩니다(3.9.4, `Blockers394`).
+
+### ⑩ 기억, 복구, 자가 점검 · Remembering, recovery and self-check
+
+- **하나의 기억 정책 (3.7.4, `RememberPolicy373`):** 마지막 설정은 파괴적 편집의 대상, 입력한 치환 문자열, 출력 이름, 승인·동의, “필드 비우기” 선택을 **복원하지 않습니다.** 작업 종류·형식·인코딩·분할 크기·root/폴더·읽기 전용 QC 선택·보고서 형식·필터 조건은 복원할 수 있습니다. 새 대화상자가 무엇을 기억하는지 볼 때 이 목록부터 확인합니다.
+- **저장 중단 저널 (3.6.2, `SaveJournal362`):** Export·보고서·XLSX·OPT·세션·분할·패키지·복사가 쓰는 중 프로세스가 끝나면 다음 시작 때 미검증 파일과 남은 임시 파일을 알리고, 제한된 임시 파일만 지웁니다. 완성되지 않은 파일을 검증된 결과로 보이게 하지 않습니다.
+- **자동 복구 (`AutomaticRecovery`):** 파일 경로로 시작해도 복구를 먼저 제시하고(3.6.2), 원본 이름·행 수·용량을 보여 줍니다. 원본 해시가 다르면 복원을 막습니다.
+- **Unexpected error (3.8.6):** 처리되지 않은 화면 예외는 복사 가능한 상세 내용 창과 로컬 로그 `%LOCALAPPDATA%\LEE\errors\lee-error-*.txt`로 남깁니다. 어디로도 보내지 않습니다.
+- **연습 데이터와 Check this computer (3.6.5):** Help → Open practice data…는 문제 10종을 심은 합성 200건 프로덕션을 새 폴더에 만들고, 연습 문제 8개의 정답은 실제 엔진으로 측정해 테스트로 고정했습니다. Help → Check this computer는 실제 엔진 9단계로 이 PC를 점검합니다(`PracticeData365`, `SelfCheck365`).
 
 <a id="integrity"></a>
 
@@ -342,6 +418,10 @@ SETUP · 설정 상태 · REVIEW · 검토 필요 · ERROR · 오류/차단 · N
 ```
 
 특정 로컬 원본과 단순 범위 뷰에서는 원본 읽기를 줄이는 최적화가 있습니다. 검증한 임시 파일과 실제 저장본의 전체 해시가 같고, 원본의 변경 불가능한 pin이 계속 유지되는 조건에서 적용합니다. **저장본 재읽기를 건너뛰는 최적화가 아닙니다.** 알 수 없는/변환된/잠글 수 없는 뷰는 같은 최적화를 무조건 적용하지 않습니다.
+
+3.9.6부터는 view가 바뀔 수 없는 경우(변경 불가능한 원본 pin) Export가 원본을 두 번이 아니라 **한 번** 읽습니다. 쓴 값들의 digest(`ValueDigest396`: 값마다 길이와 UTF-16 code unit을 SHA-256에 넣음)를 만들고, 임시 출력을 다시 파싱한 값의 digest와 비교합니다. 다르면 예전의 레코드별 원본 비교로 위치를 찾아 “Saved output mismatch at record N, field F”로 거부하고 아무것도 게시하지 않습니다. 잠기지 않은/사용자 정의 view는 두 번의 원본 비교를 유지합니다. 3.9.7의 XLSX도 같은 조건에서 저장본을 다시 파싱하지 않고 해시로 확인합니다.
+
+> **속도 최적화의 원칙:** 같은 위험을 덮는 다른 증명이 있을 때만 중복 읽기를 줄입니다. “무결성 검사 건너뛰기” 옵션은 없습니다. 최적화가 들어간 경로는 대부분 스위치로 예전 경로와 A/B 비교해 출력 바이트가 같음을 확인했습니다.
 
 ### SHA-256, pin, snapshot을 구분하기
 
@@ -408,6 +488,28 @@ SETUP · 설정 상태 · REVIEW · 검토 필요 · ERROR · 오류/차단 · N
 | CSV part에서 가족 유지 | `src/LEE/ExportFamily328.cs`   `src/LEE/ExportSplit304.cs` | KeepTogether328, SetFamilyField328, BegAtt, non-adjacent families |
 | 연결 파일 값·UTF-8 텍스트·새 OPT | `src/LEE/LinkedFileValues317.cs`   `src/LEE/TextUtf8318.cs`   `src/LEE/OptFromBates319.cs` | file readers, strict decoding, fresh output, missing/duplicate images |
 | 표기 흔들림·마지막 설정·명령 찾기 | `src/LEE/NearDuplicates322.cs`   `src/LEE/DataWorkbench.Repeat323.cs`   `src/LEE/CommandKeywords325.cs`   `src/LEE/QuickGuideSearch326.cs` | review vs apply, RememberLast/RestoreLast, valid header layout, keyword search |
+| 무엇을 기억하나·복원 제외 키 | `src/LEE/RememberPolicy373.cs`   `src/LEE/RememberedStores374.cs` | Restorable, 파괴적 대상·치환 문자열·승인 제외 |
+| 미내보내기 변경 질문·제목의 • 표시 | `src/LEE/UnexportedChanges387.cs`   `src/LEE/ExportCoverage402.cs` | ConfirmLeaveUnexported387, RefreshDirtyMark387, MarkFirstChange402, RecordExport402, ChangesCoveredByExports402 |
+| File → Save (Ctrl+S)·백업 | `src/LEE/Save398.cs` | SaveInPlace398, SaveInPlaceCore398, OpenSaved398, MoveAudit398, Prune398 |
+| 해시 스레드·Export 한 번 읽기 | `src/LEE/HashPipe396.cs`   `src/LEE/ValueDigest396.cs`   `src/LEE/NativeOperations.cs` | Add, Drain, Finish, CanReuseGeneratedValues311, Saved output mismatch |
+| 정렬 묶음·Tally 키 정렬 | `src/LEE/DiskOperations.cs`   `src/LEE/KeySort398.cs`   `src/LEE/QualityOperations.cs` | SortRunItems403, SortRunCharacters403, ChunkValues, Spill, Merge, Tally |
+| 필드 수 한계 | `src/LEE/FieldLimits373.cs`   `src/LEE/LoadFileReader.cs` | Workspace = 1000, Mdb = 254, Too many fields |
+| 필드 제목·행 번호 우클릭 메뉴 | `src/LEE/HeaderActions361.cs`   `src/LEE/FieldNavigation358.cs`   `src/LEE/DataWorkbench.Records346.cs`   `src/LEE/DataWorkbench.Clicks.cs` | heading menu, Show only / Hide selected, quick filters, Copy field names |
+| 이전 보기·ID로 이동·집계 드릴다운 | `src/LEE/ViewSteps399.cs`   `src/LEE/GoToId398.cs`   `src/LEE/Drill399.cs` | PushViewStep399, BackViewStep399, FindIdCached398, ShowTallyGroup399, GoToSumRecord399 |
+| 빈 필드 숨기기·숨긴 필드 삭제·순서와 이름 | `src/LEE/DataWorkbench.EmptyFields393.cs`   `src/LEE/FieldOrderNames377.cs` | HideEmptyFields393, DeleteHiddenFields393, MoveSelected, Arrange |
+| 파일 드롭 선택 | `src/LEE/DropChooser389.cs` | Ask, UseDropped389, TakeDropped389, ChooseDropped389 |
+| Replace 대상·작업 확장 | `src/LEE/ReplaceTargets349.cs`   `src/LEE/DataWorkbench.ReplaceConfirm351.cs`   `src/LEE/ReplaceOptions363.cs`   `src/LEE/ValueMap363.cs` | Targets, skip blank, Change case/Trim/Pad, ValueMap363.Parse/TryGet |
+| 날짜 분리·시간대·잘못된 날짜 | `src/LEE/SplitDateTime351.cs`   `src/LEE/TimeZone364.cs`   `src/LEE/DayMonthOrder360.cs`   `src/LEE/InvalidDates378.cs`   `src/LEE/DateCheck334.cs` | Components, Convert, DST policy, day/month evidence, token-aware guard |
+| OPT 작업 공간 편집·OPT Export | `src/LEE/OptEditor345.cs` | OpenOptFiles345, OptExportDialog345, ExportOpt345, WriteOpt345 |
+| 가족 전체 포함 | `src/LEE/WholeFamilies367.cs` | Role, Build, BegAtt → Parent ID → Document ID |
+| 표준 볼륨 폴더·프로덕션 비교·재번호 | `src/LEE/DeliveryPackage372.cs`   `src/LEE/ProductionDiff372.cs`   `src/LEE/Renumber373.cs`   `src/LEE/DataWorkbench.Renumber373.cs` | RenumberPlan373, NewBeg/NewEnd, ProductionDiffResult372, NOT CHECKED |
+| 텍스트 도구·텍스트 품질 | `src/LEE/TextTools366.cs`   `src/LEE/TextQuality372.cs` | PageTextOptions366, missing pages, mojibake REVIEW |
+| 파일 서명·TIFF·경로 이름 QC | `src/LEE/FileHeaders364.cs`   `src/LEE/PathChecks364.cs`   `src/LEE/PackageLevels379.cs` | IFD chain, Reserved, Folders, Hash/Size mismatch level |
+| 짧은 이름 복사·긴 경로·번호 매기기 | `src/LEE/ShortCopy400.cs`   `src/LEE/DataWorkbench.ShortCopy400.cs`   `src/LEE/LongPath400.cs`   `src/LEE/DataWorkbench.Numbering401.cs` | Validate, Shorten, Run, `\\?\`, NumberRecordsCore401 |
+| 저장 중단 저널·작업 이력·연습/자가 점검 | `src/LEE/SaveJournal362.cs`   `src/LEE/OperationHistory365.cs`   `src/LEE/PracticeData365.cs`   `src/LEE/SelfCheck365.cs` | WriteEntry, UpdateTemps, ConfirmUndo365, CheckComputer365 |
+| 한국어 메뉴·메뉴 묶음·예외 창 | `src/LEE/MenuLanguage384.cs`   `src/LEE/MenuGroups382.cs`   `src/LEE/UnexpectedError386.cs` | Translates, ApplyContext, English tooltip, lee-error log |
+| 납품 프로필·레시피·설정 묶음 | `src/LEE/DeliveryProfile377.cs`   `src/LEE/DataWorkbench.DeliveryProfile377.cs`   `src/LEE/RecipePlan377.cs`   `src/LEE/SettingsBundle377.cs` | StageDelivery377, ValidatePart, BundleSnapshot377 |
+| 옛 eDML 이름 읽기 호환 | `src/LEE/LegacyNames405.cs` | IsSession, Prefer, CopyManifest, SettingsRead |
 
 > `partial class DataWorkbench`는 “하나의 클래스가 여러 파일로 나뉜 것”입니다. `Pages316`, `SourceApproval312`, `…305` 등의 숫자는 기능을 처음 추가한 버전의 흔적일 수 있습니다. 파일명만 보고 구버전이라 삭제하거나, 그 파일 하나만 현재 코드라고 판단하면 안 됩니다.
 
@@ -419,24 +521,28 @@ C:\Coding\Tools\
   LEE.exe.config                 로컬 런타임 설정
   OLD\LEE_<version>.exe          검증된 이전 실행 파일 보존
   lee\
+    README.md                     빌드·테스트·배포 절차
     src\LEE.csproj              개발 프로젝트
-    src\LEE\                   핵심 화면 + 처리 엔진
+    src\LEE\                   핵심 화면 + 처리 엔진 (약 330개 파일)
     src\LEE.My\                시작/기존 앱 구조
     src\Properties\AssemblyInfo.cs
-    workbench-tests\             기능·실제 WinForms 테스트
-    tests\                       Export 테스트 프로젝트
-    scripts\                     개발/검증 보조
-    docs\                        계획·배포·체크포인트
-    test-results\                버전별 증거
+    workbench-tests\             기능·실제 WinForms 테스트 (LEE.WorkbenchTests)
+    tests\                       Export 테스트, torture\ 경계 사례 + 독립 Python 판독기
+    scripts\release\             빌드·게시 보조
+    docs\                        현재 문서: 체크포인트·버전 목록·최신 release
+    docs\history\                이전 계획·배포·검토 기록 전체
+    work\                        run.ps1, 빌드 로그, results\<이름>\ (다시 만들 수 있음)
+    decompiled\                  예전 eDML.exe의 디컴파일 (참고용)
+    prep\                        보조 에이전트의 읽기 전용 검토 메모
   github-eDiscovery\             별도 공개 배포 체크아웃
-  tests\shared-data\             공용 합성 200만 건 파일
+  tests\shared-data\             공용 합성 200만 건 DAT, files_1m.py(물리 파일 100만 개)
 ```
 
 ### 설정과 데이터 파일은 다릅니다
 
-현재 기본 사용자 환경설정은 `%LOCALAPPDATA%\LEE\ui-preferences.xml`, 필드 레이아웃은 같은 LEE 폴더의 `header-layouts`, 자동 복구는 `%LOCALAPPDATA%\LEE\Recovery`를 사용합니다. 파일을 닫아도 설정이 남는 이유와, 원본 DAT의 메타데이터가 바뀌는 이유를 혼동하지 마십시오.
+사용자 환경설정은 `%LOCALAPPDATA%\LEE\` 아래에 있습니다: `ui-preferences.xml`, `appearance.xml`, `paste.xml`, 필드 레이아웃 `header-layouts`, 자동 복구 `Recovery`, Save 백업 `SaveBackups`, 예외 로그 `errors`. 4.0.4 이전에 쓴 `%LOCALAPPDATA%\eDML_Enhanced`의 appearance/paste 설정은 LEE가 자기 파일을 저장하기 전까지 읽기만 합니다. 파일을 닫아도 설정이 남는 이유와, 원본 DAT의 메타데이터가 바뀌는 이유를 혼동하지 마십시오. 설정 파일 형식은 `docs/lee-settings-schemas.md`에 있습니다.
 
-**새 도구를 따라갈 때:** `DataWorkbench.*`는 입력·상태·승인을 담당하고 `PageCountOpt327 / DeliveryPackage329 / QcDiff328` 같은 별도 클래스가 데이터를 처리합니다. `DeliverySetup333`는 설정과 결과창을 공유하는 도우미로, 새 데이터 처리 엔진을 하나 더 만든 파일이 아닙니다. 설정 제안(Setup suggestion), 계산(Engine), 적용(Apply), 저장 검증(Save/Verify)의 책임을 나누어 읽으십시오.
+**새 도구를 따라갈 때:** `DataWorkbench.*`는 입력·상태·승인을 담당하고 `PageCountOpt327 / DeliveryPackage329 / QcDiff328 / ShortCopy400 / Renumber373` 같은 별도 클래스가 데이터를 처리합니다. `DeliverySetup333`는 설정과 결과창을 공유하는 도우미로, 새 데이터 처리 엔진을 하나 더 만든 파일이 아닙니다. 설정 제안(Setup suggestion), 계산(Engine), 적용(Apply), 저장 검증(Save/Verify)의 책임을 나누어 읽으십시오.
 
 <a id="debug"></a>
 
@@ -517,7 +623,7 @@ UI label과 실제 source header가 다를 수 있습니다. 이름의 대소문
 
 **관련 파일:** LegacyOperations의 MDB 읽기 → Jet OLE DB 연결.
 
-DAT/CSV 파서부터 수정하지 않습니다. MDB 경로, 읽기 권한, 파일 자체 상태, Jet provider와 실제 프로세스 환경을 확인합니다. 이 기능의 환경 의존성을 일반 DAT 작업의 필요 설치 항목으로 확대하지 않습니다.
+DAT/CSV 파서부터 수정하지 않습니다. 3.7.8부터 LEE는 64비트로 실행되고 Jet 4.0 provider는 32비트 전용이므로, 64비트 Windows에서 .mdb가 열리지 않는 것은 수용한 한계입니다. 먼저 About의 실행 비트 수를 확인하고, 필요하면 원래 시스템에서 DAT로 내보낸 파일을 받습니다. 이 기능의 환경 의존성을 일반 DAT 작업의 필요 설치 항목으로 확대하지 않습니다.
 
 ### 새 도구의 문제 추적 예시 · Recent troubleshooting cases
 
@@ -532,6 +638,22 @@ DAT/CSV 파서부터 수정하지 않습니다. MDB 경로, 읽기 권한, 파�
 #### 사례 K · 고친 문제가 NEW/RESOLVED로 달라 보임 · QC issue identity
 
 두 보고서가 같은 검사·필드 순서인지, 선택한 구별 키가 업무상 같은 문제를 뜻하는지 확인합니다. Record/Row를 키에 넣으면 행 이동이 문제의 변화로 보일 수 있습니다. `ChooseQcKey333 → QcDiff328.Key / Run`을 따라가고, 실제 선택 키와 동일 키 중복의 횟수를 확인합니다. 이는 정확한 Document ID 비교 엔진 `IdComparison`과 다른 작업입니다.
+
+#### 사례 L · Export했는데도 종료 때 “Unexported changes”가 뜸 · Export coverage
+
+`ExportCoverage402.ChangesCoveredByExports402`가 false를 돌려준 이유를 찾습니다. 바뀐 셀이 Export하지 않은 필드나 필터 밖 레코드에 있었는지, 필드를 삭제·이름 변경했는지, 레코드 수가 달라졌는지, Export에 인코딩 경고가 있었는지 확인합니다. 이 경우 질문이 남는 것은 정상입니다. 변경이 모두 덮였는데도 남는다면 `RecordExport402`가 그 Export를 기록했는지 봅니다. 질문의 기본값이 Cancel인 것도 의도입니다(3.8.7).
+
+#### 사례 M · Ctrl+S 뒤 옆에 `_LEE_saved_` 파일이 생김 · Save in place fallback
+
+다른 프로그램(Excel, 백신, 동기화 도구)이 원본을 잡고 있어 교체할 수 없었다는 뜻입니다. 원본은 그대로이고 검증된 사본을 옆에 두고 연 것입니다. `Save398.SaveInPlaceCore398 → Replace398`의 경고 문구와 `%LOCALAPPDATA%\LEE\SaveBackups`의 백업을 확인합니다. Save가 비활성이면 병합/복원 데이터·OPT·UTF-16 BE인지 봅니다.
+
+#### 사례 N · “Unexpected error” 창이 뜸 · Unhandled UI exception
+
+창에서 복사한 상세 내용 또는 `%LOCALAPPDATA%\LEE\errors\lee-error-*.txt`에서 버전·시각·열린 창 제목·예외 스택을 확인합니다. 3.8.5 Filter의 Remove condition 충돌처럼 대부분 WinForms 포커스/재진입 문제였고 데이터는 바뀌지 않았습니다. 스택의 맨 위 LEE 메서드부터 거꾸로 따라가고, 재현 테스트를 먼저 만든 뒤 고칩니다.
+
+#### 사례 O · 예전 `.edmlsession`·프리셋이 안 열림 · Legacy names
+
+4.0.5에서 이름을 LEE로 바꾸면서 옛 확장자는 `LegacyNames405`에서 읽기 전용으로 처리합니다. 열기 대화상자의 필터와 드롭이 두 이름을 모두 받는지, 같은 이름의 새 파일이 있으면 그쪽을 우선하는지(`Prefer`) 확인합니다. 세션은 원본 경로·해시가 바뀌면 이름과 관계없이 복원을 막습니다.
 
 ### 한 흐름을 코드로 읽는 연습 · Trace one workflow
 
@@ -556,13 +678,13 @@ DataWorkbench.Pages327.cs: CreateOptPagesDialog327 / PopulateOptPages327
 
 #### Q. 원본 DAT를 직접 고치나요? · Q. Does LEE modify the original DAT?
 
-기본 메타데이터 편집은 작업 뷰를 바꾸며, Export는 새 파일을 만듭니다. 원본 DAT를 덮어쓰는 방식이 아닙니다. 단, 승인한 물리 rename/copy 작업은 native 파일에 별도의 영향을 줄 수 있으므로 구분해야 합니다.
+기본 메타데이터 편집은 작업 뷰를 바꾸며, Export는 새 파일을 만듭니다. 원본 DAT를 덮어쓰는 방식이 아닙니다. 예외는 사용자가 직접 고르는 File → Save(Ctrl+S)로, 이전 파일을 `%LOCALAPPDATA%\LEE\SaveBackups`로 옮긴 뒤 검증된 파일을 같은 이름으로 둡니다. 승인한 물리 rename/copy 작업도 native 파일에 별도의 영향을 줄 수 있으므로 구분해야 합니다.
 
-> **In English:** Metadata edits update the working view, and export creates a new file. Approved physical rename or copy operations are separate and can affect native files.
+> **In English:** Metadata edits update the working view, and export creates a new file. Save (Ctrl+S) is the explicit exception: it moves the previous file to a backup folder and puts the verified file under the original name. Approved physical rename or copy operations are separate and can affect native files.
 
 #### Q. 데이터가 다 메모리에 들어가나요? · Q. Does LEE load everything into memory?
 
-주요 로드파일 경로는 원본 + 디스크 행 인덱스 + 제한된 버퍼/캐시로 처리합니다. 매칭/정렬/변경값에도 디스크 기반 구조를 씁니다. 어떤 작업도 RAM을 쓰지 않는다는 뜻은 아니고, 모든 기능/입력 크기가 무제한이라는 뜻도 아닙니다.
+주요 로드파일 경로는 원본 + 디스크 행 인덱스 + 제한된 버퍼/캐시로 처리합니다. 매칭/정렬/변경값에도 디스크 기반 구조를 씁니다. 3.7.8부터 64비트로 실행되어 정렬 묶음 같은 버퍼를 키웠지만, 파일 전체를 RAM에 올리는 방식으로 바뀐 것은 아닙니다. 어떤 작업도 RAM을 쓰지 않는다는 뜻은 아니고, 모든 기능/입력 크기가 무제한이라는 뜻도 아닙니다.
 
 > **In English:** The main load-file workflows use streaming reads, disk-based indexes, and bounded buffers and caches. This reduces memory use; it does not make every operation or input size unlimited.
 
@@ -662,6 +784,24 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 
 > **In English:** No. It is a user-observed starting point, not a universal platform limit. Record size, fields, environment, and family-preserving splits affect the actual parts. Validate the produced files in the real target workflow.
 
+#### Q. 서명된 EXE면 회사 보안 검사를 통과한다는 뜻인가요? · Q. Does the signature mean the EXE is trusted?
+
+자체 서명 인증서로 서명했습니다. 받은 파일의 바이트가 배포한 파일과 같은지 확인하는 데 쓸 수 있지만, 공인 CA가 확인한 게시자라는 뜻은 아닙니다. 회사 보안 제품의 판정은 별도입니다. `.html`로 받은 파일은 확장자를 `.exe`로 바꿔 실행하는 같은 바이트입니다.
+
+> **In English:** It is signed with a self-signed certificate. The signature can confirm that the bytes match the published file; it is not a publisher identity verified by a public certificate authority, and it does not decide how company security tools treat the file.
+
+#### Q. 경로가 260자를 넘는 자료는 어떻게 하나요? · Q. What about paths longer than 260 characters?
+
+회사 PC는 Windows long-path 정책이 꺼져 있어 일반 경로로는 열 수 없는 파일이 생깁니다. File tree는 긴 경로도 목록에 포함하고(4.0.0), *Copy folder with shorter names*는 `\\?\` 경로로 읽어 원본을 건드리지 않고 짧은 이름의 사본과 이름 대응표·Relativity용 로드파일을 만듭니다. 그 밖의 기능에서 260자 초과 경로는 수용한 한계입니다.
+
+> **In English:** File tree lists long paths, and Copy folder with shorter names reads them through `\\?\` paths and writes a verified copy with shortened names, a name map, and a load file. The originals are not changed. Elsewhere, paths over 260 characters without the Windows long-path policy remain an accepted limit.
+
+#### Q. 한국어 메뉴를 켜면 결과 파일도 한국어가 되나요? · Q. Do Korean menus change the output?
+
+아닙니다. 메뉴·툴바·우클릭 메뉴의 이름만 바뀌는 표시 설정입니다. 명령·단축키·대화상자·필드명·보고서·데이터는 같습니다. 툴팁과 Find command, Help에는 영어 명령 이름이 남습니다.
+
+> **In English:** No. Korean menus change only the labels of the main menu, toolbar, and context menus. Commands, shortcuts, dialogs, field names, reports, and data are unchanged.
+
 <a id="limits"></a>
 
 ## 설계 목표, 코드 한계, 실제 시험을 분리하기 · Limits and measured scale
@@ -673,27 +813,41 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 항목 | 현재 코드/기록에서 확인한 범위 |
 | --- | --- |
 | 설계 목표 | 수백만 레코드·수GB 로드파일, 스트리밍·디스크 기반 처리, 전량 검증 |
-| 필드 수 | LoadFileReader 최대254필드. Side-by-side 등 추가 열이 필요한 기능은 별도 낮은 한계가 있을 수 있음 |
+| 필드 수 | 로드파일 작업 공간 최대 1,000필드(3.7.3, `FieldLimits373.Workspace`). 옛 .mdb는 254. Side-by-side 등 추가 열이 필요한 기능은 별도 낮은 한계가 있을 수 있음 |
 | 단일 레코드 | 16Mi 문자 한계. “16MB 파일 전체” 제한이 아님 |
 | 그리드 | 1,000행 단위 표시. 기반 인덱스/그리드는 2,147,483,647 미만 레코드 제한이 있음 |
-| 정렬 키 | 65,536자 초과는 중단. 정렬 묶음은 최대5,000행 또는 약2Mi문자 기준으로 나눔 |
+| 정렬 키 | 65,536자 초과는 중단. 정렬 묶음은 64비트에서 최대 500,000행 또는 32Mi문자(32비트: 5,000행 / 2Mi문자) |
+| ID 인덱스 메모리 | `ExactIndex`는 6,291,456개(`MemoryEntries398`)까지 빠른 메모리 연결표를 두고, 넘으면 그 사본을 버리고 디스크를 따라가는 예전 방식으로 계속합니다. ID 수의 상한이 아니라 속도가 달라지는 경계입니다(3.9.8) |
+| 집계 | Tally/Sum은 고유값 200,000개 또는 32Mi문자까지 한 번의 순차 계산, 넘으면 외부 정렬로 전환(3.9.7) |
 | XLSX | 시트당 데이터1,048,575행 + 헤더, 최대256시트. 셀32,767 UTF-16 units 또는253 line feeds 초과 시 중단 |
 | 붙여넣기 | 16Mi문자·50,000행·100,000셀 한계. 구조 오류나 범위 초과는 부분 적용하지 않음 |
 | OPT 합치기 | 2–1,024개 OPT 파일. 페이지 행·ID·문서 경계를 검사하며 실제 image files/import는 별도 |
 | 공용 대용량 시험 | 합성2,000,000레코드 / 2,471,194,958바이트 DAT. 작은 native/text companions 두 개 포함 |
-| 배포3.3.3 기록 | 집중27·전체642·Export24·연습2·공용200만 입력2·실제2만 파일 상세보고서2 통과. 실제 빈 창 시작4회·제어배율100/125/150% 확인. 이번 문서 작업에서 제품 검사를 재실행한 것은 아님 |
-| 3.3.3 실제 물리 파일 측정 | 합성20,000파일의 전체 OK 보고서: 1.683초, 해당 테스트 프로세스 최대56.9MB. 모든 경로·크기·해시를 독립 기대값과 대조. NAS 또는 수백만 물리 파일 성능 주장이 아님 |
-| 미확인 영역 | 수백만 개의 서로 다른 물리 파일, 모든 NAS/권한/보안 정책, 실제 per-monitor DPI, 모든 대상 플랫폼 import, 실 TIFF/PDF 내부 페이지 완전성 |
+| 공용 물리 파일 시험 | `tests/shared-data/files_1m.py`: native 100만 개 + UTF-8 텍스트 100만 개(폴더당 1,000개), `files-1m.dat`, 25만 문서의 `pages-1m.opt`. 모든 파일의 SHA-256 목록 포함. 3.7.1에서 Package QC 등을 이 규모로 확인 |
+| 배포 4.0.5 기록 | `--v405-only` 67/0, 전체 suite 1251/1(1건은 클립보드 경합 CLIPBRD_E_CANT_OPEN, 해당 모드 재실행 10/0), Export 24/0. 이번 문서 작업에서 제품 검사를 재실행한 것은 아님 |
+| 2M 측정 (4.0.3 이후) | 열기 약 4초(작업대 포함 4.42초), Export 약 21초, 정렬 약 6초, Compare 19초, XLSX 26초, Field profile 10초, 고유값 많은 Tally 30초. 같은 PC의 엔진 측정이며 다른 PC·저장장치의 보장값이 아님 |
+| 미확인 영역 (수용한 한계) | 실제 Relativity/리뷰 플랫폼 import, per-monitor DPI, long-path 정책 없는 260자 초과 경로, 실제 네트워크 공유/OneDrive, 32비트/Jet, IPRO LFP 변환, 실 TIFF/PDF 내부 페이지 완전성 |
 
 2GB 넘는 하나의 DAT를 읽은 시험과, 수십만~수백만 개의 native 파일을 실제 파일 시스템에서 검사한 시험은 다른 시험입니다. “큰 데이터 시험이 통과했으니 모든 규모/저장장치에서 준비 완료”라고 일반화하지 않습니다.
 
-> **좋은 설명:** “주요 엔진은 bounded-memory 방식이고, 합성200만 건/약2.47GB를 검증한 기록이 있습니다. 물리 파일 수와 대상 시스템 import는 그 기록의 범위와 별도로 봐야 합니다.”
+> **좋은 설명:** “주요 엔진은 bounded-memory 방식이고, 합성 200만 건/약 2.47GB DAT와 합성 물리 파일 100만 개를 검증한 기록이 있습니다. 실제 NAS·네트워크 공유와 대상 시스템 import는 그 기록의 범위와 별도로 봐야 합니다.”
 
 ### 속도를 올리는 방식 · Safe performance improvements
 
-작업은 UI 스레드 밖에서 실행하고 파일 읽기·복사를 제한된 수로 병렬 처리합니다. 현재 연결 파일 값·UTF-8 텍스트·매니페스트 읽기와 복사는 8개 작업자로 제한되며 Package QC 읽기는 4개를 유지합니다. 무조건 병렬 수를 높이는 설정이 아니라 기존 출력과 같은지 비교한 결과입니다.
+작업은 UI 스레드 밖에서 실행하고 파일 읽기·복사를 제한된 수로 병렬 처리합니다. 현재 연결 파일 값·UTF-8 텍스트·매니페스트 읽기·복사·링크 존재 확인은 8개 작업자로 제한됩니다. 무조건 병렬 수를 높이는 설정이 아니라 기존 출력과 같은지 비교한 결과입니다.
 
-복사는 원본을 읽으면서 해시를 만들고 저장한 사본 전체를 다시 읽어 대조합니다. 화면 필드 검색·표시 변경은 기존 인덱스를 사용하며 전체 원본을 매번 재해시하는 입력 이벤트를 만들면 안 됩니다. OPT 페이지 수 200만 건 약53초, 복사2만 개 42.1→30.8초 등은 이전 버전에서 측정한 별도의 로컬 기록입니다. 이 문서가 현재 환경에서 다시 측정한 수치가 아니며 서로 다른 작업 시간을 직접 비교하지 않습니다.
+복사는 원본을 읽으면서 해시를 만들고 저장한 사본 전체를 다시 읽어 대조합니다. 화면 필드 검색·표시 변경은 기존 인덱스를 사용하며 전체 원본을 매번 재해시하는 입력 이벤트를 만들면 안 됩니다.
+
+| 버전 | 바꾼 것 | 기록된 효과 (공용 2M 기준) |
+| --- | --- | --- |
+| 3.7.0 | `ExactIndex` 페이지 캐시, 새 필드 값 64KiB 블록 쓰기, 바뀐 열만 읽기 | 2M 키 순차 조회 12.8 → 0.8초 |
+| 3.9.5 | 엄격한 reader가 디코딩 블록을 직접 훑음, 필드는 `Substring` 하나, 행 위치 4,096개씩 읽기 | 열기 약 4.7배, 레코드 읽기 약 2.3–2.5배 |
+| 3.9.6 | SHA-256 별도 스레드, 변경 불가능한 view의 Export는 원본 한 번 읽기 | 같은 digest·같은 출력 |
+| 3.9.7 | Tally 고유값이 적으면 한 번의 순차 계산, 레코드를 재사용 버퍼로 한 번 디코딩 | Custodian Tally 42.1 → 4.5초 |
+| 3.9.8 | ID 매칭의 메모리 연결표, Go to ID 캐시 | — |
+| 4.0.3 | 64비트 정렬 묶음, 행 번호표·병합표·파생 값의 블록 읽기 | 2M 정렬: 400개 묶음+병합 2회 → 4개 묶음+병합 1회 |
+
+각 수치는 해당 버전의 release 문서에 기록된 같은 PC의 측정입니다. 이 문서가 현재 환경에서 다시 측정한 수치가 아니며 서로 다른 작업 시간을 직접 비교하지 않습니다. 대부분의 속도 변경은 스위치로 예전 경로와 A/B 비교해 출력이 같음을 확인했습니다.
 
 <a id="plan"></a>
 
@@ -703,13 +857,14 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 >
 > A planned feature is not a shipped feature. Check the current checkpoint, release notes, tested build hash, and published artifact. Group at least three substantive improvements, or at least five minor improvements, into one verified release without removing integrity checks.
 
-1. `docs/lee-current-checkpoint.md` 맨 위: 현재 소유/진행·완료·중단 상태. 아래 오래된 기록을 현재 상태로 읽지 않습니다.
-2. `README.md`와 `docs/lee-development-overview-ko.md` 맨 위: 현재 배포본과 사용자가 체감할 변경.
-3. `docs/lee-<version>-…-plan-…md`: 후보의 재현, 영향 범위, 왜 이 변경이 필요한지.
-4. 해당 `…release…md`와 `test-results/<작업>/`: 실제 통과한 빌드·해시·실패/수정·검증 근거.
-5. canonical source와 실행 파일 버전/해시: 문서와 코드가 같은 결과를 설명하는지.
+1. `docs/lee-current-checkpoint.md`의 *Current state*: 배포 버전·SHA·커밋, 다음 버전, 진행 중인 작업, 마지막 개선 후보 검색 결과. 이 부분은 덮어써서 갱신하므로 항상 현재 상태입니다.
+2. `docs/lee-version-history.md`: 2.5.9 이후 모든 배포 버전을 한 줄씩(요약·OLD 백업 SHA 앞 8자리·release 문서 링크).
+3. `README.md`: 폴더 구조, 빌드·테스트(`work\run.ps1`), 현재 배포 절차.
+4. 해당 `lee-<version>-release-<date>.md`: 변경, 검증 결과, 테스트한/서명한 SHA, 커밋, 계획과 달라진 점, 구현자. 최신 문서만 `docs/`에 있고 이전 계획·배포·검토 기록과 4.0.4까지의 체크포인트 전체(`lee-checkpoint-archive-to-4.0.4.md`)는 `docs/history/`에 있습니다.
+5. `docs/lee-post-3.7.7-followups.md`: 사용자가 요청한 항목과 처리 버전. `docs/lee-development-overview-ko.md`: 다른 사람에게 설명할 때의 짧은 Q&A.
+6. canonical source와 실행 파일 버전/해시: 문서와 코드가 같은 결과를 설명하는지.
 
-### 3.1.7–3.3.3에서 무엇이 바뀌었나요? · Shipped evolution
+### 3.1.7–4.0.5에서 무엇이 바뀌었나요? · Shipped evolution
 
 | 구간 | 현행 코드에서 알아둘 변화 |
 | --- | --- |
@@ -720,32 +875,58 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 3.2.8–3.2.9 | QC 보고서 전후 비교, 매니페스트, 가족 유지 CSV 분할, 패키지 생성, 깨진 링크 복구. |
 | 3.3.0–3.3.2 | 원본1회 복사/해시, batch 재개, 마지막 설정, 패키지 자체 점검·필드 선택, 여러 링크 복구, 비교 키 기억, 병렬 처리 실측, 날짜·시간 안전한 기본값. |
 | 3.3.3 | 새 링크 필드명 사전 검증, 매니페스트 경로 제안 갱신/수동 입력 보존, 패키지 경로 오류 조기 수정, 선택적 OK 상세 보고서, QC 비교 두 진입점의 공통 키 선택. |
+| 3.3.4–3.3.9 | 날짜 형식 편의와 토큰 인식 날짜 검사, 정확한 Sum과 원본에 묶인 집계 보고서, 보고서 저장 이름·폴더 재사용, 보고서 전체 값 보기/찾기, 검증된 ID·요약 복사. |
+| 3.4.1–3.4.9 | 로고, 날짜 설정, Filter 설정 안정화, 필드 복사 설정, 설정 전체 검토, OPT 작업 공간 편집·다중 열기·OPT Export, 번호로 레코드 제거, 정확한 중복 판정(`ExactTuple348`), 검증 속도(중복 행 읽기 제거). |
+| 3.5.0–3.5.9 | Replace 여러 대상 체크 목록, Split date / time, 레시피 구조화 저장(버전 2), 비교·필터·매핑 설정 개선, 바뀐 열 가운데 정렬, 제목 우클릭 정렬, 세션 복원 위치·필터 설명 보존. |
+| 3.6.0–3.6.6 | 월/일 순서 보호, 출력 인코딩 기본값, 제목 우클릭 작업·명령 검색·열 고정, 저장 중단 저널·복구 관리·디스크 공간 사전 확인, Replace 작업 4종, 시간대 변환·경로/이름 QC·파일 서명/TIFF 검사, 연습 데이터·자가 점검·작업 이력, 텍스트 도구 3종. |
+| 3.6.7–3.7.6 | 가족 전체 포함, 무결성 독립 검증 캠페인(3.6.8–3.6.9), 속도 I(인덱스 캐시 등), 물리 파일 100만 개 규모, 표준 볼륨 폴더·프로덕션 비교·텍스트 품질, 재번호·1,000필드, 하나의 기억 정책, 작업 수 측정 기반 수정, 잠긴/읽기 전용 파일 처리. |
+| 3.7.7–3.8.1 | Help·접근성, 납품 프로필·레시피·batch, Order and names, 다중 선택 이동·잘못된 날짜 지우기, **64비트 전환(3.7.8)**, Package QC 결과 수준, 같은 필드의 DAT 쌓아 열기, 결과 아이콘·소리, Full HD 화면 검토. |
+| 3.8.2–3.8.9 | Edit/Tools 메뉴 묶음, 한국어 메뉴·툴바·우클릭 메뉴, 위→아래 설정 순서, Filter 수정·재설계, LEE 아이콘·**서명 빌드(3.8.5)**, Unexpected error 창, 미내보내기 변경 창·페이지 넘김, 숨긴 필드 삭제, 드롭 선택·다중 값 빠른 필터. |
+| 3.9.0–3.9.9 | 제목 우클릭 바로가기·필드명 복사, 선택 레코드만 보기/숨기기, 빈 필드 숨기기, Package QC 해시/크기 비교 기본 끔·막힌 입력 빨간 표시, **속도(3.9.5–3.9.8)**, File → Save(Ctrl+S)·Go to ID, 더블클릭 정렬·이전 보기·집계 드릴다운. |
+| 4.0.0–4.0.5 | 짧은 이름으로 폴더 복사(Relativity 로드파일)·긴 경로 File tree, Number records(DocID), Export 범위 기반 미내보내기 판정, 64비트 정렬 묶음·블록 읽기, 결과 한 번에 열기·기억한 설정, **eDML → LEE 이름 통일(4.0.5)**. |
 
 ### 현재 상태 · Current status
 
-3.3.3은 검증·게시가 끝났고 추가 핵심 묶음이 확정되지 않아 제품 개선 작업을 마무리했습니다. `lee-3.3.3-follow-up-review-2026-10-15.md`가 검토한 흐름과 중단 근거를 설명합니다. 피드백은 이미 설계·검증 가능한 기능의 개발 선행 조건이 아닙니다. 다음 작업은 재현 가능한 실제 문제나 명확한 실무 이점이 있을 때 시작하고, 새 체크포인트에서 동시 작업 소유자를 먼저 확인합니다.
+4.0.5가 검증·서명·게시된 현재 배포본이고 다음 버전은 4.0.6입니다. 진행 중인 작업은 없습니다. 4.0.3 뒤의 마지막 개선 후보 검색(2026-10-24)은 실제 사용 피드백 없이 배포할 만한 묶음을 찾지 못했습니다. 측정하고 그대로 둔 항목(고유값 Tally 30초, XLSX 26초 등)과 미룬 후보는 체크포인트에 있습니다. 피드백은 이미 설계·검증 가능한 기능의 개발 선행 조건이 아니며 우선순위만 조정합니다. 다음 작업 전에 체크포인트에서 동시 작업 소유자를 먼저 확인합니다.
 
 ### 변경 원칙
 
-우선순위는 편의성·직관성·입력 최소화·실수 예방, 데이터 완결성을 유지한 속도입니다. 이름 힌트를 권한 있는 매핑으로 바꾸거나, 검증을 지워서 속도를 높이면 안 됩니다. 큰 개선은 최소3개, 자잘한 개선만으로 구성한 배치는 최소5개를 묶어 한 버전으로 검증·배포합니다. 하나의 기능의 setup/preview/export를 억지로3개로 세지 않습니다.
+우선순위는 편의성·직관성·입력 최소화·실수 예방, 데이터 완결성을 유지한 속도입니다. 확인된 데이터 무결성 결함은 항상 먼저 고칩니다. 이름 힌트를 권한 있는 매핑으로 바꾸거나, 검증을 지워서 속도를 높이면 안 됩니다. 큰 개선은 최소 3개, 자잘한 개선만으로 구성한 배치는 최소 5개를 묶어 한 버전으로 배포합니다. 상한은 없지만 실패를 항목 하나로 좁힐 수 있게 추적 가능해야 합니다. 사용자가 요청한 항목은 따로 곧바로 만들어 배포합니다. 대화상자는 Full HD(1920×1080, 125% 배율 포함)에 맞춥니다.
 
 ### 테스트는 어디에 있나요?
 
-`workbench-tests`는 커스텀 C# 실행 파일 기반이며 실제 WinForms 화면 테스트와 core/상태/무결성 테스트가 함께 있습니다. `tests`의 Export 실행 파일은 출력 엔진을 검사합니다. Python의 독립 검사에서는 제품 파서/serializer를 그대로 재사용하지 않도록 설계합니다.
+`workbench-tests`(`LEE.WorkbenchTests`)는 커스텀 C# 실행 파일 기반이며 실제 WinForms 화면 테스트와 core/상태/무결성 테스트가 함께 있습니다. `--v405-only`처럼 모드를 골라 관련 테스트만 실행하고, 전체 suite(약 1,250개, 약 25분, 30분 제한)는 공용 엔진·플랫폼처럼 넓은 변경에서만 한 번 실행합니다. `tests`의 Export 실행 파일은 출력 엔진을 검사하고, `tests/torture/`는 인코딩·qualifier·깨진 행·1,000/1,001필드 등 합성 경계 사례를 독립 Python 판독기로 교차 확인합니다. Python의 독립 검사에서는 제품 파서/serializer를 그대로 재사용하지 않도록 설계합니다.
+
+```text
+# C:\Coding\Tools\lee 에서 (PowerShell)
+.\work\run.ps1 -Mode --v405-only -Name v405            # 한 번 빌드하고 모드 하나 실행, 실패와 요약 출력
+.\work\run.ps1 -Mode --v405-only -Name v405b -NoBuild  # 다시 빌드하지 않고 재실행
+# 결과: work\results\<Name>\results.txt
+```
 
 테스트의 `passed=N`은 해당 harness의 테스트 그룹 수입니다. “모든 고객 시나리오”나 “단언문 N개”라고 번역하지 않습니다. `ForTests`로 끝나는 hook은 변조/취소 같은 상황을 만들기 위한 도구이며, 제품의 검증을 무력화하는 해결책으로 쓰면 안 됩니다.
 
 ### 배포 구조
 
-개발 폴더와 공개 배포 체크아웃은 분리되어 있습니다. 검증된 실행 파일은 로컬 root·버전별 OLD·승인된 Git 배포 파일의 SHA-256을 맞춰 게시합니다. 현재 회사 배포 전 지침은 난독화 없이 `LEE.exe`와 동일 바이트 `LEE.html`만 게시하고, 소스·테스트·설정·고객 자료는 공개하지 않는 것입니다.
+개발 폴더와 공개 배포 체크아웃은 분리되어 있습니다. 모든 빌드는 난독화하지 않고 서명해 배포하며, `LEE.exe`와 동일 바이트 `LEE.html`만 게시합니다. 소스·테스트·설정·고객 자료는 공개하지 않습니다. 사용자는 Git에서 내려받아 회사 네트워크로 직접 복사합니다.
+
+현재 배포 절차(사용자 지침 2026-10-22/23):
+
+1. 변경마다 관련 집중 테스트를 통과시킵니다. 전체 suite는 넓은 변경에서만 한 번 실행합니다.
+2. 빌드한 뒤 테스트한 EXE에 서명합니다: `Set-AuthenticodeSignature`, 사용자 인증서 `Cert:\CurrentUser\My\1FD12C…`, SHA-256, timestamp 서버 없음. 서명 뒤 재테스트는 하지 않습니다.
+3. `OLD\LEE_<version>.exe`(+ `.exe.config`)로 백업하고(기존 백업은 절대 덮어쓰지 않음), root `LEE.exe`/`LEE.html`을 같은 바이트로 바꿉니다. `LEE.exe.config`는 로컬에만 둡니다.
+4. `github-eDiscovery`(remote `phlee219/eDiscovery`)에 두 파일만 커밋·푸시하고, 원격 바이트가 root SHA-256과 같은지 확인합니다.
+5. `docs/lee-<version>-release-<date>.md`를 쓰고 `lee-version-history.md`에 한 줄을 더하고 체크포인트를 갱신합니다.
+
+예전의 동결(frozen) 캠페인, release receipt, 독립 reference 캠페인, native 이미지 검토, 항목별 불변 스냅샷, “동결 검증 2회 실패 시 중단” 규칙은 더 이상 쓰지 않습니다. `docs/history/`의 3.6.x–3.7.x 기록에 나오는 이런 단계는 당시 절차입니다.
 
 ### 버전을 바꿀 때 함께 확인할 위치 · Version and compatibility checklist
 
-`WorkspaceEngine.Version`, `AssemblyInfo.cs`의 AssemblyVersion/AssemblyFileVersion, `HeaderLayoutStore.cs`의 현재 버전·이전 설정 허용 목록, `Compatibility250Tests.cs`의 미래 버전 거부 probe를 함께 확인합니다. 숫자 하나만 바꾸면 이전 필드 설정이 사라지는 회귀가 생길 수 있습니다. `3.3.9 → 3.4.0`처럼 각 자리는 한 자리입니다.
+`WorkspaceEngine.Version`과 `AssemblyInfo.cs`의 AssemblyVersion/AssemblyFileVersion(`4.0.6.0`처럼 `.0`을 붙임)을 함께 바꿉니다. `HeaderLayoutStore.CompatibleToolVersion`은 3.8.3부터 2.4.8 이상 현재 버전 이하의 저장 레이아웃을 자동으로 받아들이고 더 새로운 버전은 거부하므로 릴리스마다 허용 목록을 고칠 필요가 없습니다. 3.8.2에서 이 목록이 한 버전에 묶여 이전 설정이 복원되지 않던 회귀가 있었습니다. `Compatibility250Tests.cs`의 미래 버전 거부 probe도 확인합니다. `4.0.9 → 4.1.0`처럼 각 자리는 한 자리입니다.
 
-제품 변경은 실제 화면/코드 재현 → 범위가 정해진 계획 → 구현 → 동결 빌드 검사 → OLD 보존·root/Git 해시 일치 → 게시·인계 순서입니다. 기존 검사의 실패를 건너뛰고 배포하지 않습니다. 3.3.3 기록의 `Path/PATH` 중복은 테스트 자식 프로세스 환경 생성 문제였고, 제품 코드를 바꾸지 않은 같은 빌드의 재검사로 구분했습니다. 문서 변경은 문서 구조·검색·화면·동일 바이트 게시만 검증하며 제품 버전을 올리지 않습니다.
+제품 변경은 실제 화면/코드 재현 → 범위가 정해진 계획 → 구현 → 집중 테스트 → 빌드·서명 → OLD 보존·root/Git 해시 일치 → 게시·기록 순서입니다. 기존 검사의 실패를 건너뛰고 배포하지 않습니다. 전체 suite의 단발 실패(예: 4.0.5의 클립보드 경합)는 해당 모드 재실행으로 제품 결함과 구분하고 release 문서에 적습니다. 문서 변경은 제품 버전을 올리지 않습니다.
 
-개발 중 임시 `SYSTEM_REQUIRED + DISPLAY_REQUIRED` 요청과 heartbeat를 유지하고 실제 마무리 직전에 해제·프로세스 종료·idle reset을 확인합니다. 영구 전원 정책을 바꾸지 않으며 다른 작업의 helper를 종료하지 않습니다.
+Claude로 개발할 때는 Claude 앱이 절전을 막으므로 별도의 keep-awake helper를 실행하지 않습니다(사용자 2026-10-24). 다른 에이전트가 필요하면 `lee\work\power` 아래의 임시 요청만 쓰고 전원 정책은 바꾸지 않으며 끝날 때 해제합니다.
 
 <a id="learning"></a>
 
@@ -813,6 +994,12 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 | 가족 유지 분할 | Family-preserving split | 연속한 같은 가족을 part 사이에서 나누지 않아 건수가 목표를 넘을 수 있음 |
 | 볼륨별 경로 접두어 | Per-volume link prefix | 병합된 원본마다 상대 링크를 공통 root 아래에 연결 |
 | 완성 / 미완성 | COMPLETE / INCOMPLETE | 패키지 도구가 설정한 구성의 결과. 고객 최종 승인과 구분 |
+| 내보내지 않은 변경 | Unexported changes | 검증된 Export에 포함되지 않은 셀 변경. 떠나기 전 질문의 기준 |
+| 제자리 저장 | Save in place (Ctrl+S) | 이전 파일을 백업으로 옮기고 같은 이름에 검증된 파일을 둠. Export와 구분 |
+| 가족 전체 포함 | Include whole families | view에 일부만 있는 가족의 나머지 레코드를 추가하는 선택 |
+| 이전 보기 | Back to previous view | 필터·정렬 전의 view로 돌아감. 데이터 Undo와 별도 |
+| 기억 정책 | Remembering policy | 마지막 설정 중 복원해도 되는 값과 절대 복원하지 않는 값의 구분 |
+| 결과 수준 | Result level | Package QC의 일부 비교를 ERROR / REVIEW / Not reported 중 무엇으로 보고할지 |
 
 ### C#에서 우선 읽을 문법 · C# reading essentials
 
@@ -830,4 +1017,4 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 
 > 목표는 모든 파일을 암기하는 것이 아닙니다. **무엇을 입력으로 잡았는지, 어느 범위를 읽었는지, 어떤 규칙을 적용했는지, 무엇을 다시 검증했는지**를 설명하고, 그 책임을 가진 메서드까지 찾아갈 수 있으면 됩니다.
 
-최신 갱신 2026-10-15 · 제품/소스 3.3.3. 근거: 현재 csproj·시작/워크스페이스·파서·출력/QC·3.1.7–3.3.3 기능 엔진, README·체크포인트, 3.3.3 동결 빌드의 저장된 검사·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 문서 자체의 구조·검색·표시는 별도 확인했습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
+최신 갱신 2026-10-27 · 제품/소스 4.0.5. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4–4.0.5에 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5–4.0.5 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
