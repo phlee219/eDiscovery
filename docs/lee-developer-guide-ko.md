@@ -6,9 +6,9 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 한국어 + English · 개발자 / Delivery Engineer
 
-배포 파일 확인: 4.0.7
+배포 파일 확인: 4.0.8
 
-확인한 개발 소스: 4.0.7
+확인한 개발 소스: 4.0.8
 
 최신 갱신: 2026-10-27 · 미동부 기준
 
@@ -47,10 +47,10 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 
 ### 이 문서의 기준 · Version snapshot
 
-2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.7.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.7**입니다. 해당 제품 배포 커밋은 `50343e8`입니다. 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
+2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.8.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.8**입니다. 해당 제품 배포 커밋은 `660afda`입니다. 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
 
 확인한 배포본 SHA-256 (서명된 파일):
-D78A301ED8DF0C7DD5C6BE913763881053346259537F244302F196DF1FF90126
+3BF19AF1926BA292AC9C9E659F8A97C0DACD482BDF7C88417DF61636CAA39B5F
 
 > **3.3.3 기준 노트를 읽었다면:** 02의 64비트·서명·이름 변경, 04의 저장/미내보내기 변경 관리, 05의 바뀐 표와 새 작업(⑦의 새 행, ⑨·⑩), 07의 새 코드 위치, 10의 바뀐 한계와 측정값, 11의 현재 배포 절차를 먼저 보십시오. 3.3.4 이후 현재 배포본까지의 변경을 반영했습니다.
 
@@ -381,7 +381,7 @@ ClientPackage_LEE_manifest.dat         패키지 폴더 밖에 둔 전체 파일
 | 페이지 | 1,000행 페이지의 끝/처음에서 아래/위 키가 다음/이전 페이지로(3.8.7) | 표시 방식만 바뀌고 처리 범위는 바뀌지 않습니다. |
 | Tally / Sum 결과 | Tally의 *Show records with this value*, Sum 제외 행의 *Go to source record*(3.9.9, `Drill399`) | 집계했던 **같은 view**를 그룹의 정확한 저장값(빈 값 포함)으로 거르고, 표시 건수가 그룹 건수와 같은지 확인합니다. view가 바뀌었으면 거부합니다. 보고서는 원본 해시·필드·범위에 묶여 있습니다(3.3.6 `SourceBoundReport336`). |
 
-Fields to display의 **Order and names**(3.7.7, `FieldOrderNames377`)는 순서 조정, 새 이름 붙여넣기/불러오기, 숨긴 필드 삭제(3.8.8)를 한 번의 검토와 하나의 Undo로 처리합니다. 4.0.7부터 1열에는 **보이는 필드만** 나오므로, SOW 목록을 보이는 필드 수만큼 붙이면 행마다 맞습니다. 숨긴 필드는 이름과 위치를 유지하고(`LeftOut407`, `CompleteOrder407`), *Delete hidden fields*는 삭제 여부만 정합니다. 붙여넣은 목록은 `NameList407`이 읽습니다. 끝의 빈 줄, CR/LF/CRLF, Excel에서 같이 복사된 빈 열은 무시하고, 빈 줄·중복 이름·실제 두 번째 열은 줄 번호와 함께 거부합니다. 앞뒤 공백이 있는 이름은 그대로 두고 확인 안내만 합니다. 다른 필드도 함께 바뀌면 그 필드의 현재 이름을 새 이름으로 쓸 수 있고(연쇄·교환), 레시피에는 한 단계씩 다시 실행해도 맞는 순서로 기록합니다(`ReplaySteps407`, 교환은 임시 이름 `이름~1`을 거침). 숨긴 필드가 유지하는 이름과 겹치면 그 필드 이름을 알려 주며 막습니다. 설정 화면의 막힌 입력은 굵은 빨간 제목과 연한 빨간 띠로 표시됩니다(3.9.4, `Blockers394`).
+Fields to display의 **Order and names**(3.7.7, `FieldOrderNames377`)는 순서 조정, 새 이름 붙여넣기/불러오기, 숨긴 필드 삭제(3.8.8)를 한 번의 검토와 하나의 Undo로 처리합니다. 4.0.7부터 1열에는 **보이는 필드만** 나오므로, SOW 목록을 보이는 필드 수만큼 붙이면 행마다 맞습니다. 숨긴 필드는 이름과 위치를 유지하고(`LeftOut407`, `CompleteOrder407`), *Delete hidden fields*는 삭제 여부만 정합니다. 붙여넣은 목록은 `NameList407`이 읽습니다. 끝의 빈 줄, CR/LF/CRLF, Excel에서 같이 복사된 빈 열은 무시하고, 빈 줄·중복 이름·실제 두 번째 열은 줄 번호와 함께 거부합니다. 앞뒤 공백이 있는 이름은 그대로 두고 확인 안내만 합니다. 다른 필드도 함께 바뀌면 그 필드의 현재 이름을 새 이름으로 쓸 수 있고(연쇄·교환), 레시피에는 한 단계씩 다시 실행해도 맞는 순서로 기록합니다(`ReplaySteps407`, 교환은 임시 이름 `이름~1`을 거침). 숨긴 필드가 유지하는 이름과 겹치면 그 필드 이름을 알려 주며 막습니다. 1열과 2열은 같은 줄에 맞춰 스크롤되지만, 4.0.8부터는 사용자가 움직이는 쪽을 되돌리지 않고 다른 쪽만 따라옵니다(Export의 SOW 이름 칸도 같음). 줄 수가 다르거나 가로 스크롤바 때문에 끝까지 같은 줄에 맞출 수 없으면 목록이 끝에서 멈춥니다. 적용할 때 표시 순서는 `SetFieldOrder377`이 그리드에 있는 필드만 한 번씩 놓으므로, 목록이 그리드보다 길어도 “DisplayIndex … must be smaller than the number of columns”로 실패하지 않습니다(4.0.8). 설정 화면의 막힌 입력은 굵은 빨간 제목과 연한 빨간 띠로 표시됩니다(3.9.4, `Blockers394`).
 
 ### ⑩ 기억, 복구, 자가 점검 · Remembering, recovery and self-check
 
@@ -665,6 +665,14 @@ DAT/CSV 파서부터 수정하지 않습니다. 3.7.8부터 LEE는 64비트로 �
 
 먼저 상태 줄의 문구를 읽습니다. 4.0.7부터는 원인과 줄 번호가 나옵니다. “Fields listed in column 1: N; new names: M”이면 1열(보이는 필드)과 줄 수가 다른 것이고, 숨긴 필드는 세지 않습니다. “Row K is blank”·“Rows A and B have the same name”은 SOW 목록 자체의 문제입니다. 이름 비교는 대소문자를 구분하지 않습니다. “is the name of the hidden field”는 숨긴 필드가 그 이름을 계속 쓰는 경우입니다. 코드는 `FieldOrderNames377.Renames → ParseNames → NameList407.Parse` 순서로 따라갑니다. Export의 SOW 이름은 `NativeExportDialog.ParseOutputNames`가 같은 `NameList407`을 씁니다. 4.0.6까지는 숨긴 필드가 1열에 함께 있어 보이는 필드 수만큼 붙이면 줄 수가 달랐습니다. 다른 필드의 현재 이름을 쓰는 연쇄·교환도 막았습니다.
 
+#### 사례 Q · Fields to display 적용 후 “DisplayIndex … must be smaller than the number of columns” · Display order failure
+
+WinForms는 열 개수 이상의 위치를 받지 않습니다. 열 위치를 쓰는 곳은 `SetFieldOrder377`, `RefreshGrid`의 재배치, `ViewPresets.ApplyLayout` 세 곳이고, 4.0.8부터 모두 그리드에 있는 필드만 한 번씩 놓습니다. 같은 오류가 다시 보이면 4.0.8 이상인지 먼저 확인합니다. 그다음 새로 생긴 위치 지정 코드가 이 규칙을 따르는지 봅니다(`grid.Columns[...].DisplayIndex =`를 검색).
+
+#### 사례 R · 이름 칸 스크롤바가 움직이지 않음 · Aligned boxes
+
+`FieldOrderNames377.Align`과 `NativeExportDialog.AlignExport360`이 두 칸을 맞춥니다. 4.0.8부터는 움직인 쪽은 그대로 두고 다른 쪽만 따라오게 합니다. 예전처럼 맞춘 뒤 다시 되돌리는 반복이 생기면, 끝 근처에서 스크롤이 계속 원위치되어 고정된 것처럼 보입니다.
+
 ### 한 흐름을 코드로 읽는 연습 · Trace one workflow
 
 ```text
@@ -834,7 +842,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | OPT 합치기 | 2–1,024개 OPT 파일. 페이지 행·ID·문서 경계를 검사하며 실제 image files/import는 별도 |
 | 공용 대용량 시험 | 합성2,000,000레코드 / 2,471,194,958바이트 DAT. 작은 native/text companions 두 개 포함 |
 | 공용 물리 파일 시험 | `tests/shared-data/files_1m.py`: native 100만 개 + UTF-8 텍스트 100만 개(폴더당 1,000개), `files-1m.dat`, 25만 문서의 `pages-1m.opt`. 모든 파일의 SHA-256 목록 포함. 3.7.1에서 Package QC 등을 이 규모로 확인 |
-| 최근 전체 검사 기록 (4.0.7) | `--v407-only` 43/0, 전체 suite 1256/1(1건은 4.0.7에서 일부러 받아들이게 한 끝 빈 줄 목록을 예전 테스트가 거부로 기대한 것. 기대값을 고친 뒤 해당 모드 통과). 전체 suite 목록에 3.9.5 이후 19개 묶음이 빠져 있어 그 묶음들은 각자의 집중 모드로만 실행됨 |
+| 최근 전체 검사 기록 (4.0.8) | 전체 suite **1319/0, 28.2분**(30분 제한 안, 여유 약 2분). 4.0.8부터 모든 테스트 묶음이 전체 목록에 들어 있음(`RunMenuLegacy382Tests`는 이미 들어 있는 2.4.3/2.4.4 테스트를 다시 부르는 묶음이라 제외). `--v408-only` 44/0 |
 | 2M 측정 (4.0.3 이후) | 열기 약 4초(작업대 포함 4.42초), Export 약 21초, 정렬 약 6초, Compare 19초, XLSX 26초, Field profile 10초, 고유값 많은 Tally 30초. 같은 PC의 엔진 측정이며 다른 PC·저장장치의 보장값이 아님 |
 | 미확인 영역 (수용한 한계) | 실제 Relativity/리뷰 플랫폼 import, per-monitor DPI, long-path 정책 없는 260자 초과 경로, 실제 네트워크 공유/OneDrive, 32비트/Jet, IPRO LFP 변환, 실 TIFF/PDF 내부 페이지 완전성 |
 
@@ -894,7 +902,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 3.8.2–3.8.9 | Edit/Tools 메뉴 묶음, 한국어 메뉴·툴바·우클릭 메뉴, 위→아래 설정 순서, Filter 수정·재설계, LEE 아이콘·**서명 빌드(3.8.5)**, Unexpected error 창, 미내보내기 변경 창·페이지 넘김, 숨긴 필드 삭제, 드롭 선택·다중 값 빠른 필터. |
 | 3.9.0–3.9.9 | 제목 우클릭 바로가기·필드명 복사, 선택 레코드만 보기/숨기기, 빈 필드 숨기기, Package QC 해시/크기 비교 기본 끔·막힌 입력 빨간 표시, **속도(3.9.5–3.9.8)**, File → Save(Ctrl+S)·Go to ID, 더블클릭 정렬·이전 보기·집계 드릴다운. |
 | 4.0.0–4.0.5 | 짧은 이름으로 폴더 복사(Relativity 로드파일)·긴 경로 File tree, Number records(DocID), Export 범위 기반 미내보내기 판정, 64비트 정렬 묶음·블록 읽기, 결과 한 번에 열기·기억한 설정, **eDML → LEE 이름 통일(4.0.5)**, 같은 버전 재빌드로 작성자 로고를 흐리게. |
-| 4.0.6–4.0.7 | **Save(Ctrl+S)가 화면에 보이는 필드를 보이는 순서대로 씀(4.0.6)**, Order and names에 보이는 필드만 나와 SOW 이름이 행마다 맞음·연쇄/교환 이름 변경·줄 번호가 있는 붙여넣기 오류(4.0.7), **하나만 연 OPT의 Ctrl+S(4.0.7)**. |
+| 4.0.6–4.0.8 | **Save(Ctrl+S)가 화면에 보이는 필드를 보이는 순서대로 씀(4.0.6)**, Order and names에 보이는 필드만 나와 SOW 이름이 행마다 맞음·연쇄/교환 이름 변경·줄 번호가 있는 붙여넣기 오류(4.0.7), **하나만 연 OPT의 Ctrl+S(4.0.7)**, 필드 순서 적용의 DisplayIndex 실패 방지·이름 칸 스크롤이 되돌아가지 않음·전체 suite에 모든 테스트 묶음 포함(4.0.8). |
 
 ### 현재 상태 · Current status
 
@@ -906,7 +914,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 
 ### 테스트는 어디에 있나요?
 
-`workbench-tests`(`LEE.WorkbenchTests`)는 커스텀 C# 실행 파일 기반이며 실제 WinForms 화면 테스트와 core/상태/무결성 테스트가 함께 있습니다. `--v405-only`처럼 모드를 골라 관련 테스트만 실행하고, 전체 suite(약 1,250개, 약 25분, 30분 제한)는 공용 엔진·플랫폼처럼 넓은 변경에서만 한 번 실행합니다. `tests`의 Export 실행 파일은 출력 엔진을 검사하고, `tests/torture/`는 인코딩·qualifier·깨진 행·1,000/1,001필드 등 합성 경계 사례를 독립 Python 판독기로 교차 확인합니다. Python의 독립 검사에서는 제품 파서/serializer를 그대로 재사용하지 않도록 설계합니다.
+`workbench-tests`(`LEE.WorkbenchTests`)는 커스텀 C# 실행 파일 기반이며 실제 WinForms 화면 테스트와 core/상태/무결성 테스트가 함께 있습니다. `--v405-only`처럼 모드를 골라 관련 테스트만 실행하고, 전체 suite(약 1,320개, 약 28분, 30분 제한)는 공용 엔진·플랫폼처럼 넓은 변경에서만 한 번 실행합니다. 새 테스트 묶음은 전용 모드와 함께 `Program.cs`의 전체 목록에도 넣습니다(4.0.8에서 빠져 있던 18개를 넣음). 클릭 크롤(`--crawl385-only`, `--crawl386-only`)은 눌러서 열린 드롭다운 메뉴를 매번 닫습니다(`CloseMenus408`). `tests`의 Export 실행 파일은 출력 엔진을 검사하고, `tests/torture/`는 인코딩·qualifier·깨진 행·1,000/1,001필드 등 합성 경계 사례를 독립 Python 판독기로 교차 확인합니다. Python의 독립 검사에서는 제품 파서/serializer를 그대로 재사용하지 않도록 설계합니다.
 
 ```text
 # C:\Coding\Tools\lee 에서 (PowerShell)
@@ -1028,4 +1036,4 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 
 > 목표는 모든 파일을 암기하는 것이 아닙니다. **무엇을 입력으로 잡았는지, 어느 범위를 읽었는지, 어떤 규칙을 적용했는지, 무엇을 다시 검증했는지**를 설명하고, 그 책임을 가진 메서드까지 찾아갈 수 있으면 됩니다.
 
-최신 갱신 2026-10-27 · 제품/소스 4.0.7. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4 이후 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5 이후 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
+최신 갱신 2026-10-27 · 제품/소스 4.0.8. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4 이후 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5 이후 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
