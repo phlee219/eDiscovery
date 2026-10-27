@@ -6,9 +6,9 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 한국어 + English · 개발자 / Delivery Engineer
 
-배포 파일 확인: 4.0.6
+배포 파일 확인: 4.0.7
 
-확인한 개발 소스: 4.0.6
+확인한 개발 소스: 4.0.7
 
 최신 갱신: 2026-10-27 · 미동부 기준
 
@@ -47,12 +47,14 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 
 ### 이 문서의 기준 · Version snapshot
 
-2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.6.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.6**입니다. 해당 제품 배포 커밋은 `47472ff`입니다(4.0.6: Save가 화면에 보이는 필드를 보이는 순서대로 씀). 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
+2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.7.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.7**입니다. 해당 제품 배포 커밋은 `50343e8`입니다. 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
 
 확인한 배포본 SHA-256 (서명된 파일):
-0340435C00049A6DA4CE256A4B80701E94F57F9C81AE1CC19E96464751F548FE
+D78A301ED8DF0C7DD5C6BE913763881053346259537F244302F196DF1FF90126
 
-> **3.3.3 기준 노트를 읽었다면:** 02의 64비트·서명·이름 변경, 04의 저장/미내보내기 변경 관리, 05의 바뀐 표와 새 작업(⑦의 새 행, ⑨·⑩), 07의 새 코드 위치, 10의 바뀐 한계와 측정값, 11의 현재 배포 절차를 먼저 보십시오. 3.3.4부터 4.0.5까지 약 60개 버전의 변경을 반영했습니다.
+> **3.3.3 기준 노트를 읽었다면:** 02의 64비트·서명·이름 변경, 04의 저장/미내보내기 변경 관리, 05의 바뀐 표와 새 작업(⑦의 새 행, ⑨·⑩), 07의 새 코드 위치, 10의 바뀐 한계와 측정값, 11의 현재 배포 절차를 먼저 보십시오. 3.3.4 이후 현재 배포본까지의 변경을 반영했습니다.
+
+> **버전 표기 규칙:** 이 문서에서 “현재 버전”은 맨 위 머리말, 이 절의 버전 정보, 맨 끝 맺음말 세 곳에만 적고 세 곳은 항상 같습니다(HTML 생성기가 다르면 생성을 거부합니다). 본문의 “(3.9.8)”·“4.0.6부터” 같은 숫자는 그 기능이 처음 들어온 버전입니다.
 
 이번 갱신은 소스와 기존 검증·배포 기록을 읽고 학습 문서만 수정한 작업입니다. 제품 소스·실행 파일·사용자 설정을 수정하거나 빌드·제품 테스트를 재실행하지 않았습니다. 버전별 세부 내용은 `docs/lee-version-history.md`와 각 release 문서에 있습니다.
 
@@ -191,7 +193,8 @@ Undo/Redo는 매번 전체 원본 파일을 복제하는 단순 방식이 아니
 
 - **한 번의 Enter로 작업을 잃지 않음 (3.8.7, `UnexportedChanges387`):** 닫기, 다른 파일 열기(최근 파일·드롭·연습 데이터 포함), 병합/OPT 열기, 세션 복원 전에 *Unexported changes* 창이 뜹니다. Export… / Save session… / Discard changes / Cancel 중 기본값은 Cancel입니다. 제목 표시줄 앞의 `• `는 아직 내보내지 않은 변경이 있다는 표시입니다.
 - **어떤 Export가 변경을 덮는가 (4.0.2, `ExportCoverage402`):** 첫 미내보내기 변경 직전의 데이터를 기준으로 두고, 검증된 Export마다 데이터·레코드·필드를 기록합니다. 바뀐 모든 셀이 이 데이터의 검증된 Export(여러 번 합산 가능)에 포함된 필드·레코드 안에 있으면 표시와 질문이 사라집니다. 필드 삭제/이름 변경, 레코드 수 변화, 인코딩 경고, 실패·취소된 확인은 질문을 유지합니다.
-- **File → Save (Ctrl+S, 3.9.8, `Save398`):** 열었던 DAT/CSV에 모든 레코드를 **화면에 보이는 필드 그대로**(표시 순서, 이름 변경·삭제 반영, 숨긴 필드는 쓰지 않음, 4.0.6) 원래 이름·인코딩·구분자·qualifier로 다시 씁니다. 쓰지 않은 숨긴 필드는 안내와 save audit에 이름을 남기고, 이전 파일(그 필드 포함)은 백업에 있습니다. 4.0.5까지는 데이터 순서로 숨긴 필드까지 써서, 화면에서 바꾼 순서·숨김이 저장 파일에 반영되지 않았습니다. Export와 같은 검증 경로를 거치며 확인 질문은 없습니다. 이전 파일은 납품 폴더 밖 `%LOCALAPPDATA%\LEE\SaveBackups\<이름>-<경로 해시>\`로 옮기고 파일당 최신 3개를 보관합니다. 다른 프로그램이 원본을 잡고 있으면 원본은 그대로 두고 옆에 `name_LEE_saved_<time>`를 만들어 엽니다. 병합/복원 데이터·OPT·UTF-16 BE에는 제공하지 않습니다(Export 사용). UTF-8 원본은 BOM과 함께 씁니다.
+- **File → Save (Ctrl+S, 3.9.8, `Save398`):** 열었던 DAT/CSV에 모든 레코드를 **화면에 보이는 필드 그대로**(표시 순서, 이름 변경·삭제 반영, 숨긴 필드는 쓰지 않음, 4.0.6) 원래 이름·인코딩·구분자·qualifier로 다시 씁니다. 쓰지 않은 숨긴 필드는 안내와 save audit에 이름을 남기고, 이전 파일(그 필드 포함)은 백업에 있습니다. 4.0.5까지는 데이터 순서로 숨긴 필드까지 써서, 화면에서 바꾼 순서·숨김이 저장 파일에 반영되지 않았습니다. Export와 같은 검증 경로를 거치며 확인 질문은 없습니다. 이전 파일은 납품 폴더 밖 `%LOCALAPPDATA%\LEE\SaveBackups\<이름>-<경로 해시>\`로 옮기고 파일당 최신 3개를 보관합니다. 다른 프로그램이 원본을 잡고 있으면 원본은 그대로 두고 옆에 `name_LEE_saved_<time>`를 만들어 엽니다. UTF-8 DAT/CSV 원본은 BOM과 함께 씁니다.
+- **OPT도 Ctrl+S (4.0.7, `Save398.SaveOptInPlace407`):** 하나만 연 OPT는 같은 방식으로 원래 이름에 저장합니다. OPT 페이지 검사(`OptCombine313.Validate`)를 거쳐 전체 데이터의 모든 페이지 행을 원래 순서로, 7개 필드를 OPT 순서로 씁니다(표시 순서·숨김은 적용하지 않음). 인코딩과 BOM은 원본 파일 그대로이고(UTF-8·UTF-16·Windows-1252/ANSI), 그 인코딩으로 쓸 수 없는 값이 있으면 아무것도 쓰지 않고 거부합니다. 여러 OPT를 함께 연 작업, IPRO LFP, 병합/복원 데이터, UTF-16 BE는 Save를 제공하지 않습니다(Export 사용).
 
 > **Save는 “원본을 덮어쓰지 않는다”는 규칙의 명시적 예외입니다.** 사용자가 직접 고른 명령이고, 이전 파일을 백업으로 옮긴 다음 검증된 새 파일을 같은 이름으로 둡니다. Export는 여전히 새 파일만 만듭니다.
 
@@ -378,7 +381,7 @@ ClientPackage_LEE_manifest.dat         패키지 폴더 밖에 둔 전체 파일
 | 페이지 | 1,000행 페이지의 끝/처음에서 아래/위 키가 다음/이전 페이지로(3.8.7) | 표시 방식만 바뀌고 처리 범위는 바뀌지 않습니다. |
 | Tally / Sum 결과 | Tally의 *Show records with this value*, Sum 제외 행의 *Go to source record*(3.9.9, `Drill399`) | 집계했던 **같은 view**를 그룹의 정확한 저장값(빈 값 포함)으로 거르고, 표시 건수가 그룹 건수와 같은지 확인합니다. view가 바뀌었으면 거부합니다. 보고서는 원본 해시·필드·범위에 묶여 있습니다(3.3.6 `SourceBoundReport336`). |
 
-Fields to display의 **Order and names**(3.7.7, `FieldOrderNames377`)는 순서 조정, 새 이름 붙여넣기/불러오기, 숨긴 필드 삭제(3.8.8)를 한 번의 검토와 하나의 Undo로 처리합니다. 설정 화면의 막힌 입력은 굵은 빨간 제목과 연한 빨간 띠로 표시됩니다(3.9.4, `Blockers394`).
+Fields to display의 **Order and names**(3.7.7, `FieldOrderNames377`)는 순서 조정, 새 이름 붙여넣기/불러오기, 숨긴 필드 삭제(3.8.8)를 한 번의 검토와 하나의 Undo로 처리합니다. 4.0.7부터 1열에는 **보이는 필드만** 나오므로, SOW 목록을 보이는 필드 수만큼 붙이면 행마다 맞습니다. 숨긴 필드는 이름과 위치를 유지하고(`LeftOut407`, `CompleteOrder407`), *Delete hidden fields*는 삭제 여부만 정합니다. 붙여넣은 목록은 `NameList407`이 읽습니다. 끝의 빈 줄, CR/LF/CRLF, Excel에서 같이 복사된 빈 열은 무시하고, 빈 줄·중복 이름·실제 두 번째 열은 줄 번호와 함께 거부합니다. 앞뒤 공백이 있는 이름은 그대로 두고 확인 안내만 합니다. 다른 필드도 함께 바뀌면 그 필드의 현재 이름을 새 이름으로 쓸 수 있고(연쇄·교환), 레시피에는 한 단계씩 다시 실행해도 맞는 순서로 기록합니다(`ReplaySteps407`, 교환은 임시 이름 `이름~1`을 거침). 숨긴 필드가 유지하는 이름과 겹치면 그 필드 이름을 알려 주며 막습니다. 설정 화면의 막힌 입력은 굵은 빨간 제목과 연한 빨간 띠로 표시됩니다(3.9.4, `Blockers394`).
 
 ### ⑩ 기억, 복구, 자가 점검 · Remembering, recovery and self-check
 
@@ -510,6 +513,9 @@ SETUP · 설정 상태 · REVIEW · 검토 필요 · ERROR · 오류/차단 · N
 | 한국어 메뉴·메뉴 묶음·예외 창 | `src/LEE/MenuLanguage384.cs`   `src/LEE/MenuGroups382.cs`   `src/LEE/UnexpectedError386.cs` | Translates, ApplyContext, English tooltip, lee-error log |
 | 납품 프로필·레시피·설정 묶음 | `src/LEE/DeliveryProfile377.cs`   `src/LEE/DataWorkbench.DeliveryProfile377.cs`   `src/LEE/RecipePlan377.cs`   `src/LEE/SettingsBundle377.cs` | StageDelivery377, ValidatePart, BundleSnapshot377 |
 | 옛 eDML 이름 읽기 호환 | `src/LEE/LegacyNames405.cs` | IsSession, Prefer, CopyManifest, SettingsRead |
+| 붙여넣은 이름 목록·SOW 이름·매핑 표 | `src/LEE/NameList407.cs`   `src/LEE/FieldOrderNames377.cs`   `src/LEE/OrderMoves378.cs`   `src/LEE/WorkbenchDialogs.cs` | Lines, Parse, SpaceHint, ParseNames, ParseOutputNames, FieldMapping379.Parse, Near |
+| 숨긴 필드와 Order and names·연쇄 이름 변경 | `src/LEE/FieldOrderNames377.cs`   `src/LEE/LegacyOperations.cs`   `src/LEE/DataWorkbench.cs` | RefreshDeletion388, LeftOut407, KeptUnlisted407, CompleteOrder407, Renames, ReplaySteps407, RenameFields, DisplayFields |
+| OPT의 Ctrl+S | `src/LEE/Save398.cs`   `src/LEE/OptCombine313.cs`   `src/LEE/PackageQc.cs` | CanSaveOpt407, SaveOptInPlace407, Utf8Bom407, Save(encodingName, bom), SaveEncoding407, OpenImages(expectedSha) |
 
 > `partial class DataWorkbench`는 “하나의 클래스가 여러 파일로 나뉜 것”입니다. `Pages316`, `SourceApproval312`, `…305` 등의 숫자는 기능을 처음 추가한 버전의 흔적일 수 있습니다. 파일명만 보고 구버전이라 삭제하거나, 그 파일 하나만 현재 코드라고 판단하면 안 됩니다.
 
@@ -645,7 +651,7 @@ DAT/CSV 파서부터 수정하지 않습니다. 3.7.8부터 LEE는 64비트로 �
 
 #### 사례 M · Ctrl+S 뒤 옆에 `_LEE_saved_` 파일이 생김 · Save in place fallback
 
-다른 프로그램(Excel, 백신, 동기화 도구)이 원본을 잡고 있어 교체할 수 없었다는 뜻입니다. 원본은 그대로이고 검증된 사본을 옆에 두고 연 것입니다. `Save398.SaveInPlaceCore398 → Replace398`의 경고 문구와 `%LOCALAPPDATA%\LEE\SaveBackups`의 백업을 확인합니다. Save가 비활성이면 병합/복원 데이터·OPT·UTF-16 BE인지 봅니다.
+다른 프로그램(Excel, 백신, 동기화 도구)이 원본을 잡고 있어 교체할 수 없었다는 뜻입니다. 원본은 그대로이고 검증된 사본을 옆에 두고 연 것입니다. `Save398.SaveInPlaceCore398 → Replace398`의 경고 문구와 `%LOCALAPPDATA%\LEE\SaveBackups`의 백업을 확인합니다. Save가 거부되면 병합/복원 데이터·여러 OPT를 함께 연 작업·IPRO LFP·UTF-16 BE인지 봅니다(하나만 연 OPT는 4.0.7부터 저장됨).
 
 #### 사례 N · “Unexpected error” 창이 뜸 · Unhandled UI exception
 
@@ -654,6 +660,10 @@ DAT/CSV 파서부터 수정하지 않습니다. 3.7.8부터 LEE는 64비트로 �
 #### 사례 O · 예전 `.edmlsession`·프리셋이 안 열림 · Legacy names
 
 4.0.5에서 이름을 LEE로 바꾸면서 옛 확장자는 `LegacyNames405`에서 읽기 전용으로 처리합니다. 열기 대화상자의 필터와 드롭이 두 이름을 모두 받는지, 같은 이름의 새 파일이 있으면 그쪽을 우선하는지(`Prefer`) 확인합니다. 세션은 원본 경로·해시가 바뀌면 이름과 관계없이 복원을 막습니다.
+
+#### 사례 P · SOW 이름을 개수에 맞춰 붙였는데 거부됨 · Pasted names refused
+
+먼저 상태 줄의 문구를 읽습니다. 4.0.7부터는 원인과 줄 번호가 나옵니다. “Fields listed in column 1: N; new names: M”이면 1열(보이는 필드)과 줄 수가 다른 것이고, 숨긴 필드는 세지 않습니다. “Row K is blank”·“Rows A and B have the same name”은 SOW 목록 자체의 문제입니다. 이름 비교는 대소문자를 구분하지 않습니다. “is the name of the hidden field”는 숨긴 필드가 그 이름을 계속 쓰는 경우입니다. 코드는 `FieldOrderNames377.Renames → ParseNames → NameList407.Parse` 순서로 따라갑니다. Export의 SOW 이름은 `NativeExportDialog.ParseOutputNames`가 같은 `NameList407`을 씁니다. 4.0.6까지는 숨긴 필드가 1열에 함께 있어 보이는 필드 수만큼 붙이면 줄 수가 달랐습니다. 다른 필드의 현재 이름을 쓰는 연쇄·교환도 막았습니다.
 
 ### 한 흐름을 코드로 읽는 연습 · Trace one workflow
 
@@ -824,7 +834,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | OPT 합치기 | 2–1,024개 OPT 파일. 페이지 행·ID·문서 경계를 검사하며 실제 image files/import는 별도 |
 | 공용 대용량 시험 | 합성2,000,000레코드 / 2,471,194,958바이트 DAT. 작은 native/text companions 두 개 포함 |
 | 공용 물리 파일 시험 | `tests/shared-data/files_1m.py`: native 100만 개 + UTF-8 텍스트 100만 개(폴더당 1,000개), `files-1m.dat`, 25만 문서의 `pages-1m.opt`. 모든 파일의 SHA-256 목록 포함. 3.7.1에서 Package QC 등을 이 규모로 확인 |
-| 배포 4.0.5 기록 | `--v405-only` 67/0, 전체 suite 1251/1(1건은 클립보드 경합 CLIPBRD_E_CANT_OPEN, 해당 모드 재실행 10/0), Export 24/0. 이번 문서 작업에서 제품 검사를 재실행한 것은 아님 |
+| 최근 전체 검사 기록 (4.0.7) | `--v407-only` 43/0, 전체 suite 1256/1(1건은 4.0.7에서 일부러 받아들이게 한 끝 빈 줄 목록을 예전 테스트가 거부로 기대한 것. 기대값을 고친 뒤 해당 모드 통과). 전체 suite 목록에 3.9.5 이후 19개 묶음이 빠져 있어 그 묶음들은 각자의 집중 모드로만 실행됨 |
 | 2M 측정 (4.0.3 이후) | 열기 약 4초(작업대 포함 4.42초), Export 약 21초, 정렬 약 6초, Compare 19초, XLSX 26초, Field profile 10초, 고유값 많은 Tally 30초. 같은 PC의 엔진 측정이며 다른 PC·저장장치의 보장값이 아님 |
 | 미확인 영역 (수용한 한계) | 실제 Relativity/리뷰 플랫폼 import, per-monitor DPI, long-path 정책 없는 260자 초과 경로, 실제 네트워크 공유/OneDrive, 32비트/Jet, IPRO LFP 변환, 실 TIFF/PDF 내부 페이지 완전성 |
 
@@ -864,7 +874,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 5. `docs/lee-post-3.7.7-followups.md`: 사용자가 요청한 항목과 처리 버전. `docs/lee-development-overview-ko.md`: 다른 사람에게 설명할 때의 짧은 Q&A.
 6. canonical source와 실행 파일 버전/해시: 문서와 코드가 같은 결과를 설명하는지.
 
-### 3.1.7–4.0.5에서 무엇이 바뀌었나요? · Shipped evolution
+### 3.1.7 이후 무엇이 바뀌었나요? · Shipped evolution
 
 | 구간 | 현행 코드에서 알아둘 변화 |
 | --- | --- |
@@ -883,11 +893,12 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 3.7.7–3.8.1 | Help·접근성, 납품 프로필·레시피·batch, Order and names, 다중 선택 이동·잘못된 날짜 지우기, **64비트 전환(3.7.8)**, Package QC 결과 수준, 같은 필드의 DAT 쌓아 열기, 결과 아이콘·소리, Full HD 화면 검토. |
 | 3.8.2–3.8.9 | Edit/Tools 메뉴 묶음, 한국어 메뉴·툴바·우클릭 메뉴, 위→아래 설정 순서, Filter 수정·재설계, LEE 아이콘·**서명 빌드(3.8.5)**, Unexpected error 창, 미내보내기 변경 창·페이지 넘김, 숨긴 필드 삭제, 드롭 선택·다중 값 빠른 필터. |
 | 3.9.0–3.9.9 | 제목 우클릭 바로가기·필드명 복사, 선택 레코드만 보기/숨기기, 빈 필드 숨기기, Package QC 해시/크기 비교 기본 끔·막힌 입력 빨간 표시, **속도(3.9.5–3.9.8)**, File → Save(Ctrl+S)·Go to ID, 더블클릭 정렬·이전 보기·집계 드릴다운. |
-| 4.0.0–4.0.5 | 짧은 이름으로 폴더 복사(Relativity 로드파일)·긴 경로 File tree, Number records(DocID), Export 범위 기반 미내보내기 판정, 64비트 정렬 묶음·블록 읽기, 결과 한 번에 열기·기억한 설정, **eDML → LEE 이름 통일(4.0.5)**. |
+| 4.0.0–4.0.5 | 짧은 이름으로 폴더 복사(Relativity 로드파일)·긴 경로 File tree, Number records(DocID), Export 범위 기반 미내보내기 판정, 64비트 정렬 묶음·블록 읽기, 결과 한 번에 열기·기억한 설정, **eDML → LEE 이름 통일(4.0.5)**, 같은 버전 재빌드로 작성자 로고를 흐리게. |
+| 4.0.6–4.0.7 | **Save(Ctrl+S)가 화면에 보이는 필드를 보이는 순서대로 씀(4.0.6)**, Order and names에 보이는 필드만 나와 SOW 이름이 행마다 맞음·연쇄/교환 이름 변경·줄 번호가 있는 붙여넣기 오류(4.0.7), **하나만 연 OPT의 Ctrl+S(4.0.7)**. |
 
 ### 현재 상태 · Current status
 
-4.0.5가 검증·서명·게시된 현재 배포본이고 다음 버전은 4.0.6입니다. 진행 중인 작업은 없습니다. 4.0.3 뒤의 마지막 개선 후보 검색(2026-10-24)은 실제 사용 피드백 없이 배포할 만한 묶음을 찾지 못했습니다. 측정하고 그대로 둔 항목(고유값 Tally 30초, XLSX 26초 등)과 미룬 후보는 체크포인트에 있습니다. 피드백은 이미 설계·검증 가능한 기능의 개발 선행 조건이 아니며 우선순위만 조정합니다. 다음 작업 전에 체크포인트에서 동시 작업 소유자를 먼저 확인합니다.
+현재 배포본(01의 버전 정보)은 검증·서명·게시되어 있고 진행 중인 작업은 없습니다. 다음 버전 번호와 남은 후보는 체크포인트가 기준입니다(이 문서는 다음 버전을 적지 않습니다). 4.0.3 뒤의 마지막 개선 후보 검색(2026-10-24)은 실제 사용 피드백 없이 배포할 만한 묶음을 찾지 못했습니다. 측정하고 그대로 둔 항목(고유값 Tally 30초, XLSX 26초 등)과 미룬 후보는 체크포인트에 있습니다. 피드백은 이미 설계·검증 가능한 기능의 개발 선행 조건이 아니며 우선순위만 조정합니다. 다음 작업 전에 체크포인트에서 동시 작업 소유자를 먼저 확인합니다.
 
 ### 변경 원칙
 
@@ -922,7 +933,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 
 ### 버전을 바꿀 때 함께 확인할 위치 · Version and compatibility checklist
 
-`WorkspaceEngine.Version`과 `AssemblyInfo.cs`의 AssemblyVersion/AssemblyFileVersion(`4.0.6.0`처럼 `.0`을 붙임)을 함께 바꿉니다. `HeaderLayoutStore.CompatibleToolVersion`은 3.8.3부터 2.4.8 이상 현재 버전 이하의 저장 레이아웃을 자동으로 받아들이고 더 새로운 버전은 거부하므로 릴리스마다 허용 목록을 고칠 필요가 없습니다. 3.8.2에서 이 목록이 한 버전에 묶여 이전 설정이 복원되지 않던 회귀가 있었습니다. `Compatibility250Tests.cs`의 미래 버전 거부 probe도 확인합니다. `4.0.9 → 4.1.0`처럼 각 자리는 한 자리입니다.
+`WorkspaceEngine.Version`과 `AssemblyInfo.cs`의 AssemblyVersion/AssemblyFileVersion(`X.Y.Z.0`처럼 `.0`을 붙임)을 함께 바꿉니다. `HeaderLayoutStore.CompatibleToolVersion`은 3.8.3부터 2.4.8 이상 현재 버전 이하의 저장 레이아웃을 자동으로 받아들이고 더 새로운 버전은 거부하므로 릴리스마다 허용 목록을 고칠 필요가 없습니다. 3.8.2에서 이 목록이 한 버전에 묶여 이전 설정이 복원되지 않던 회귀가 있었습니다. `Compatibility250Tests.cs`의 미래 버전 거부 probe도 확인합니다. `4.0.9 → 4.1.0`처럼 각 자리는 한 자리입니다.
 
 제품 변경은 실제 화면/코드 재현 → 범위가 정해진 계획 → 구현 → 집중 테스트 → 빌드·서명 → OLD 보존·root/Git 해시 일치 → 게시·기록 순서입니다. 기존 검사의 실패를 건너뛰고 배포하지 않습니다. 전체 suite의 단발 실패(예: 4.0.5의 클립보드 경합)는 해당 모드 재실행으로 제품 결함과 구분하고 release 문서에 적습니다. 문서 변경은 제품 버전을 올리지 않습니다.
 
@@ -1017,4 +1028,4 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 
 > 목표는 모든 파일을 암기하는 것이 아닙니다. **무엇을 입력으로 잡았는지, 어느 범위를 읽었는지, 어떤 규칙을 적용했는지, 무엇을 다시 검증했는지**를 설명하고, 그 책임을 가진 메서드까지 찾아갈 수 있으면 됩니다.
 
-최신 갱신 2026-10-27 · 제품/소스 4.0.5. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4–4.0.5에 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5–4.0.5 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
+최신 갱신 2026-10-27 · 제품/소스 4.0.7. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4 이후 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5 이후 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
