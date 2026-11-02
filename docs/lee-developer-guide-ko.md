@@ -6,11 +6,11 @@ LOAD-FILE EDITOR & EXAMINER · DEVELOPER GUIDE
 
 한국어 + English · 개발자 / Delivery Engineer
 
-배포 파일 확인: 4.0.8
+배포 파일 확인: 4.7.4
 
-확인한 개발 소스: 4.0.8
+확인한 개발 소스: 4.7.4
 
-최신 갱신: 2026-10-27 · 미동부 기준
+최신 갱신: 2026-11-02 · 미동부 기준
 
 - [다른 사람에게는 이렇게 설명하면 됩니다 · Product overview](#overview)
 - [무슨 언어로 만들었고 어떻게 실행되나요? · Technology and startup](#stack)
@@ -47,16 +47,47 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 
 ### 이 문서의 기준 · Version snapshot
 
-2026-10-27에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.0.8.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.0.8**입니다. 해당 제품 배포 커밋은 `660afda`입니다. 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
+2026-11-02에 확인한 로컬 `LEE.exe`와 제품 `LEE.html`은 **4.7.4.0**이며 SHA-256이 같습니다. 개발 소스 `WorkspaceEngine.Version`도 **4.7.4**입니다. 해당 제품 배포 커밋은 `3dadce7`입니다. 3.8.5부터 배포 EXE에는 사용자의 자체 서명 인증서로 Authenticode 서명(SHA-256, timestamp 없음)을 넣습니다. 이 문서의 파일명은 날짜·버전과 무관하게 `lee-developer-guide-ko.md` / `.html`로 고정하고, 내용과 위의 버전 표시만 갱신합니다(2026-10-27부터. 이전 이름 `lee-developer-guide-ko-2026-10-14.*`).
 
 확인한 배포본 SHA-256 (서명된 파일):
-3BF19AF1926BA292AC9C9E659F8A97C0DACD482BDF7C88417DF61636CAA39B5F
+A84C35D723B529CFE2F8C479F7FB62BF00664307613AC0EFCAC6E31A72ABEF01
 
 > **3.3.3 기준 노트를 읽었다면:** 02의 64비트·서명·이름 변경, 04의 저장/미내보내기 변경 관리, 05의 바뀐 표와 새 작업(⑦의 새 행, ⑨·⑩), 07의 새 코드 위치, 10의 바뀐 한계와 측정값, 11의 현재 배포 절차를 먼저 보십시오. 3.3.4 이후 현재 배포본까지의 변경을 반영했습니다.
 
 > **버전 표기 규칙:** 이 문서에서 “현재 버전”은 맨 위 머리말, 이 절의 버전 정보, 맨 끝 맺음말 세 곳에만 적고 세 곳은 항상 같습니다(HTML 생성기가 다르면 생성을 거부합니다). 본문의 “(3.9.8)”·“4.0.6부터” 같은 숫자는 그 기능이 처음 들어온 버전입니다.
 
 이번 갱신은 소스와 기존 검증·배포 기록을 읽고 학습 문서만 수정한 작업입니다. 제품 소스·실행 파일·사용자 설정을 수정하거나 빌드·제품 테스트를 재실행하지 않았습니다. 버전별 세부 내용은 `docs/lee-version-history.md`와 각 release 문서에 있습니다.
+
+<a id="compare-edml"></a>
+
+## 예전 eDML.exe와 무엇이 다른가요? · LEE vs. the former eDML.exe
+
+> **In English**
+>
+> eDML was a general load-file editor that loaded the whole file into memory, defaulted to the system ANSI code page and applied changes directly. LEE streams millions of records with disk-based indexes, reads encodings strictly, reviews every change before it is applied (with Undo/Redo), matches IDs exactly and proves each saved file by re-reading it with SHA-256. In short: eDML edits load files; LEE edits them and proves the delivery is correct.
+
+> 한 줄 설명: eDML은 로드파일을 고치는 도구였고, LEE는 고친 결과가 정확하다는 것까지 증명하는 도구입니다. 수백만 건을 다뤄도 데이터가 조용히 깨지거나 빠지지 않도록 막고, 모든 변경을 미리 보여 주고 되돌릴 수 있습니다.
+
+| 항목 | eDML.exe (예전) | LEE |
+|---|---|---|
+| 큰 파일 | 파일 전체를 표(DataTable)로 메모리에 올림 — 파일이 크면 느려지거나 멈춤 | 원본을 스트리밍으로 읽고 디스크 기반 색인 사용. 매 출시마다 **200만 건 / 2.47 GB** 공용 데이터로 검증 |
+| 문자 인코딩 | 기본값이 시스템 ANSI(`Encoding.Default`) — 한글·특수문자가 조용히 깨질 수 있음 | UTF-8/BOM을 엄격히 인식. ANSI는 명시적으로 고를 때만 쓰고, 손실이 생기면 미리 막고 보고 |
+| 변경 적용 | 바로 적용, 되돌리기 없음 | 적용 전 전후 비교 검토, Undo/Redo, 필드 잠금, 레시피로 같은 작업 반복 |
+| 저장과 결과 | 파일을 쓰기만 함 | 임시 파일 → 다시 읽기 → SHA-256 확인 → 교체. 원본은 덮어쓰지 않음(Ctrl+S는 백업 후 명시적으로만) |
+| ID 매칭 | 일반 문자열 비교 | 정확한 ID(앞자리 0, 대소문자 구분). 빈·중복 ID와 모호한 매핑은 막고, 비슷한 값(공백, 0, 대소문자)을 알려 줌 |
+| 기능 범위 | 기본 편집 약 15종(Replace, Tag, Filter, Export, QC 등) | 메뉴 명령 약 130개: Overlay, Compare, Bates/OPT, Package·Production QC, Delivery package, XLSX, 레시피, 세션 자동 복구 등 |
+| 실수 방지 | 없음 | Excel 손상(앞자리 0, 날짜 변환, #N/A, 32,767자 잘림)과 보이지 않는 문자 경고, 취소해도 입력값 유지 |
+| 품질 보증 | 자동 테스트 없음 | 회귀 테스트 약 2,400개, 출시 게이트, 무작위 작업 모델(monkey), 대용량 게이트를 통과한 EXE만 서명해 배포 |
+
+### 비전문가에게
+
+“엑셀처럼 열어서 고치는 건 같지만, LEE는 고친 내용을 먼저 보여 주고, 실수하면 되돌리고, 저장한 파일이 맞는지 직접 다시 읽어 확인합니다. 그래서 수백만 건 납품에서도 빠지거나 깨진 데이터가 고객에게 가지 않습니다.”
+
+### 전문가에게
+
+“Streaming reader와 disk-backed ExactIndex로 메모리 상한이 있고, strict decoding과 exact-ID matching을 씁니다. 모든 transformation은 review → apply → saved-file re-read/SHA-256 verification을 거치며, PASS는 출력 hash·source hash·version에 묶입니다. 2M-record volume gate와 약 2,400개 regression test로 매 build를 검증합니다.”
+
+근거: eDML은 디컴파일 코드(`lee/decompiled/eDML`, 약 17,000줄)로 판단했습니다. 두 프로그램을 같은 데이터로 나란히 실행해 비교한 것은 아닙니다. LEE 수치는 4.7.4 기준입니다.
 
 <a id="stack"></a>
 
@@ -75,7 +106,7 @@ Relativity나 Nuix 자체를 대체하는 처리·리뷰 플랫폼은 아닙니�
 | 이름 | 네임스페이스·프로젝트·폴더 모두 `LEE` (4.0.5) | 4.0.4 이전 버전이 쓴 파일 이름(`.edmlsession`, `.edml-view.xml` 등, 설정 폴더 `eDML_Enhanced`)은 `LegacyNames405.cs`에서만 읽기 호환으로 다룹니다. 새로 쓰는 파일은 `.leesession`, `.lee-view.xml`, `.lee-export.xml` 등 LEE 이름입니다. |
 | 시작 부분 | `LEE.My/MyApplication.cs` | C# 코드에서 Visual Basic의 WindowsFormsApplicationBase를 사용합니다. 기존 애플리케이션 구조의 흔적입니다. 전체가 VB 프로그램이라는 뜻은 아닙니다. 처리되지 않은 화면 예외는 여기서 LEE의 Unexpected error 창(`UnexpectedError386`)으로 보냅니다. |
 | XLSX | ZIP + XML 직접 스트리밍 작성 | 핵심 XLSX 내보내기는 Excel을 자동 조작하지 않고 파일 구조를 직접 씁니다. 셀 값은 텍스트로 저장합니다. |
-| MDB | 옛 Access 데이터베이스 입력 · Jet OLE DB 4.0 | Jet 4.0 provider는 32비트 전용이라 64비트 LEE에서는 사실상 열리지 않습니다. 사용자가 .mdb 가져오기가 필요 없다고 결정해(3.7.8) 64비트로 전환했고, “32-bit/Jet”은 수용한 한계입니다. 주요 DAT 처리 엔진의 저장소가 MDB인 것은 아닙니다. |
+| MDB | 옛 Access 데이터베이스 입력 · Jet OLE DB 4.0 | Jet 4.0 provider는 32비트 전용이라 64비트 LEE에서는 사실상 열리지 않습니다. 사용자가 .mdb 가져오기가 필요 없다고 결정해(3.7.8) 64비트로 전환했고, “32-bit/Jet”은 수용한 한계입니다. 4.0.9에서 Jet 읽기 코드와 옛 eDML 폼도 제거했고, .mdb를 고르면 DAT로 내보내 달라는 안내만 표시합니다. 주요 DAT 처리 엔진의 저장소가 MDB인 것은 아닙니다. |
 | 서명 | 자체 서명 Authenticode (3.8.5부터) | 배포 바이트가 바뀌지 않았는지 확인하는 용도입니다. 공인 CA 인증서가 아니므로 Windows가 “신뢰된 게시자”로 표시한다는 뜻은 아닙니다. |
 | 화면 언어 | 영어 기본 · 한국어 메뉴 선택 (Options, 3.8.3/3.8.6) | 메인 메뉴·툴바·우클릭 메뉴 이름만 한국어로 바꾸는 표시 기능입니다. 명령·단축키·handler는 같고, 툴팁·Find command·Help에는 영어 이름이 남습니다. 대화상자·데이터·필드명·보고서는 영어입니다(`MenuLanguage384`). |
 | 개발 보조 | PowerShell, Python, 커스텀 C# 테스트 실행 파일 | 빌드·패키징·해시 확인·독립 검사에 사용합니다. 이 언어들로 프로그램 전체를 만든 것은 아닙니다. |
@@ -627,7 +658,7 @@ UI label과 실제 source header가 다를 수 있습니다. 이름의 대소문
 
 #### 사례 H · MDB만 열리지 않음 · MDB provider / Runtime environment
 
-**관련 파일:** LegacyOperations의 MDB 읽기 → Jet OLE DB 연결.
+**관련 파일:** DataWorkbench의 .mdb 거부 안내(4.0.9부터 Jet 읽기 코드는 없음).
 
 DAT/CSV 파서부터 수정하지 않습니다. 3.7.8부터 LEE는 64비트로 실행되고 Jet 4.0 provider는 32비트 전용이므로, 64비트 Windows에서 .mdb가 열리지 않는 것은 수용한 한계입니다. 먼저 About의 실행 비트 수를 확인하고, 필요하면 원래 시스템에서 DAT로 내보낸 파일을 받습니다. 이 기능의 환경 의존성을 일반 DAT 작업의 필요 설치 항목으로 확대하지 않습니다.
 
@@ -831,7 +862,7 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 항목 | 현재 코드/기록에서 확인한 범위 |
 | --- | --- |
 | 설계 목표 | 수백만 레코드·수GB 로드파일, 스트리밍·디스크 기반 처리, 전량 검증 |
-| 필드 수 | 로드파일 작업 공간 최대 1,000필드(3.7.3, `FieldLimits373.Workspace`). 옛 .mdb는 254. Side-by-side 등 추가 열이 필요한 기능은 별도 낮은 한계가 있을 수 있음 |
+| 필드 수 | 로드파일 작업 공간 최대 1,000필드(3.7.3, `FieldLimits373.Workspace`). Side-by-side 등 추가 열이 필요한 기능은 별도 낮은 한계가 있을 수 있음 |
 | 단일 레코드 | 16Mi 문자 한계. “16MB 파일 전체” 제한이 아님 |
 | 그리드 | 1,000행 단위 표시. 기반 인덱스/그리드는 2,147,483,647 미만 레코드 제한이 있음 |
 | 정렬 키 | 65,536자 초과는 중단. 정렬 묶음은 64비트에서 최대 500,000행 또는 32Mi문자(32비트: 5,000행 / 2Mi문자) |
@@ -866,6 +897,26 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 4.0.3 | 64비트 정렬 묶음, 행 번호표·병합표·파생 값의 블록 읽기 | 2M 정렬: 400개 묶음+병합 2회 → 4개 묶음+병합 1회 |
 
 각 수치는 해당 버전의 release 문서에 기록된 같은 PC의 측정입니다. 이 문서가 현재 환경에서 다시 측정한 수치가 아니며 서로 다른 작업 시간을 직접 비교하지 않습니다. 대부분의 속도 변경은 스위치로 예전 경로와 A/B 비교해 출력이 같음을 확인했습니다.
+
+<a id="since-408"></a>
+
+## 4.0.9 이후 달라진 점(4.7.4까지) · What changed after 4.0.8
+
+> **In English**
+>
+> From 4.0.9 to 4.7.4 LEE gained about thirty user-requested features, fixed every reproduced external-review defect, kept typed setups after refusals and cancels, explained near-miss IDs and values, and ran a real-use defect experiment that hardened Excel-shaped and copied data, invisible characters and 2M-record performance. Every release passed focused tests, a release gate and a random workflow model, with the complete suite and the 2M volume gate whenever shared engines changed.
+
+> 이 문서의 1–9절(구조·원리)은 그대로 유효합니다. 아래는 그 위에 추가된 동작이며, 버전별 상세는 `lee/docs/lee-version-history.md`와 각 `lee-<버전>-release-*.md`에 있습니다.
+
+| 분야 | 달라진 점 | 주로 보는 코드 |
+|---|---|---|
+| 입력 설정 유지 | 설정이 거절되거나, 확인을 취소하거나, 검토 창에서 Cancel해도 같은 창이 입력값과 이유를 가진 채 다시 열림(Split·Build field·Overlay·Copy·Fill·Join·Compare 복원·레시피 매개변수) | `ResumeAfterSubmission`, 각 명령의 `for(;;)` 루프 |
+| 근접 값 안내 | ID·필드 이름·필터·Replace·규칙이 맞는 것을 못 찾으면 공백·대소문자·앞자리 0·Unicode 형태·보이지 않는 문자만 다른 값을 알려 줌(매칭은 정확하게 유지) | `OverlayHints452`, `DataSetView.NearField465` |
+| Excel·복사 데이터 | 머리글 행 붙여넣기·추가 TAB 열 거절, 과학 표기·앞자리 0 손실·날짜 변환·#N/A·32,767자 잘림을 검토 창에서 집계, Excel 따옴표 TSV 인식 | `ExcelArtifacts471`, `BulkPaste`, `WorkspaceSetup.Detect` |
+| 입력값 검사 | 모든 레코드에 찍히는 입력(Tag 값, 규칙 라벨, 구분자, OPT 볼륨, 레시피 매개변수, 매핑 새 값, 새 필드 이름)의 보이지 않는 문자·TAB을 창 안에서 거절 | `TypedText471`, `RuleView.NewNames471` |
+| 검토 화면 | 보이지 않는 차이만 있는 변경을 표시 기호로 보여 줌(복사·저장은 원래 값) | `ReviewMarks471`, `VisibleMarks433` |
+| 대용량 | 작은 수정은 바뀐 레코드만 검증, Overlay·Import 고속화, 새 검사도 메모리·길이 상한 유지(2M 볼륨 게이트로 매 출시 확인) | `ChangedRowSet453`, `ExactIndex` |
+| 품질 절차 | 결함 분류(`lee-defect-taxonomy.md`)와 유형×명령 점검표(`SWEEP.md`), 메뉴 129개를 자동으로 눌러 보는 probe, 결함 범위는 “LEE가 직접 바꾸거나 빠뜨리거나 잘못 읽는 것” | `workbench-tests`, `Probe464Tests` |
 
 <a id="plan"></a>
 
@@ -903,6 +954,12 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 | 3.9.0–3.9.9 | 제목 우클릭 바로가기·필드명 복사, 선택 레코드만 보기/숨기기, 빈 필드 숨기기, Package QC 해시/크기 비교 기본 끔·막힌 입력 빨간 표시, **속도(3.9.5–3.9.8)**, File → Save(Ctrl+S)·Go to ID, 더블클릭 정렬·이전 보기·집계 드릴다운. |
 | 4.0.0–4.0.5 | 짧은 이름으로 폴더 복사(Relativity 로드파일)·긴 경로 File tree, Number records(DocID), Export 범위 기반 미내보내기 판정, 64비트 정렬 묶음·블록 읽기, 결과 한 번에 열기·기억한 설정, **eDML → LEE 이름 통일(4.0.5)**, 같은 버전 재빌드로 작성자 로고를 흐리게. |
 | 4.0.6–4.0.8 | **Save(Ctrl+S)가 화면에 보이는 필드를 보이는 순서대로 씀(4.0.6)**, Order and names에 보이는 필드만 나와 SOW 이름이 행마다 맞음·연쇄/교환 이름 변경·줄 번호가 있는 붙여넣기 오류(4.0.7), **하나만 연 OPT의 Ctrl+S(4.0.7)**, 필드 순서 적용의 DisplayIndex 실패 방지·이름 칸 스크롤이 되돌아가지 않음·전체 suite에 모든 테스트 묶음 포함(4.0.8). |
+| 4.0.9–4.2.0 | 변경 이력이 세션·자동 복구 사이에서도 레코드를 정확히 추적, 대소문자만 다른 필드 이름, Document ID 보호, 작업 중 복구 체크포인트, 정확한 Excel 붙여넣기, 패키지 무결성·안전한 일괄 대상 |
+| 4.2.1–4.3.1 | 외부 검증 결과의 결함 일괄 수정(통합 리뷰, validation batch 1–4c, must-fix BUG01–BUG10) |
+| 4.3.2–4.4.9 | 제안 기능: 필드 위치 유지, 공백·제어문자 표시, 그룹 내 번호·빈칸 채우기, 여러 키 정렬, 그룹 합계, 필드 조합·분할, 규칙 태그, 체크섬, 목록 내보내기, Compare productions, Scrub 감사; 전체 테스트 30분 이내 |
+| 4.5.0–4.5.9 | 사람처럼 쓰는 테스트로 찾은 결함, 큰 파일의 작은 수정 즉시 처리, 실무형 Overlay, 근접 ID 설명, QC 문제 유형 필터, 빈 Undo 단계 제거 |
+| 4.6.0–4.6.9 | 거절·확인 취소·검토 Cancel 뒤에도 입력 설정 유지, 실무 흐름을 이어 붙인 테스트, Excel 형태 데이터 결함 |
+| 4.7.0–4.7.4 | 실사용 결함 실험: 보이지 않는 문자·Mac NFD·Excel 흔적, 데이터에 찍히는 입력값 검사, 목록 필터의 누락 값 안내, LEE가 저장한 TSV 재읽기, 정확한 텍스트 링크, 레시피 매개변수 유지, 2M 규모 메모리·성능 결함 |
 
 ### 현재 상태 · Current status
 
@@ -918,8 +975,8 @@ DAT 비교는 문서 ID로 메타데이터를 대응합니다. QC 보고서 비�
 
 ```text
 # C:\Coding\Tools\lee 에서 (PowerShell)
-.\work\run.ps1 -Mode --v405-only -Name v405            # 한 번 빌드하고 모드 하나 실행, 실패와 요약 출력
-.\work\run.ps1 -Mode --v405-only -Name v405b -NoBuild  # 다시 빌드하지 않고 재실행
+.\work\run.ps1 -Mode --v409-only -Name v409            # 한 번 빌드하고 모드 하나 실행, 실패와 요약 출력
+.\work\run.ps1 -Mode --v409-only -Name v409b -NoBuild  # 다시 빌드하지 않고 재실행
 # 결과: work\results\<Name>\results.txt
 ```
 
@@ -1036,4 +1093,4 @@ Replace 또는 Compare를 골라 메뉴 등록 → handler → UI 값 → 작업
 
 > 목표는 모든 파일을 암기하는 것이 아닙니다. **무엇을 입력으로 잡았는지, 어느 범위를 읽었는지, 어떤 규칙을 적용했는지, 무엇을 다시 검증했는지**를 설명하고, 그 책임을 가진 메서드까지 찾아갈 수 있으면 됩니다.
 
-최신 갱신 2026-10-27 · 제품/소스 4.0.8. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4 이후 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5 이후 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
+최신 갱신 2026-11-02 · 제품/소스 4.7.4. 4.0.9–4.7.4 변경은 “4.0.9 이후 달라진 점” 절에 요약했습니다. 근거: 현재 csproj·AssemblyInfo·WorkspaceEngine, 시작/워크스페이스·파서·출력/QC 엔진과 3.3.4 이후 추가된 소스 파일, README·체크포인트·버전 목록, 3.3.5 이후 release 문서의 검증·원격 해시 기록. 제품 검사는 이번 문서 작업에서 재실행하지 않았습니다. 공유 문서에는 소스 파일·고객 데이터·로컬 설정을 포함하지 않습니다.
