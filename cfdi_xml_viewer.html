@@ -119,7 +119,7 @@ details summary{cursor:pointer;color:var(--accent-dark);font-weight:600}
 
 <section class="panel tabpane" id="tExport">
   <h2>One Excel workbook per XML (individual files)</h2>
-  <p class="small">Each workbook holds only that XML's data and is named after it (<i>invoice</i>.xml → <i>invoice</i>.xlsx). After Open XML folder they are written into that folder; otherwise you choose a destination folder once. Existing files are never replaced.</p>
+  <p class="small">Each workbook has one sheet with only that XML's content (Element path, Field, Value in XML order; no file name, numbering or tool information) and is named after it (<i>invoice</i>.xml → <i>invoice</i>.xlsx). After Open XML folder they are written into that folder; otherwise you choose a destination folder once. Existing files are never replaced.</p>
   <div class="bar"><button class="primary" id="btnPerFile" disabled>Save one XLSX per XML…</button></div>
   <h2 style="margin-top:14px">Combined Excel workbook (all loaded files)</h2>
   <p class="small">Every cell is written as text, so codes such as FormaPago <code>03</code>, ClaveProdServ <code>01010101</code>, CodigoPostal <code>06600</code>, 20-digit NoCertificado and amounts such as <code>1160.00</code> stay exactly as in the XML. Sheets: Documents, one sheet per repeated element type, All fields (every attribute, text and comment, one row each, including namespace declarations), Files (SHA-256), Exceptions, About.</p>
@@ -133,7 +133,7 @@ details summary{cursor:pointer;color:var(--accent-dark);font-weight:600}
 
 <script>
 'use strict';
-const TOOL = {name: 'CFDI XML Viewer', version: '1.0.1'};
+const TOOL = {name: 'CFDI XML Viewer', version: '1.0.2'};
 const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 const CFDI_NS = new Set(['http://www.sat.gob.mx/cfd/3', 'http://www.sat.gob.mx/cfd/4']);
 const TFD_NS = new Set(['http://www.sat.gob.mx/TimbreFiscalDigital']);
@@ -423,6 +423,8 @@ function buildTables(docs = state.docs, exceptions = state.exceptions) {
   for (const t of others) {
     const parts = []; let x = t.anchorNode; while (x && x.parent) { parts.unshift(x.local); x = x.parent; }
     t.pathParts = parts; t.title = parts[parts.length - 1];
+    let y = t.anchorNode.parent; t.nested = false;
+    while (y && y.parent) { if (repeating.has(y.genericPath)) { t.nested = true; break; } y = y.parent; }
   }
   const clashes = () => { const byTitle = new Map(); for (const t of others) { const a = byTitle.get(t.title) || []; a.push(t); byTitle.set(t.title, a); } return Array.from(byTitle.values()).filter(g => g.length > 1); };
   for (const group of clashes()) for (const t of group) {
@@ -448,13 +450,18 @@ function buildTables(docs = state.docs, exceptions = state.exceptions) {
   return {data: [docTable, ...others], fieldsTable, filesTable, excTable};
 }
 
-function tableMatrix(t) {
-  // returns {header: [...], rows: [[...]]} with all values as strings
-  if (t.fixed) return {header: t.columns.slice(), rows: t.rows};
-  const header = t.id === 'DOC' ? ['Doc #', 'File'] : ['Doc #', 'File', 'Item'];
+function tableMatrix(t, bare) {
+  // returns {header: [...], rows: [[...]]} with all values as strings.
+  // bare (single-XML workbook): only XML content - no Doc #, no file name; Item (XML position) only where a row belongs to another repeated element.
+  if (t.fixed) {
+    if (bare && t.id === 'FIELDS') return {header: ['Element path', 'Field', 'Value'], rows: t.rows.map(r => [r[2], r[5], r[6]])};
+    return {header: t.columns.slice(), rows: t.rows};
+  }
+  const lead = bare ? (t.nested ? ['Item'] : []) : (t.id === 'DOC' ? ['Doc #', 'File'] : ['Doc #', 'File', 'Item']);
+  const header = lead.slice();
   for (const c of t.columns) header.push(c.label);
   const rows = t.rows.map(r => {
-    const out = t.id === 'DOC' ? [String(r.doc.n), r.doc.name] : [String(r.doc.n), r.doc.name, r.item];
+    const out = bare ? (t.nested ? [r.item] : []) : t.id === 'DOC' ? [String(r.doc.n), r.doc.name] : [String(r.doc.n), r.doc.name, r.item];
     for (const c of t.columns) { const v = r.values.get(c.id); out.push(v === undefined ? '' : v); }
     return out;
   });
@@ -689,9 +696,11 @@ function aboutMatrix(meta, docs) {
   ];
   return {header: ['Item', 'Detail'], rows};
 }
-function workbookSheets(meta, T, docs) {
-  const list = [...T.data, T.fieldsTable, T.filesTable, T.excTable].map(t => ({title: t.title, ...tableMatrix(t)}));
-  list.push({title: 'About', ...aboutMatrix(meta, docs)});
+function workbookSheets(meta, T, docs, bare) {
+  const list = bare
+    ? [{title: 'XML', ...tableMatrix(T.fieldsTable, true)}]
+    : [...T.data, T.fieldsTable, T.filesTable, T.excTable].map(t => ({title: t.title, ...tableMatrix(t)}));
+  if (!bare) list.push({title: 'About', ...aboutMatrix(meta, docs)});
   const names = sheetNames(list.map(s => s.title));
   list.forEach((s, i) => s.name = names[i]);
   return list;
@@ -757,10 +766,10 @@ function tooLongIn(T) {
   for (const t of [...T.data, T.fieldsTable, T.filesTable, T.excTable]) { const {header, rows} = tableMatrix(t); for (const r of [header, ...rows]) for (const v of r) if (v.length > XLSX_CELL_MAX) return 'A value in ' + t.title + ' is longer than 32,767 characters (Excel limit). Use DAT/CSV for that table; see Exceptions.'; }
   return '';
 }
-async function buildXlsx(meta, docs = state.docs) {
+async function buildXlsx(meta, docs = state.docs, bare = false) {
   const T = tablesFor(docs);
   const blk = tooLongIn(T); if (blk) throw new Error(blk);
-  const sheets = workbookSheets(meta, T, docs);
+  const sheets = workbookSheets(meta, T, docs, bare);
   const files = [];
   const put = (name, s) => files.push({name, data: enc.encode(s)});
   put('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' + sheets.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>');
@@ -952,7 +961,7 @@ async function exportPerFile() {
       if (!d.parsed) { fails.push(d.name + ' — not converted (XML could not be read): ' + d.error); continue; }
       setExportMsg('info', 'Writing ' + (done + 1) + ' of ' + docs.filter(x => x.parsed).length + ': ' + d.name + '…');
       try {
-        const {blob, sheets} = await buildXlsx(st, [d]);
+        const {blob, sheets} = await buildXlsx(st, [d], true);
         const bytes = new Uint8Array(await blob.arrayBuffer());
         const gen = await verifyXlsx(bytes, sheets);
         const base = d.name.split('/').pop().replace(/\.xml$/i, '') + '.xlsx';
