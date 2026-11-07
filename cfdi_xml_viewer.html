@@ -133,7 +133,7 @@ details summary{cursor:pointer;color:var(--accent-dark);font-weight:600}
 
 <script>
 'use strict';
-const TOOL = {name: 'CFDI XML Viewer', version: '1.0.0'};
+const TOOL = {name: 'CFDI XML Viewer', version: '1.0.1'};
 const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 const CFDI_NS = new Set(['http://www.sat.gob.mx/cfd/3', 'http://www.sat.gob.mx/cfd/4']);
 const TFD_NS = new Set(['http://www.sat.gob.mx/TimbreFiscalDigital']);
@@ -339,6 +339,15 @@ async function loadOne(file, name) {
     doc.total = attrVal(p.rootNode, 'Total'); doc.moneda = attrVal(p.rootNode, 'Moneda');
     doc.fecha = attrVal(p.rootNode, 'Fecha'); doc.version = attrVal(p.rootNode, 'Version');
     doc.tipo = attrVal(p.rootNode, 'TipoDeComprobante');
+    const r = p.rootNode;
+    if (r.local === 'Comprobante' && CFDI_NS.has(r.ns)) doc.docType = 'CFDI ' + (doc.version || '');
+    else if (r.local === 'Acuse' && p.elements.some(e => /cancelacfd\.sat\.gob\.mx/i.test(e.ns) || e.local === 'EstatusUUID')) {
+      // SAT cancellation acknowledgment (Acuse de cancelación): UUID / EstatusUUID are element text under Folios
+      doc.docType = 'SAT cancellation acknowledgment';
+      const texts = local => p.elements.filter(e => e.local === local && e.parent && e.parent.local === 'Folios' && e.text !== null).map(e => e.text);
+      doc.cancelUuids = texts('UUID'); doc.estatus = texts('EstatusUUID');
+      doc.emisor = attrVal(r, 'RfcEmisor'); doc.fecha = attrVal(r, 'Fecha');
+    } else doc.docType = 'Other XML (' + r.qname + ')';
   } catch (e) {
     doc.error = e.message || String(e);
   }
@@ -430,10 +439,10 @@ function buildTables(docs = state.docs, exceptions = state.exceptions) {
     for (const m of d.parsed.misc) fieldsTable.rows.push([String(d.n), d.name, '(document)', '', m.kind === '#doctype' ? 'Document type declaration' : m.kind === '#pi' ? 'Processing instruction' : 'Comment', m.kind === '#pi' ? '#pi ' + m.name : m.kind, m.value]);
     for (const f of d.parsed.fields) fieldsTable.rows.push([String(d.n), d.name, f.el.instPath, f.el.qname, f.kind, f.name, f.value]);
   }
-  const filesTable = {id: 'FILES', title: 'Files', fixed: true, columns: ['Doc #', 'File', 'Bytes', 'SHA-256', 'Status', 'Error', 'Encoding used', 'Encoding declared', 'BOM', 'Root element', 'Version', 'UUID (TimbreFiscalDigital)', 'Fields extracted'], rows: []};
+  const filesTable = {id: 'FILES', title: 'Files', fixed: true, columns: ['Doc #', 'File', 'Bytes', 'SHA-256', 'Status', 'Error', 'Document type', 'Encoding used', 'Encoding declared', 'BOM', 'Root element', 'Version', 'UUID (TimbreFiscalDigital)', 'Cancelled UUID (Acuse)', 'EstatusUUID (Acuse)', 'Fields extracted'], rows: []};
   for (const d of docs) {
     const p = d.parsed;
-    filesTable.rows.push([String(d.n), d.name, d.bytes === undefined ? '' : String(d.bytes), d.sha, d.status, d.error || '', d.decode ? d.decode.encoding : '', d.decode && d.decode.declared ? d.decode.declared : '', d.decode ? (d.decode.bom ? 'Yes' : 'No') : '', p ? p.rootNode.qname : '', d.version || '', d.uuid || '', p ? String(p.fields.length + p.misc.length) : '']);
+    filesTable.rows.push([String(d.n), d.name, d.bytes === undefined ? '' : String(d.bytes), d.sha, d.status, d.error || '', d.docType || '', d.decode ? d.decode.encoding : '', d.decode && d.decode.declared ? d.decode.declared : '', d.decode ? (d.decode.bom ? 'Yes' : 'No') : '', p ? p.rootNode.qname : '', d.version || '', d.uuid || '', (d.cancelUuids || []).join(' | '), (d.estatus || []).join(' | '), p ? String(p.fields.length + p.misc.length) : '']);
   }
   const excTable = {id: 'EXC', title: 'Exceptions', fixed: true, columns: ['Severity', 'Doc #', 'File', 'Location', 'Value', 'Reason'], rows: exceptions.map(x => [x.severity, x.n ? String(x.n) : '', x.file || '', x.location || '', x.value === undefined ? '' : x.value, x.reason])};
   return {data: [docTable, ...others], fieldsTable, filesTable, excTable};
@@ -460,8 +469,10 @@ function buildExceptions(docs = state.docs) {
     if (d.error) { ex.push({severity: 'Error', n: d.n, file: d.name, location: '(file)', reason: d.error}); continue; }
     for (const note of d.decode.notes) ex.push({severity: 'Review', n: d.n, file: d.name, location: '(encoding)', reason: note});
     const p = d.parsed, r = p.rootNode;
-    if (!(r.local === 'Comprobante' && CFDI_NS.has(r.ns))) ex.push({severity: 'Review', n: d.n, file: d.name, location: r.qname, value: r.ns, reason: 'Root element is not a CFDI 3.x/4.0 cfdi:Comprobante. All content is still extracted.'});
-    if (!d.uuid) ex.push({severity: 'Review', n: d.n, file: d.name, location: 'TimbreFiscalDigital', reason: 'No TimbreFiscalDigital UUID found (document may not be stamped by SAT).'});
+    const isCfdi = r.local === 'Comprobante' && CFDI_NS.has(r.ns), isAcuse = d.docType === 'SAT cancellation acknowledgment';
+    if (!isCfdi && !isAcuse) ex.push({severity: 'Review', n: d.n, file: d.name, location: r.qname, value: r.ns, reason: 'Root element is neither a CFDI 3.x/4.0 cfdi:Comprobante nor a SAT cancellation acknowledgment. All content is still extracted.'});
+    if (isAcuse && !(d.cancelUuids || []).length) ex.push({severity: 'Review', n: d.n, file: d.name, location: 'Folios/UUID', reason: 'Cancellation acknowledgment without a Folios/UUID value.'});
+    if (isCfdi && !d.uuid) ex.push({severity: 'Review', n: d.n, file: d.name, location: 'TimbreFiscalDigital', reason: 'No TimbreFiscalDigital UUID found (document may not be stamped by SAT).'});
     for (const m of p.misc) if (m.kind === '#doctype') ex.push({severity: 'Review', n: d.n, file: d.name, location: '(document)', value: m.value, reason: 'Document type declaration present; entity values, if any, are shown expanded.'});
     for (const f of p.fields) {
       if (f.kind !== 'Attribute') continue;
@@ -507,6 +518,7 @@ function renderFileList() {
     const row = h('div', {class: 'filerow' + (i === state.selected ? ' sel' : ''), 'data-i': String(i)},
       h('div', {class: 'fn'}, String(d.n) + '. ' + d.name,
         d.error ? h('span', {class: 'badge b-err', text: 'Error'}) : revBy.get(d.n) ? h('span', {class: 'badge b-rev', text: revBy.get(d.n) + ' review'}) : h('span', {class: 'badge b-ok', text: 'Parsed'})),
+      d.parsed && d.cancelUuids ? h('div', {class: 'small', text: ['Cancellation acknowledgment', d.emisor, d.cancelUuids.length ? 'UUID ' + d.cancelUuids.join(', ') : '', d.estatus.length ? 'EstatusUUID ' + d.estatus.join(', ') : '', d.fecha].filter(Boolean).join('  ·  ')}) :
       d.parsed ? h('div', {class: 'small', text: [d.emisor, d.receptor ? '→ ' + d.receptor : '', d.total !== undefined ? 'Total ' + d.total + (d.moneda ? ' ' + d.moneda : '') : '', d.fecha].filter(Boolean).join('  ·  ')}) : h('div', {class: 'small', text: d.error}));
     row.addEventListener('click', () => selectDoc(i));
     fl.append(row);
@@ -569,7 +581,7 @@ function renderDoc() {
   if (!d) { v.append(h('div', {class: 'small', text: state.docs.length ? 'Select a file.' : 'No files loaded.'})); return; }
   const meta = h('dl', {class: 'docmeta'});
   const m = (k, val) => { meta.append(h('dt', {text: k}), h('dd', {text: val})); };
-  m('File', d.name); m('Bytes', d.bytes === undefined ? '' : String(d.bytes)); m('SHA-256', d.sha || '(not read)');
+  m('File', d.name); if (d.docType) m('Document type', d.docType); m('Bytes', d.bytes === undefined ? '' : String(d.bytes)); m('SHA-256', d.sha || '(not read)');
   if (d.decode) m('Encoding', d.decode.encoding + (d.decode.bom ? ' (BOM)' : '') + (d.decode.declared ? ' · declared ' + d.decode.declared : ' · no declaration'));
   if (d.parsed) m('Fields', String(d.parsed.fields.length + d.parsed.misc.length) + ' (attributes, text, comments; namespace declarations included)');
   v.append(meta);
