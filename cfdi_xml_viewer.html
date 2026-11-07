@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>CFDI XML Viewer</title>
+<style>
+:root{--accent:#59B2E7;--accent-dark:#1f6f9f;--ink:#1d2933;--muted:#5b6b78;--line:#d5e3ee;--bg:#f6fafd;--card:#fff;--err:#b42318;--errbg:#fdecea;--rev:#8a5a00;--revbg:#fff4dc;--ok:#1e7a3c;--okbg:#e6f5ea}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 "Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--accent);color:#fff;padding:10px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-size:19px;margin:0}
+header .ver{opacity:.9;font-size:12px}
+main{padding:12px 18px 40px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:12px}
+.panel h2{font-size:15px;margin:0 0 8px}
+.small{font-size:12px;color:var(--muted)}
+button,select{font:inherit;padding:5px 11px;border:1px solid var(--accent-dark);border-radius:4px;background:#fff;color:var(--accent-dark);cursor:pointer}
+button.primary{background:var(--accent-dark);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,select:focus-visible,.filerow:focus-visible{outline:2px solid #0b4f7a;outline-offset:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#drop{border:2px dashed var(--accent);border-radius:6px;padding:14px;text-align:center;background:#fbfdff}
+#drop.over{background:#e8f4fc}
+.counts{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.counts b{font-size:16px}
+.tabs{display:flex;gap:4px;margin:4px 0 0;border-bottom:2px solid var(--accent)}
+.tabs button{border-radius:4px 4px 0 0;border-bottom:none}
+.tabs button[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabpane{display:none}.tabpane.on{display:block}
+.split{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:12px;align-items:start}
+#fileList{max-height:72vh;overflow:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
+.filerow{padding:6px 9px;border-bottom:1px solid var(--line);cursor:pointer}
+.filerow:hover{background:#eef7fd}.filerow.sel{background:#d6ecfa}
+.filerow .fn{font-weight:600;word-break:break-all}
+.badge{display:inline-block;font-size:11px;padding:0 6px;border-radius:9px;margin-left:4px;font-weight:600}
+.b-err{background:var(--errbg);color:var(--err)}.b-rev{background:var(--revbg);color:var(--rev)}.b-ok{background:var(--okbg);color:var(--ok)}
+.docmeta{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;font-size:12px;margin-bottom:8px}
+.docmeta dt{color:var(--muted)}.docmeta dd{margin:0;word-break:break-all;font-family:Consolas,monospace}
+.el{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px;margin:8px 0;background:#fff}
+.el>.eh{background:#eef7fd;padding:4px 9px;font-weight:600}
+.el>.eh .path{font-weight:400;color:var(--muted);font-size:12px;margin-left:8px}
+.el>.eb{padding:4px 9px 6px}
+.el .el{margin-left:6px}
+table{border-collapse:collapse}
+table.kv{width:100%}
+table.kv th{text-align:left;font-weight:600;color:#33495a;width:1%;white-space:nowrap;padding:2px 14px 2px 0;vertical-align:top}
+table.kv td,.grid td{font-family:Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-all;vertical-align:top}
+table.kv td{padding:2px 0}
+.grid{font-size:12.5px}
+.grid th,.grid td{border:1px solid var(--line);padding:3px 6px;text-align:left}
+.grid th{background:#d6ecfa;position:sticky;top:0;white-space:nowrap}
+.gridwrap{overflow:auto;max-height:70vh;border:1px solid var(--line)}
+.grid td{white-space:pre;word-break:normal}
+.longv{max-height:7.5em;overflow:auto;display:block}
+.grid td .longv{white-space:pre-wrap;word-break:break-all;min-width:320px;max-width:520px}
+.empty{color:var(--muted);font-style:italic}
+pre.raw{white-space:pre-wrap;word-break:break-all;font:12px Consolas,monospace;background:#fbfdff;border:1px solid var(--line);padding:8px;max-height:70vh;overflow:auto}
+.msg{padding:7px 10px;border-radius:4px;margin:6px 0;white-space:pre-wrap}
+.msg.err{background:var(--errbg);color:var(--err)}.msg.rev{background:var(--revbg);color:var(--rev)}.msg.ok{background:var(--okbg);color:var(--ok)}.msg.info{background:#eef7fd}
+details summary{cursor:pointer;color:var(--accent-dark);font-weight:600}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><h1>CFDI XML Viewer</h1><span class="ver" id="ver"></span><span class="ver">Local only · no upload · values kept exactly as text</span></header>
+<main>
+<section class="panel">
+  <div id="drop">
+    <div class="bar" style="justify-content:center">
+      <button class="primary" id="btnOpenDir">Open XML folder (results saved there)…</button>
+      <button id="btnFiles">Add XML files…</button>
+      <button id="btnFolder">Add folder…</button>
+      <button id="btnClear" disabled>Clear all</button>
+    </div>
+    <div class="bar" style="justify-content:center;margin-top:6px">
+      <label><input type="checkbox" id="autoPerFile" checked> After opening a folder, save one XLSX per XML into that folder</label>
+      <label><input type="checkbox" id="autoCombined"> also one combined workbook</label>
+    </div>
+    <div class="small" style="margin-top:4px">Open XML folder reads every .xml file directly inside the chosen folder (subfolders are not read) and writes each result as <i>XML file name</i>.xlsx beside it. Existing files are never replaced; a new name such as <i>name</i>_2.xlsx is used. Or drop XML files / folders here. Files are read in this browser only. Non-.xml files are skipped and counted.</div>
+    <div class="small" id="outDirInfo" style="margin-top:4px;font-weight:600"></div>
+    <input type="file" id="inFiles" accept=".xml,text/xml,application/xml" multiple class="hidden">
+    <input type="file" id="inFolder" webkitdirectory multiple class="hidden">
+  </div>
+  <div class="counts" id="counts"></div>
+  <div id="loadMsg"></div>
+  <div id="topExportMsg"></div>
+</section>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="tDoc">Document view</button>
+  <button role="tab" aria-selected="false" data-tab="tTables">Batch tables</button>
+  <button role="tab" aria-selected="false" data-tab="tExc">Exceptions <span id="excCount"></span></button>
+  <button role="tab" aria-selected="false" data-tab="tExport">Export</button>
+</div>
+
+<section class="panel tabpane on" id="tDoc" style="border-top-left-radius:0">
+  <div class="split">
+    <div><div class="small" style="margin-bottom:4px">Files (load order)</div><div id="fileList" tabindex="0"><div class="small" style="padding:8px">No files loaded.</div></div></div>
+    <div>
+      <div class="bar" style="margin-bottom:6px"><button id="btnFmt" disabled aria-pressed="false">Show original XML text</button><span class="small">Field names are the XML attribute names. Every value is shown exactly as stored in the file.</span></div>
+      <div id="docView"><div class="small">Select a file.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel tabpane" id="tTables">
+  <div class="bar"><label>Table <select id="tableSel"></select></label><span class="small" id="tableInfo"></span></div>
+  <div class="small" style="margin:6px 0">Documents: one row per XML (elements that occur once per document). Other tables: one row per repeated element (for example each Concepto or tax line). Item shows the exact position in the XML. A blank cell means the attribute is not in that XML; attributes present with an empty value are listed under Exceptions.</div>
+  <div class="bar" style="margin-bottom:6px"><button id="pgPrev">◀ Previous</button><span id="pgInfo" class="small"></span><button id="pgNext">Next ▶</button></div>
+  <div class="gridwrap"><table class="grid" id="tableGrid"></table></div>
+</section>
+
+<section class="panel tabpane" id="tExc">
+  <div class="small">Errors stop a file from being parsed (it is still listed and counted). Review items are facts to check; they do not change any value.</div>
+  <div class="gridwrap" style="margin-top:6px"><table class="grid" id="excGrid"></table></div>
+</section>
+
+<section class="panel tabpane" id="tExport">
+  <h2>One Excel workbook per XML (individual files)</h2>
+  <p class="small">Each workbook holds only that XML's data and is named after it (<i>invoice</i>.xml → <i>invoice</i>.xlsx). After Open XML folder they are written into that folder; otherwise you choose a destination folder once. Existing files are never replaced.</p>
+  <div class="bar"><button class="primary" id="btnPerFile" disabled>Save one XLSX per XML…</button></div>
+  <h2 style="margin-top:14px">Combined Excel workbook (all loaded files)</h2>
+  <p class="small">Every cell is written as text, so codes such as FormaPago <code>03</code>, ClaveProdServ <code>01010101</code>, CodigoPostal <code>06600</code>, 20-digit NoCertificado and amounts such as <code>1160.00</code> stay exactly as in the XML. Sheets: Documents, one sheet per repeated element type, All fields (every attribute, text and comment, one row each, including namespace declarations), Files (SHA-256), Exceptions, About.</p>
+  <div class="bar"><button id="btnXlsx" disabled>Save combined XLSX…</button><span class="small" id="xlsxBlock"></span></div>
+  <h2 style="margin-top:14px">Single table as Concordance DAT or CSV</h2>
+  <p class="small">DAT: þ qualifier, DC4 (¶) separator, UTF-8 with BOM, CRLF. CSV: UTF-8 with BOM, all values quoted, never altered. Opening a CSV by double-click in Excel converts <code>03</code> to <code>3</code>; use the XLSX workbook for Excel review.</p>
+  <div class="bar"><label>Table <select id="expTableSel"></select></label><button id="btnDat" disabled>Save DAT…</button><button id="btnCsv" disabled>Save CSV…</button></div>
+  <div id="exportMsg"></div>
+</section>
+</main>
+
+<script>
+'use strict';
+const TOOL = {name: 'CFDI XML Viewer', version: '1.0.0'};
+const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
+const CFDI_NS = new Set(['http://www.sat.gob.mx/cfd/3', 'http://www.sat.gob.mx/cfd/4']);
+const TFD_NS = new Set(['http://www.sat.gob.mx/TimbreFiscalDigital']);
+// Element local names that SAT schemas allow to repeat. Repetition seen in the loaded files is detected as well.
+const KNOWN_REPEATING = new Set(['CfdiRelacionados','CfdiRelacionado','Concepto','Traslado','Retencion','Parte','InformacionAduanera','CuentaPredial',
+  'Pago','DoctoRelacionado','TrasladoDR','RetencionDR','TrasladoP','RetencionP','Percepcion','Deduccion','OtroPago','Incapacidad','HorasExtra','SubContratacion',
+  'TrasladosLocales','RetencionesLocales','Ubicacion','Mercancia','CantidadTransporta','GuiaIdentificacion','Remolque','TiposFigura','PartesTransporte','DocumentacionAduanera']);
+const XLSX_CELL_MAX = 32767;
+const PAGE = 200;
+
+/* ---------------- hashing ---------------- */
+const SHA_K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+function sha256Js(bytes) {
+  const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6, m = new Uint8Array(total);
+  m.set(bytes); m[len] = 0x80;
+  const dv = new DataView(m.buffer); dv.setUint32(total - 4, (len * 8) >>> 0); dv.setUint32(total - 8, Math.floor(len / 0x20000000));
+  const h = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]), w = new Uint32Array(64);
+  for (let o = 0; o < total; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const a = w[i - 15], b = w[i - 2];
+      const s0 = ((a >>> 7) | (a << 25)) ^ ((a >>> 18) | (a << 14)) ^ (a >>> 3);
+      const s1 = ((b >>> 17) | (b << 15)) ^ ((b >>> 19) | (b << 13)) ^ (b >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, hh] = h;
+    for (let i = 0; i < 64; i++) {
+      const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+      const t1 = (hh + S1 + ((e & f) ^ (~e & g)) + SHA_K[i] + w[i]) | 0;
+      const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+      const t2 = (S0 + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+  }
+  return Array.from(h, x => x.toString(16).padStart(8, '0')).join('');
+}
+async function sha256(bytes) {
+  if (globalThis.crypto && crypto.subtle) {
+    try { const d = await crypto.subtle.digest('SHA-256', bytes); return Array.from(new Uint8Array(d), b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { /* fall back below */ }
+  }
+  return sha256Js(bytes);
+}
+
+/* ---------------- decoding ---------------- */
+function firstInvalidUtf8(b) {
+  let i = 0;
+  while (i < b.length) {
+    const c = b[i];
+    if (c < 0x80) { i++; continue; }
+    let n, min;
+    if (c >= 0xC2 && c <= 0xDF) { n = 1; min = 0x80; } else if (c >= 0xE0 && c <= 0xEF) { n = 2; min = 0x800; } else if (c >= 0xF0 && c <= 0xF4) { n = 3; min = 0x10000; } else return i;
+    let cp = c & (0x3F >> n);
+    for (let k = 1; k <= n; k++) { const x = b[i + k]; if (x === undefined || (x & 0xC0) !== 0x80) return i; cp = (cp << 6) | (x & 0x3F); }
+    if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) return i;
+    i += n + 1;
+  }
+  return -1;
+}
+function decodeXmlBytes(bytes) {
+  const notes = [];
+  let bom = null, skip = 0;
+  if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) { bom = 'utf-8'; skip = 3; }
+  else if (bytes[0] === 0xFF && bytes[1] === 0xFE) { bom = 'utf-16le'; skip = 2; }
+  else if (bytes[0] === 0xFE && bytes[1] === 0xFF) { bom = 'utf-16be'; skip = 2; }
+  let declared = null;
+  if (!bom || bom === 'utf-8') {
+    const head = String.fromCharCode.apply(null, bytes.subarray(skip, skip + 300));
+    const m = /^<\?xml[^>]*?\sencoding\s*=\s*["']([A-Za-z0-9._-]+)["']/.exec(head);
+    if (m) declared = m[1].toLowerCase();
+  }
+  const norm = l => ({'utf8': 'utf-8', 'latin1': 'iso-8859-1', 'iso_8859-1': 'iso-8859-1', 'iso8859-1': 'iso-8859-1', 'cp1252': 'windows-1252'}[l] || l);
+  let enc = bom || (declared ? norm(declared) : 'utf-8');
+  if (bom && declared && !(bom === 'utf-8' && norm(declared) === 'utf-8') && !bom.startsWith('utf-16'))
+    notes.push('Byte order mark says ' + bom + ' but the XML declaration says ' + declared + '; decoded by the byte order mark.');
+  const body = bytes.subarray(skip);
+  let text;
+  if (enc === 'utf-8') {
+    const bad = firstInvalidUtf8(body);
+    if (bad >= 0) throw new Error('Invalid UTF-8 byte sequence at byte offset ' + (bad + skip) + '. No bytes were replaced; the file is not parsed.');
+    text = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(body);
+  } else if (enc === 'iso-8859-1') {
+    let s = ''; for (let i = 0; i < body.length; i += 8192) s += String.fromCharCode.apply(null, body.subarray(i, i + 8192)); text = s;
+  } else {
+    try { text = new TextDecoder(enc, {fatal: true, ignoreBOM: true}).decode(body); }
+    catch (e) { throw new Error('Cannot decode as ' + enc + ' (' + (e.message || 'unsupported encoding') + '). No bytes were replaced; the file is not parsed.'); }
+  }
+  return {text, encoding: enc, bom: !!bom, declared, notes};
+}
+
+/* ---------------- XML extraction ---------------- */
+function keyOf(el) { return (el.namespaceURI || '') + '|' + el.localName; }
+function isRepeatLocal(local) { return KNOWN_REPEATING.has(local); }
+
+function parseCfdi(text) {
+  const dom = new DOMParser().parseFromString(text, 'application/xml');
+  const pe = dom.getElementsByTagName('parsererror');
+  if (pe.length) { const inner = pe[0].querySelector('div'); throw new Error('XML is not well-formed: ' + (inner || pe[0]).textContent.replace(/\s+/g, ' ').trim().slice(0, 400)); }
+  const root = dom.documentElement;
+  const elements = [];   // document order
+  const fields = [];     // every attribute / text / comment, document order
+  const misc = [];       // doctype / processing instructions / top-level comments
+  for (const n of dom.childNodes) {
+    if (n.nodeType === 10) misc.push({kind: '#doctype', value: '<!DOCTYPE ' + n.name + (n.publicId ? ' PUBLIC "' + n.publicId + '"' : '') + (n.systemId ? ' "' + n.systemId + '"' : '') + '>'});
+    else if (n.nodeType === 7) misc.push({kind: '#pi', name: n.target, value: n.data});
+    else if (n.nodeType === 8) misc.push({kind: '#comment', value: n.data});
+  }
+  function walk(el, parent, siblingIndex, siblingCount, depth) {
+    const repeatType = isRepeatLocal(el.localName) || siblingCount > 1;
+    const seg = el.localName + (repeatType ? '[' + siblingIndex + ']' : '');
+    const node = {
+      idx: elements.length, local: el.localName, qname: el.nodeName, ns: el.namespaceURI || '', prefix: el.prefix || '',
+      key: keyOf(el), parent, depth, siblingIndex, siblingCount, repeatType,
+      // Grouping key uses local names so CFDI 3.3 (cfd/3) and 4.0 (cfd/4) files share one table and one column per field.
+      genericPath: parent ? parent.genericPath + '/' + el.localName : el.localName,
+      label: parent ? (parent.label ? parent.label + '.' : '') + el.localName : '',
+      instPath: parent ? parent.instPath + '/' + seg : seg,
+      attrs: [], text: null, children: [], comments: []
+    };
+    if (!parent) node.label = '';
+    elements.push(node);
+    if (parent) parent.children.push(node);
+    for (const a of Array.from(el.attributes)) {
+      const nsDecl = a.namespaceURI === XMLNS_NS;
+      const at = {qname: a.name, local: a.localName, ns: a.namespaceURI || '', prefix: a.prefix || '', value: a.value, nsDecl};
+      node.attrs.push(at);
+      fields.push({el: node, kind: nsDecl ? 'Namespace declaration' : 'Attribute', name: a.name, value: a.value});
+    }
+    let txt = '', hasElem = false;
+    const counts = new Map(), totals = new Map();
+    for (const c of el.childNodes) if (c.nodeType === 1) { hasElem = true; const k = keyOf(c); totals.set(k, (totals.get(k) || 0) + 1); }
+    for (const c of el.childNodes) {
+      if (c.nodeType === 3 || c.nodeType === 4) txt += c.data;
+      else if (c.nodeType === 8) { node.comments.push(c.data); fields.push({el: node, kind: 'Comment', name: '#comment', value: c.data}); }
+      else if (c.nodeType === 7) fields.push({el: node, kind: 'Processing instruction', name: '#pi ' + c.target, value: c.data});
+    }
+    if (txt !== '' && !(hasElem && /^[ \t\r\n]*$/.test(txt))) {
+      node.text = txt;
+      fields.push({el: node, kind: 'Text', name: '#text', value: txt});
+    }
+    for (const c of el.childNodes) if (c.nodeType === 1) {
+      const k = keyOf(c); const i = (counts.get(k) || 0) + 1; counts.set(k, i);
+      walk(c, node, i, totals.get(k), depth + 1);
+    }
+    return node;
+  }
+  const rootNode = walk(root, null, 1, 1, 0);
+  rootNode.label = '';
+  return {rootNode, elements, fields, misc};
+}
+
+function findFirst(doc, pred) { return doc.elements.find(pred) || null; }
+function attrVal(node, local) { if (!node) return undefined; const a = node.attrs.find(x => x.local === local && !x.nsDecl); return a ? a.value : undefined; }
+
+/* ---------------- state ---------------- */
+const state = {docs: [], skipped: [], seenNames: new Set(), tables: null, exceptions: [], selected: -1, showRaw: false, page: 0, busy: false};
+
+async function addFiles(fileList) {
+  if (state.busy) return;
+  state.busy = true; setBusy(true);
+  const files = Array.from(fileList);
+  let added = 0, dupNames = 0;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const name = f.webkitRelativePath || f.relPath || f.name;
+      if (!/\.xml$/i.test(f.name)) { state.skipped.push(name); continue; }
+      if (state.seenNames.has(name + '\u0000' + f.size + '\u0000' + f.lastModified)) { dupNames++; continue; }
+      state.seenNames.add(name + '\u0000' + f.size + '\u0000' + f.lastModified);
+      if (i % 20 === 0) { setLoadMsg('info', 'Reading ' + (i + 1) + ' of ' + files.length + '…'); await new Promise(r => setTimeout(r, 0)); }
+      state.docs.push(await loadOne(f, name));
+      added++;
+    }
+  } finally {
+    state.busy = false; setBusy(false);
+  }
+  rebuild();
+  const parts = [added + ' XML file(s) added.'];
+  if (dupNames) parts.push(dupNames + ' file(s) already loaded (same path, size and time) were not added again.');
+  setLoadMsg('info', parts.join(' '));
+  if (state.selected < 0 && state.docs.length) selectDoc(0);
+  else renderDoc();
+}
+
+async function loadOne(file, name) {
+  const doc = {n: 0, name, size: file.size, lastModified: file.lastModified, sha: '', status: 'Error', error: null, decode: null, parsed: null, rawText: null};
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.length !== file.size) throw new Error('Read ' + bytes.length + ' bytes but the file reports ' + file.size + ' bytes.');
+    doc.bytes = bytes.length;
+    doc.sha = await sha256(bytes);
+    doc.decode = decodeXmlBytes(bytes);
+    doc.rawText = doc.decode.text;
+    doc.parsed = parseCfdi(doc.decode.text);
+    doc.status = 'Parsed';
+    const p = doc.parsed;
+    const tfd = findFirst(p, e => e.local === 'TimbreFiscalDigital');
+    doc.uuid = attrVal(tfd, 'UUID');
+    const em = findFirst(p, e => e.local === 'Emisor' && e.parent === p.rootNode);
+    const re = findFirst(p, e => e.local === 'Receptor' && e.parent === p.rootNode);
+    doc.emisor = attrVal(em, 'Rfc'); doc.emisorName = attrVal(em, 'Nombre');
+    doc.receptor = attrVal(re, 'Rfc'); doc.receptorName = attrVal(re, 'Nombre');
+    doc.total = attrVal(p.rootNode, 'Total'); doc.moneda = attrVal(p.rootNode, 'Moneda');
+    doc.fecha = attrVal(p.rootNode, 'Fecha'); doc.version = attrVal(p.rootNode, 'Version');
+    doc.tipo = attrVal(p.rootNode, 'TipoDeComprobante');
+  } catch (e) {
+    doc.error = e.message || String(e);
+  }
+  return doc;
+}
+
+/* ---------------- batch tables ---------------- */
+function rebuild() {
+  state.docs.forEach((d, i) => d.n = i + 1);
+  state.exceptions = buildExceptions();
+  state.tables = buildTables();
+  state.page = 0;
+  invalidateExport('Loaded files changed; previous export results no longer apply.');
+  renderCounts(); renderFileList(); renderTableSelects(); renderTable(); renderExceptions(); updateButtons();
+}
+
+function buildTables(docs = state.docs, exceptions = state.exceptions) {
+  const parsed = docs.filter(d => d.parsed);
+  // 1. which generic paths repeat (known names or seen more than once under one parent)
+  const repeating = new Set();
+  for (const d of parsed) for (const e of d.parsed.elements) if (e.parent && e.repeatType) repeating.add(e.genericPath);
+  // 2. anchor = nearest repeating ancestor-or-self; root anchor = Documents table
+  const tables = new Map();
+  const docTable = {id: 'DOC', title: 'Documents', anchorPath: null, anchorLabel: '', columns: [], colIndex: new Map(), rows: []};
+  tables.set('DOC', docTable);
+  function anchorOf(e) { let a = e; while (a.parent && !repeating.has(a.genericPath)) a = a.parent; return a; }
+  function colLabel(e, anchor, name) {
+    let rel = '';
+    if (e !== anchor) { const parts = []; let x = e; while (x && x !== anchor) { parts.unshift(x.local); x = x.parent; } rel = parts.join('.'); }
+    return rel ? rel + '.' + name : name;
+  }
+  for (const d of parsed) {
+    const rowsByAnchor = new Map();
+    const lastColByTable = new Map();
+    for (const e of d.parsed.elements) {
+      const anchor = anchorOf(e);
+      const tid = anchor.parent ? anchor.genericPath : 'DOC';
+      let t = tables.get(tid);
+      if (!t) {
+        t = {id: tid, title: '', anchorPath: anchor.genericPath, anchorNode: anchor, columns: [], colIndex: new Map(), rows: []};
+        tables.set(tid, t);
+      }
+      let row = rowsByAnchor.get(anchor);
+      if (!row) {
+        row = {doc: d, item: anchor.parent ? anchor.instPath.replace(/^[^/]*\//, '') : '', values: new Map()};
+        rowsByAnchor.set(anchor, row); t.rows.push(row);
+      }
+      const items = e.attrs.filter(a => !a.nsDecl).map(a => ({id: e.genericPath + '@' + a.ns + '|' + a.local, name: a.qname, value: a.value}));
+      if (e.text !== null) items.push({id: e.genericPath + '#text', name: '#text', value: e.text});
+      for (const it of items) {
+        let ci = t.colIndex.get(it.id);
+        if (ci === undefined) {
+          const col = {id: it.id, label: colLabel(e, anchor, it.name)};
+          const after = lastColByTable.get(t.id);
+          const pos = after === undefined ? t.columns.length : t.columns.indexOf(after) + 1;
+          t.columns.splice(pos, 0, col);
+          t.colIndex = new Map(t.columns.map((c, i) => [c.id, i]));
+          ci = t.colIndex.get(it.id);
+        }
+        lastColByTable.set(t.id, t.columns[ci]);
+        row.values.set(it.id, it.value);
+      }
+    }
+  }
+  // labels unique per table
+  for (const t of tables.values()) {
+    const seen = new Map();
+    for (const c of t.columns) { const n = (seen.get(c.label) || 0) + 1; seen.set(c.label, n); if (n > 1) c.label += ' (' + c.id.split('@').pop() + ')'; }
+  }
+  // titles: anchor local name, disambiguated by parent names
+  const list = Array.from(tables.values());
+  const others = list.filter(t => t.id !== 'DOC');
+  for (const t of others) {
+    const parts = []; let x = t.anchorNode; while (x && x.parent) { parts.unshift(x.local); x = x.parent; }
+    t.pathParts = parts; t.title = parts[parts.length - 1];
+  }
+  const clashes = () => { const byTitle = new Map(); for (const t of others) { const a = byTitle.get(t.title) || []; a.push(t); byTitle.set(t.title, a); } return Array.from(byTitle.values()).filter(g => g.length > 1); };
+  for (const group of clashes()) for (const t of group) {
+    // prefix with the nearest repeating ancestor (e.g. "Concepto Traslado"), else the top-level element (e.g. "Impuestos Traslado")
+    let x = t.anchorNode.parent, pre = null;
+    while (x && x.parent) { if (repeating.has(x.genericPath)) { pre = x.local; break; } x = x.parent; }
+    t.title = (pre || t.pathParts[0]) + ' ' + t.title;
+  }
+  for (const group of clashes()) for (const t of group) t.title = t.pathParts.join(' ');
+  docTable.title = 'Documents';
+  // all-fields long table
+  const fieldsTable = {id: 'FIELDS', title: 'All fields', fixed: true, columns: ['Doc #', 'File', 'Element path', 'Element', 'Kind', 'Field', 'Value'], rows: []};
+  for (const d of parsed) {
+    for (const m of d.parsed.misc) fieldsTable.rows.push([String(d.n), d.name, '(document)', '', m.kind === '#doctype' ? 'Document type declaration' : m.kind === '#pi' ? 'Processing instruction' : 'Comment', m.kind === '#pi' ? '#pi ' + m.name : m.kind, m.value]);
+    for (const f of d.parsed.fields) fieldsTable.rows.push([String(d.n), d.name, f.el.instPath, f.el.qname, f.kind, f.name, f.value]);
+  }
+  const filesTable = {id: 'FILES', title: 'Files', fixed: true, columns: ['Doc #', 'File', 'Bytes', 'SHA-256', 'Status', 'Error', 'Encoding used', 'Encoding declared', 'BOM', 'Root element', 'Version', 'UUID (TimbreFiscalDigital)', 'Fields extracted'], rows: []};
+  for (const d of docs) {
+    const p = d.parsed;
+    filesTable.rows.push([String(d.n), d.name, d.bytes === undefined ? '' : String(d.bytes), d.sha, d.status, d.error || '', d.decode ? d.decode.encoding : '', d.decode && d.decode.declared ? d.decode.declared : '', d.decode ? (d.decode.bom ? 'Yes' : 'No') : '', p ? p.rootNode.qname : '', d.version || '', d.uuid || '', p ? String(p.fields.length + p.misc.length) : '']);
+  }
+  const excTable = {id: 'EXC', title: 'Exceptions', fixed: true, columns: ['Severity', 'Doc #', 'File', 'Location', 'Value', 'Reason'], rows: exceptions.map(x => [x.severity, x.n ? String(x.n) : '', x.file || '', x.location || '', x.value === undefined ? '' : x.value, x.reason])};
+  return {data: [docTable, ...others], fieldsTable, filesTable, excTable};
+}
+
+function tableMatrix(t) {
+  // returns {header: [...], rows: [[...]]} with all values as strings
+  if (t.fixed) return {header: t.columns.slice(), rows: t.rows};
+  const header = t.id === 'DOC' ? ['Doc #', 'File'] : ['Doc #', 'File', 'Item'];
+  for (const c of t.columns) header.push(c.label);
+  const rows = t.rows.map(r => {
+    const out = t.id === 'DOC' ? [String(r.doc.n), r.doc.name] : [String(r.doc.n), r.doc.name, r.item];
+    for (const c of t.columns) { const v = r.values.get(c.id); out.push(v === undefined ? '' : v); }
+    return out;
+  });
+  return {header, rows};
+}
+function allTables() { if (!state.tables) return []; const T = state.tables; return [...T.data, T.fieldsTable, T.filesTable, T.excTable]; }
+
+function buildExceptions(docs = state.docs) {
+  const ex = [];
+  const byUuid = new Map(), bySha = new Map();
+  for (const d of docs) {
+    if (d.error) { ex.push({severity: 'Error', n: d.n, file: d.name, location: '(file)', reason: d.error}); continue; }
+    for (const note of d.decode.notes) ex.push({severity: 'Review', n: d.n, file: d.name, location: '(encoding)', reason: note});
+    const p = d.parsed, r = p.rootNode;
+    if (!(r.local === 'Comprobante' && CFDI_NS.has(r.ns))) ex.push({severity: 'Review', n: d.n, file: d.name, location: r.qname, value: r.ns, reason: 'Root element is not a CFDI 3.x/4.0 cfdi:Comprobante. All content is still extracted.'});
+    if (!d.uuid) ex.push({severity: 'Review', n: d.n, file: d.name, location: 'TimbreFiscalDigital', reason: 'No TimbreFiscalDigital UUID found (document may not be stamped by SAT).'});
+    for (const m of p.misc) if (m.kind === '#doctype') ex.push({severity: 'Review', n: d.n, file: d.name, location: '(document)', value: m.value, reason: 'Document type declaration present; entity values, if any, are shown expanded.'});
+    for (const f of p.fields) {
+      if (f.kind !== 'Attribute') continue;
+      const loc = f.el.instPath + ' @' + f.name;
+      if (f.value === '') ex.push({severity: 'Review', n: d.n, file: d.name, location: loc, value: '', reason: 'Attribute present with an empty value (shown as a blank cell in tables).'});
+      else if (/^\s|\s$/.test(f.value)) ex.push({severity: 'Review', n: d.n, file: d.name, location: loc, value: f.value, reason: 'Value has leading or trailing whitespace; kept exactly.'});
+      if (f.value.length > XLSX_CELL_MAX) ex.push({severity: 'Review', n: d.n, file: d.name, location: loc, value: f.value.length + ' characters', reason: 'Longer than the Excel cell limit of 32,767 characters; XLSX export is blocked, DAT/CSV can hold it.'});
+    }
+    for (const f of p.fields) if (f.kind === 'Text' && f.value.length > XLSX_CELL_MAX) ex.push({severity: 'Review', n: d.n, file: d.name, location: f.el.instPath + ' #text', value: f.value.length + ' characters', reason: 'Longer than the Excel cell limit of 32,767 characters; XLSX export is blocked, DAT/CSV can hold it.'});
+    if (d.uuid) { const k = d.uuid.toUpperCase(); const a = byUuid.get(k) || []; a.push(d); byUuid.set(k, a); }
+    const a = bySha.get(d.sha) || []; a.push(d); bySha.set(d.sha, a);
+  }
+  for (const [u, ds] of byUuid) if (ds.length > 1) for (const d of ds) ex.push({severity: 'Review', n: d.n, file: d.name, location: 'TimbreFiscalDigital @UUID', value: d.uuid, reason: 'Same UUID in ' + ds.length + ' files: Doc # ' + ds.map(x => x.n).join(', ') + '.'});
+  for (const [s, ds] of bySha) if (ds.length > 1) for (const d of ds) ex.push({severity: 'Review', n: d.n, file: d.name, location: '(file)', value: s, reason: 'Byte-identical to Doc # ' + ds.filter(x => x !== d).map(x => x.n).join(', ') + ' (same SHA-256).'});
+  return ex;
+}
+
+/* ---------------- rendering ---------------- */
+const $ = id => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) { if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else e.setAttribute(k, v); }
+  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
+  return e;
+}
+function setLoadMsg(kind, text) { $('loadMsg').replaceChildren(text ? h('div', {class: 'msg ' + kind, text}) : ''); }
+function setBusy(b) { for (const id of ['btnFiles', 'btnFolder', 'btnClear']) $(id).disabled = b || (id === 'btnClear' && !state.docs.length); }
+function renderCounts() {
+  const total = state.docs.length, ok = state.docs.filter(d => d.parsed).length, err = total - ok;
+  const rev = state.exceptions.filter(x => x.severity === 'Review').length;
+  const fields = state.docs.reduce((s, d) => s + (d.parsed ? d.parsed.fields.length + d.parsed.misc.length : 0), 0);
+  const c = $('counts'); c.replaceChildren();
+  const add = (label, v, cls) => c.append(h('span', null, label + ': ', h('b', {class: cls || '', text: String(v)})));
+  add('XML files', total); add('Parsed', ok); add('Errors', err, err ? 'b-err badge' : ''); add('Review items', rev, rev ? 'b-rev badge' : ''); add('Fields extracted', fields.toLocaleString('en-US'));
+  if (state.skipped.length) add('Skipped non-XML', state.skipped.length);
+  $('excCount').textContent = state.exceptions.length ? '(' + state.exceptions.length + ')' : '';
+}
+function renderFileList() {
+  const fl = $('fileList'); fl.replaceChildren();
+  if (!state.docs.length) { fl.append(h('div', {class: 'small', style: 'padding:8px', text: 'No files loaded.'})); return; }
+  const revBy = new Map(); for (const x of state.exceptions) if (x.severity === 'Review') revBy.set(x.n, (revBy.get(x.n) || 0) + 1);
+  state.docs.forEach((d, i) => {
+    const row = h('div', {class: 'filerow' + (i === state.selected ? ' sel' : ''), 'data-i': String(i)},
+      h('div', {class: 'fn'}, String(d.n) + '. ' + d.name,
+        d.error ? h('span', {class: 'badge b-err', text: 'Error'}) : revBy.get(d.n) ? h('span', {class: 'badge b-rev', text: revBy.get(d.n) + ' review'}) : h('span', {class: 'badge b-ok', text: 'Parsed'})),
+      d.parsed ? h('div', {class: 'small', text: [d.emisor, d.receptor ? '→ ' + d.receptor : '', d.total !== undefined ? 'Total ' + d.total + (d.moneda ? ' ' + d.moneda : '') : '', d.fecha].filter(Boolean).join('  ·  ')}) : h('div', {class: 'small', text: d.error}));
+    row.addEventListener('click', () => selectDoc(i));
+    fl.append(row);
+  });
+}
+function selectDoc(i) {
+  state.selected = i;
+  for (const r of document.querySelectorAll('.filerow')) r.classList.toggle('sel', Number(r.dataset.i) === i);
+  renderDoc();
+}
+function valueCell(v) {
+  const td = h('td');
+  if (v === '') td.append(h('span', {class: 'empty', text: '(empty value)'}));
+  else if (v.length > 300) td.append(h('span', {class: 'longv', text: v}));
+  else td.textContent = v;
+  return td;
+}
+function renderElement(node, container) {
+  const box = h('div', {class: 'el'});
+  const title = node.local + (node.repeatType ? ' ' + node.siblingIndex : '');
+  box.append(h('div', {class: 'eh'}, title, h('span', {class: 'path', text: node.instPath})));
+  const body = h('div', {class: 'eb'});
+  const shown = node.attrs.filter(a => !a.nsDecl);
+  if (shown.length || node.text !== null || node.comments.length) {
+    const t = h('table', {class: 'kv'});
+    for (const a of shown) t.append(h('tr', null, h('th', {text: a.qname}), valueCell(a.value)));
+    if (node.text !== null) t.append(h('tr', null, h('th', {text: '#text'}), valueCell(node.text)));
+    for (const c of node.comments) t.append(h('tr', null, h('th', {text: '#comment'}), valueCell(c)));
+    body.append(t);
+  }
+  const nsd = node.attrs.filter(a => a.nsDecl);
+  if (nsd.length) {
+    const det = h('details', null, h('summary', {class: 'small', text: nsd.length + ' namespace declaration(s)'}));
+    const t = h('table', {class: 'kv'}); for (const a of nsd) t.append(h('tr', null, h('th', {text: a.qname}), valueCell(a.value)));
+    det.append(t); body.append(det);
+  }
+  // group leaf repeated siblings into one compact table
+  let i = 0;
+  const kids = node.children;
+  while (i < kids.length) {
+    const k = kids[i];
+    let j = i; while (j < kids.length && kids[j].key === k.key) j++;
+    const group = kids.slice(i, j);
+    if (group.length > 1 && group.every(g => !g.children.length && g.text === null && !g.comments.length)) {
+      const cols = []; for (const g of group) for (const a of g.attrs) if (!a.nsDecl && !cols.includes(a.qname)) cols.push(a.qname);
+      const sub = h('div', {class: 'el'}, h('div', {class: 'eh'}, k.local + ' × ' + group.length, h('span', {class: 'path', text: node.instPath + '/' + k.local + '[1…' + group.length + ']'})));
+      const t = h('table', {class: 'grid'}); const hr = h('tr', null, h('th', {text: '#'})); for (const c of cols) hr.append(h('th', {text: c})); t.append(hr);
+      for (const g of group) { const tr = h('tr', null, h('td', {text: String(g.siblingIndex)})); for (const c of cols) { const a = g.attrs.find(x => x.qname === c && !x.nsDecl); tr.append(a ? valueCell(a.value) : h('td')); } t.append(tr); }
+      sub.append(h('div', {class: 'eb', style: 'overflow:auto'}, t)); body.append(sub);
+    } else for (const g of group) renderElement(g, body);
+    i = j;
+  }
+  box.append(body);
+  container.append(box);
+}
+function renderDoc() {
+  const v = $('docView'); v.replaceChildren();
+  const d = state.docs[state.selected];
+  $('btnFmt').disabled = !d || !d.rawText;
+  if (!d) { v.append(h('div', {class: 'small', text: state.docs.length ? 'Select a file.' : 'No files loaded.'})); return; }
+  const meta = h('dl', {class: 'docmeta'});
+  const m = (k, val) => { meta.append(h('dt', {text: k}), h('dd', {text: val})); };
+  m('File', d.name); m('Bytes', d.bytes === undefined ? '' : String(d.bytes)); m('SHA-256', d.sha || '(not read)');
+  if (d.decode) m('Encoding', d.decode.encoding + (d.decode.bom ? ' (BOM)' : '') + (d.decode.declared ? ' · declared ' + d.decode.declared : ' · no declaration'));
+  if (d.parsed) m('Fields', String(d.parsed.fields.length + d.parsed.misc.length) + ' (attributes, text, comments; namespace declarations included)');
+  v.append(meta);
+  if (d.error) { v.append(h('div', {class: 'msg err', text: d.error})); }
+  if (state.showRaw && d.rawText) { v.append(h('pre', {class: 'raw', text: d.rawText})); return; }
+  if (!d.parsed) return;
+  for (const mm of d.parsed.misc) v.append(h('div', {class: 'msg info', text: mm.kind + (mm.name ? ' ' + mm.name : '') + ': ' + mm.value}));
+  renderElement(d.parsed.rootNode, v);
+}
+function renderTableSelects() {
+  for (const id of ['tableSel', 'expTableSel']) {
+    const sel = $(id), prev = sel.value; sel.replaceChildren();
+    for (const t of allTables()) { const mtx = t.fixed ? t.rows.length : t.rows.length; sel.append(h('option', {value: t.id, text: t.title + ' (' + mtx.toLocaleString('en-US') + ' rows)'})); }
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+}
+function renderTable() {
+  const g = $('tableGrid'); g.replaceChildren();
+  const t = allTables().find(x => x.id === $('tableSel').value);
+  if (!t) { $('tableInfo').textContent = ''; $('pgInfo').textContent = ''; return; }
+  const {header, rows} = tableMatrix(t);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  if (state.page >= pages) state.page = pages - 1;
+  const start = state.page * PAGE, end = Math.min(rows.length, start + PAGE);
+  $('tableInfo').textContent = rows.length.toLocaleString('en-US') + ' rows × ' + header.length + ' columns';
+  $('pgInfo').textContent = rows.length ? 'Rows ' + (start + 1).toLocaleString('en-US') + '–' + end.toLocaleString('en-US') + ' of ' + rows.length.toLocaleString('en-US') : 'No rows';
+  $('pgPrev').disabled = state.page === 0; $('pgNext').disabled = state.page >= pages - 1;
+  const hr = h('tr'); for (const c of header) hr.append(h('th', {text: c})); g.append(h('thead', null, hr));
+  const tb = h('tbody');
+  for (let i = start; i < end; i++) { const tr = h('tr'); for (const v of rows[i]) tr.append(v.length > 300 ? valueCell(v) : h('td', {text: v})); tb.append(tr); }
+  g.append(tb);
+}
+function renderExceptions() {
+  const g = $('excGrid'); g.replaceChildren();
+  const t = state.tables ? state.tables.excTable : null;
+  if (!t || !t.rows.length) { g.append(h('tr', null, h('td', {text: 'No exceptions.'}))); return; }
+  const hr = h('tr'); for (const c of t.columns) hr.append(h('th', {text: c})); g.append(h('thead', null, hr));
+  const tb = h('tbody');
+  for (const r of t.rows) { const tr = h('tr'); r.forEach((v, i) => { const td = i === 0 ? h('td', null, h('span', {class: 'badge ' + (v === 'Error' ? 'b-err' : 'b-rev'), text: v})) : (v.length > 300 ? valueCell(v) : h('td', {text: v})); tr.append(td); }); tb.append(tr); }
+  g.append(tb);
+}
+function xlsxBlocker() {
+  const parsed = state.docs.filter(d => d.parsed).length;
+  if (!parsed) return 'Load at least one XML file that parses.';
+  for (const t of allTables()) { const {header, rows} = tableMatrix(t); for (const r of [header, ...rows]) for (const v of r) if (v.length > XLSX_CELL_MAX) return 'A value in ' + t.title + ' is longer than 32,767 characters (Excel limit). Use DAT/CSV for that table; see Exceptions.'; }
+  return '';
+}
+function updateButtons() {
+  const parsed = state.docs.some(d => d.parsed);
+  const blk = parsed ? xlsxBlocker() : 'Load at least one XML file that parses.';
+  $('btnXlsx').disabled = !!blk; $('xlsxBlock').textContent = blk;
+  $('btnDat').disabled = !parsed; $('btnCsv').disabled = !parsed; $('btnPerFile').disabled = !parsed;
+  $('btnClear').disabled = !state.docs.length || state.busy;
+}
+
+/* ---------------- writers ---------------- */
+const enc = new TextEncoder();
+function escXml(s) {
+  return s.replace(/[&<>"\r]/g, c => c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#13;');
+}
+function colName(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function sheetNames(titles) {
+  const used = new Set(), out = [];
+  for (const t of titles) {
+    let base = t.replace(/[\[\]:*?\/\\]/g, ' ').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet';
+    let n = base, k = 2; while (used.has(n.toLowerCase())) { const suf = ' (' + k++ + ')'; n = base.slice(0, 31 - suf.length) + suf; }
+    used.add(n.toLowerCase()); out.push(n);
+  }
+  return out;
+}
+function sheetXml(header, rows) {
+  const nCols = Math.max(1, header.length), last = colName(nCols - 1), lastRow = rows.length + 1;
+  const widths = header.map((hd, ci) => { let w = hd.length; for (let r = 0; r < Math.min(rows.length, 300); r++) w = Math.max(w, Math.min(60, (rows[r][ci] || '').length)); return Math.max(6, Math.min(60, w + 2)); });
+  const parts = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+    '<dimension ref="A1:' + last + lastRow + '"/>',
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>'];
+  widths.forEach((w, i) => parts.push('<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'));
+  parts.push('</cols><sheetData>');
+  const rowXml = (vals, r, style) => {
+    let s = '<row r="' + r + '">';
+    for (let c = 0; c < vals.length; c++) { const v = vals[c]; if (v === '' || v === undefined) continue; s += '<c r="' + colName(c) + r + '" s="' + style + '" t="inlineStr"><is><t xml:space="preserve">' + escXml(v) + '</t></is></c>'; }
+    return s + '</row>';
+  };
+  parts.push(rowXml(header, 1, 1));
+  for (let i = 0; i < rows.length; i++) parts.push(rowXml(rows[i], i + 2, 2));
+  parts.push('</sheetData><autoFilter ref="A1:' + last + lastRow + '"/><ignoredErrors><ignoredError sqref="A1:XFD1048576" numberStoredAsText="1"/></ignoredErrors></worksheet>');
+  return parts.join('');
+}
+function aboutMatrix(meta, docs) {
+  const single = docs.length === 1 && docs !== state.docs;
+  const rows = [
+    ['Tool', TOOL.name + ' ' + TOOL.version],
+    ['Generated (local time)', meta.generated],
+    ['Scope', single ? 'Single XML file: ' + docs[0].name + ' (SHA-256 ' + docs[0].sha + ')' : 'All loaded XML files'],
+    ['Source XML files', String(docs.length)],
+    ['Parsed', String(docs.filter(d => d.parsed).length)],
+    ['Errors (not parsed)', String(docs.filter(d => !d.parsed).length)],
+    ['Skipped non-XML files', single ? 'n/a (single-file workbook)' : String(state.skipped.length)],
+    ['Values', 'Every cell is text copied exactly from the XML (attribute values as read by a conforming XML parser). No value is converted, trimmed, rounded or translated.'],
+    ['Blank cells', 'A blank cell in Documents or a repeated-element sheet means the attribute is not present in that XML. Attributes present with an empty value are listed in Exceptions and in All fields.'],
+    ['Fields not in the XML', 'Schema fields that are absent from an XML are not added. Columns are only fields present in at least one loaded XML.'],
+    ['Namespace declarations', 'xmlns declarations are listed only in All fields; all other attributes appear in the table sheets too.'],
+    ['Source identity', 'SHA-256 of each source file is listed in Files and was computed from the same bytes that were parsed.'],
+    ['What this does not prove', 'It does not validate SAT signatures (Sello), certificate status, cancellation status or schema conformance.']
+  ];
+  return {header: ['Item', 'Detail'], rows};
+}
+function workbookSheets(meta, T, docs) {
+  const list = [...T.data, T.fieldsTable, T.filesTable, T.excTable].map(t => ({title: t.title, ...tableMatrix(t)}));
+  list.push({title: 'About', ...aboutMatrix(meta, docs)});
+  const names = sheetNames(list.map(s => s.title));
+  list.forEach((s, i) => s.name = names[i]);
+  return list;
+}
+
+/* CRC32 + ZIP */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function streamBytes(bytes, transform) {
+  const s = new Blob([bytes]).stream().pipeThrough(transform);
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+const canDeflate = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function' && (() => { try { new CompressionStream('deflate-raw'); return true; } catch (e) { return false; } })();
+async function zip(entries) {
+  const chunks = [], central = []; let offset = 0;
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  for (const e of entries) {
+    const name = enc.encode(e.name), data = e.data, crc = crc32(data);
+    let method = 0, stored = data;
+    if (canDeflate && data.length > 256) { stored = await streamBytes(data, new CompressionStream('deflate-raw')); method = 8; }
+    if (offset + stored.length > 0xFFFFFFF0) throw new Error('Workbook would exceed 4 GB; load fewer files per export.');
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, method, true);
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true); lh.setUint32(18, stored.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(lh.buffer), name, stored);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, method, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true); ch.setUint32(20, stored.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + stored.length;
+  }
+  const cdSize = central.reduce((s, c) => s + c.length, 0);
+  const eo = new DataView(new ArrayBuffer(22));
+  eo.setUint32(0, 0x06054b50, true); eo.setUint16(8, entries.length, true); eo.setUint16(10, entries.length, true); eo.setUint32(12, cdSize, true); eo.setUint32(16, offset, true);
+  return new Blob([...chunks, ...central, new Uint8Array(eo.buffer)], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+async function unzip(bytes) {
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let eocd = -1; for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('ZIP end record not found.');
+  const count = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  const out = new Map(), dec = new TextDecoder('utf-8', {fatal: true});
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Bad ZIP central directory.');
+    const method = dv.getUint16(p + 10, true), crc = dv.getUint32(p + 16, true), csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    const name = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
+    const lnl = dv.getUint16(loff + 26, true), lxl = dv.getUint16(loff + 28, true), start = loff + 30 + lnl + lxl;
+    let data = bytes.subarray(start, start + csize);
+    if (method === 8) data = await streamBytes(data, new DecompressionStream('deflate-raw')); else if (method !== 0) throw new Error('Unsupported ZIP method.');
+    if (data.length !== usize || crc32(data) !== crc) throw new Error('ZIP entry ' + name + ' failed size/CRC check.');
+    out.set(name, data);
+    p += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+function tablesFor(docs) { return docs === state.docs ? state.tables : buildTables(docs, buildExceptions(docs)); }
+function tooLongIn(T) {
+  for (const t of [...T.data, T.fieldsTable, T.filesTable, T.excTable]) { const {header, rows} = tableMatrix(t); for (const r of [header, ...rows]) for (const v of r) if (v.length > XLSX_CELL_MAX) return 'A value in ' + t.title + ' is longer than 32,767 characters (Excel limit). Use DAT/CSV for that table; see Exceptions.'; }
+  return '';
+}
+async function buildXlsx(meta, docs = state.docs) {
+  const T = tablesFor(docs);
+  const blk = tooLongIn(T); if (blk) throw new Error(blk);
+  const sheets = workbookSheets(meta, T, docs);
+  const files = [];
+  const put = (name, s) => files.push({name, data: enc.encode(s)});
+  put('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' + sheets.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>');
+  put('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>');
+  put('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>CFDI XML extract</dc:title><dc:creator>' + escXml(TOOL.name + ' ' + TOOL.version) + '</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">' + meta.iso + '</dcterms:created></cp:coreProperties>');
+  put('docProps/app.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>' + escXml(TOOL.name) + '</Application></Properties>');
+  put('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>' + sheets.map((s, i) => '<sheet name="' + escXml(s.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets><definedNames>' + sheets.map((s, i) => '<definedName name="_xlnm._FilterDatabase" localSheetId="' + i + '" hidden="1">' + escXml("'" + s.name.replace(/'/g, "''") + "'!$A$1:$" + colName(Math.max(1, s.header.length) - 1) + '$' + (s.rows.length + 1)) + '</definedName>').join('') + '</definedNames></workbook>');
+  put('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') + '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  put('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD6ECFA"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="1" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+  sheets.forEach((s, i) => put('xl/worksheets/sheet' + (i + 1) + '.xml', sheetXml(s.header, s.rows)));
+  const blob = await zip(files);
+  return {blob, sheets};
+}
+// Independent reader: re-parses the generated workbook and compares every cell with the in-memory tables.
+async function verifyXlsx(bytes, sheets) {
+  const parts = await unzip(bytes);
+  const dec = new TextDecoder('utf-8', {fatal: true});
+  const wb = new DOMParser().parseFromString(dec.decode(parts.get('xl/workbook.xml')), 'application/xml');
+  const names = Array.from(wb.getElementsByTagName('sheet')).map(s => s.getAttribute('name'));
+  if (names.length !== sheets.length) throw new Error('Sheet count differs.');
+  let cells = 0;
+  for (let i = 0; i < sheets.length; i++) {
+    if (names[i] !== sheets[i].name) throw new Error('Sheet name differs: ' + names[i]);
+    const x = parts.get('xl/worksheets/sheet' + (i + 1) + '.xml');
+    if (!x) throw new Error('Missing sheet ' + (i + 1));
+    const doc = new DOMParser().parseFromString(dec.decode(x), 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('Sheet ' + names[i] + ' XML is not well-formed.');
+    const expected = [sheets[i].header, ...sheets[i].rows];
+    const rows = doc.getElementsByTagName('row');
+    if (rows.length !== expected.length) throw new Error(names[i] + ': ' + rows.length + ' rows written, ' + expected.length + ' expected.');
+    for (let r = 0; r < rows.length; r++) {
+      const got = new Map();
+      for (const c of rows[r].getElementsByTagName('c')) {
+        if (c.getAttribute('t') !== 'inlineStr') throw new Error(names[i] + ' ' + c.getAttribute('r') + ' is not a text cell.');
+        const ref = c.getAttribute('r'), col = ref.replace(/\d+$/, '');
+        let ci = 0; for (const ch of col) ci = ci * 26 + (ch.charCodeAt(0) - 64); ci--;
+        got.set(ci, Array.from(c.getElementsByTagName('t')).map(t => t.textContent).join(''));
+      }
+      const exp = expected[r];
+      for (let c = 0; c < Math.max(exp.length, ...got.keys(), 0); c++) {
+        const e = exp[c] === undefined ? '' : exp[c], g = got.has(c) ? got.get(c) : '';
+        if (e !== g) throw new Error(names[i] + ' row ' + (r + 1) + ' column ' + colName(c) + ' differs from the source value.');
+        if (e !== '') cells++;
+      }
+    }
+  }
+  return {sheets: sheets.length, cells};
+}
+function datBytes(header, rows) {
+  const bad = [];
+  const check = (v, r, c) => { if (/[þ\u0014\r\n]/.test(v)) bad.push('row ' + r + ' column ' + (header[c] || c + 1)); };
+  header.forEach((v, c) => check(v, 0, c)); rows.forEach((row, r) => row.forEach((v, c) => check(v, r + 1, c)));
+  if (bad.length) throw new Error('DAT cannot hold ' + bad.length + ' value(s) containing þ, DC4 or a line break (first: ' + bad[0] + '). Nothing was written. Use XLSX or CSV for this table.');
+  const line = r => r.map(v => 'þ' + v + 'þ').join('\u0014') + '\r\n';
+  const parts = ['﻿' + line(header)]; for (const r of rows) parts.push(line(r));
+  return enc.encode(parts.join(''));
+}
+function csvBytes(header, rows) {
+  const line = r => r.map(v => '"' + v.replace(/"/g, '""') + '"').join(',') + '\r\n';
+  const parts = ['﻿' + line(header)]; for (const r of rows) parts.push(line(r));
+  return enc.encode(parts.join(''));
+}
+// Independent readers for DAT / CSV verification
+function readDat(bytes) {
+  let s = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(bytes);
+  if (s.charCodeAt(0) !== 0xFEFF) throw new Error('Missing UTF-8 BOM.'); s = s.slice(1);
+  if (!s.endsWith('\r\n')) throw new Error('Missing final CRLF.');
+  return s.slice(0, -2).split('\r\n').map(l => { if (l[0] !== 'þ' || l[l.length - 1] !== 'þ') throw new Error('Bad DAT qualifier.'); return l.slice(1, -1).split('þ\u0014þ'); });
+}
+function readCsv(bytes) {
+  let s = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(bytes);
+  if (s.charCodeAt(0) !== 0xFEFF) throw new Error('Missing UTF-8 BOM.'); s = s.slice(1);
+  const rows = []; let row = [], i = 0;
+  while (i < s.length) {
+    if (s[i] !== '"') throw new Error('Unquoted CSV value at ' + i);
+    let v = ''; i++;
+    for (;;) { const q = s.indexOf('"', i); if (q < 0) throw new Error('Unterminated CSV value.'); v += s.slice(i, q); if (s[q + 1] === '"') { v += '"'; i = q + 2; } else { i = q + 1; break; } }
+    row.push(v);
+    if (s[i] === ',') i++; else if (s[i] === '\r' && s[i + 1] === '\n') { rows.push(row); row = []; i += 2; } else throw new Error('Bad CSV separator at ' + i);
+  }
+  if (row.length) throw new Error('Missing final CRLF.');
+  return rows;
+}
+function compareMatrix(got, header, rows, label) {
+  const exp = [header, ...rows];
+  if (got.length !== exp.length) throw new Error(label + ': ' + got.length + ' rows read back, ' + exp.length + ' expected.');
+  for (let r = 0; r < exp.length; r++) {
+    if (got[r].length !== exp[r].length) throw new Error(label + ' row ' + (r + 1) + ': field count differs.');
+    for (let c = 0; c < exp[r].length; c++) if (got[r][c] !== exp[r][c]) throw new Error(label + ' row ' + (r + 1) + ' field ' + (c + 1) + ' differs.');
+  }
+  return exp.length * (header.length);
+}
+
+/* ---------------- export flow ---------------- */
+let exportToken = 0;
+function invalidateExport(reason) { exportToken++; const m = $('exportMsg'); if (m && m.childNodes.length) { m.replaceChildren(h('div', {class: 'msg info', text: reason})); $('topExportMsg').replaceChildren(); } }
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-', ao = Math.abs(off);
+  return {
+    file: d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()),
+    generated: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' (UTC' + sign + p(Math.floor(ao / 60)) + ':' + p(ao % 60) + ')',
+    iso: d.toISOString().replace(/\.\d{3}Z$/, 'Z')
+  };
+}
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function setExportMsg(cls, text) {
+  for (const id of ['exportMsg', 'topExportMsg']) $(id).replaceChildren(text ? h('div', {class: 'msg ' + cls, text}) : '');
+}
+async function writeHandle(handle, bytes, genSha, verifyFn) {
+  const w = await handle.createWritable();
+  try { await w.write(bytes); await w.close(); } catch (e) { try { await w.abort(); } catch (e2) { /* ignore */ } throw new Error('Writing ' + handle.name + ' failed; no existing file was replaced: ' + (e.message || e)); }
+  const back = new Uint8Array(await (await handle.getFile()).arrayBuffer());
+  const backSha = await sha256(back);
+  if (backSha !== genSha || back.length !== bytes.length) throw new Error('Saved file ' + handle.name + ' read back with a different SHA-256 (' + backSha + '). Do not use it.');
+  await verifyFn(back);
+}
+async function ensureWritable(dir) {
+  if (!dir.queryPermission) return;
+  let p = await dir.queryPermission({mode: 'readwrite'});
+  if (p !== 'granted') p = await dir.requestPermission({mode: 'readwrite'});
+  if (p !== 'granted') throw new Error('Permission to save into folder "' + dir.name + '" was not granted. Nothing was written.');
+}
+// Writes a NEW file into the folder: an existing name is never replaced (name_2.xlsx, name_3.xlsx, ...).
+async function writeToDir(dir, suggested, bytes, verifyFn, token) {
+  const genSha = await sha256(bytes);
+  await ensureWritable(dir);
+  const dot = suggested.lastIndexOf('.'), stem = dot > 0 ? suggested.slice(0, dot) : suggested, ext = dot > 0 ? suggested.slice(dot) : '';
+  let name = suggested;
+  for (let k = 2; ; k++) {
+    let exists = true;
+    try { await dir.getFileHandle(name); } catch (e) { if (e && e.name === 'NotFoundError') exists = false; else if (!(e && e.name === 'TypeMismatchError')) throw e; }
+    if (!exists) break;
+    if (k > 999) throw new Error('No free output name for ' + suggested + ' in folder "' + dir.name + '".');
+    name = stem + '_' + k + ext;
+  }
+  if (token !== exportToken) throw new Error('Loaded files changed while saving; nothing more was written.');
+  const fh = await dir.getFileHandle(name, {create: true});
+  await writeHandle(fh, bytes, genSha, verifyFn);
+  return {name: fh.name, folder: dir.name, bytes: bytes.length, sha: genSha, saved: true, savedVerified: true};
+}
+function downloadBytes(bytes, name, mime) {
+  const url = URL.createObjectURL(new Blob([bytes], {type: mime}));
+  const a = h('a', {href: url, download: name}); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+async function saveBytes(bytes, suggested, mime, ext, verifyFn) {
+  const token = exportToken;
+  if (state.outDir) return writeToDir(state.outDir, suggested, bytes, verifyFn, token);
+  const genSha = await sha256(bytes);
+  const result = {name: suggested, bytes: bytes.length, sha: genSha, saved: false, savedVerified: false};
+  if (window.showSaveFilePicker) {
+    let handle;
+    try { handle = await window.showSaveFilePicker({suggestedName: suggested, types: [{description: ext.toUpperCase(), accept: {[mime]: ['.' + ext]}}]}); }
+    catch (e) { if (e && e.name === 'AbortError') return {cancelled: true}; throw e; }
+    if (token !== exportToken) throw new Error('Loaded files changed while saving; nothing was written.');
+    await writeHandle(handle, bytes, genSha, verifyFn);
+    result.name = handle.name; result.saved = true; result.savedVerified = true;
+  } else {
+    downloadBytes(bytes, suggested, mime);
+    result.saved = true;
+  }
+  return result;
+}
+function sourcesLine() { return 'Sources: ' + state.docs.length + ' XML file(s) (' + state.docs.filter(d => d.parsed).length + ' parsed, ' + state.docs.filter(d => !d.parsed).length + ' errors) · ' + TOOL.name + ' ' + TOOL.version; }
+function showExportResult(kind, label, res, checkText) {
+  if (res.cancelled) { setExportMsg('info', label + ': save cancelled. Nothing was written.'); return; }
+  const lines = [label + ' — ' + (res.folder ? 'folder "' + res.folder + '" / ' : '') + res.name, 'Bytes: ' + res.bytes.toLocaleString('en-US') + '   SHA-256: ' + res.sha, checkText];
+  lines.push(res.savedVerified ? 'Saved-file verification PASS: the saved file was read back; SHA-256 and every value match.' : 'Generated validation PASS. The browser download was not read back; compare the downloaded file SHA-256 with the value above if needed.');
+  lines.push(sourcesLine());
+  setExportMsg('ok', lines.join('\n'));
+}
+const EXPORT_BUTTONS = ['btnPerFile', 'btnXlsx', 'btnDat', 'btnCsv'];
+async function exportPerFile() {
+  if (state.busy) return;
+  const docs = state.docs.slice();
+  if (!docs.some(d => d.parsed)) { setExportMsg('err', 'No parsed XML file to convert.'); return; }
+  state.busy = true; for (const id of EXPORT_BUTTONS) $(id).disabled = true;
+  const token = exportToken, lines = [], fails = [];
+  let done = 0, dir = state.outDir;
+  try {
+    if (!dir && window.showDirectoryPicker) {
+      try { dir = await window.showDirectoryPicker({id: 'cfdi-out', mode: 'readwrite'}); }
+      catch (e) { if (e && e.name === 'AbortError') { setExportMsg('info', 'Folder choice cancelled. Nothing was written.'); return; } throw e; }
+    }
+    const st = stamp();
+    for (const d of docs) {
+      if (token !== exportToken) { fails.push('Stopped: loaded files changed during export. Files listed above were written and verified.'); break; }
+      if (!d.parsed) { fails.push(d.name + ' — not converted (XML could not be read): ' + d.error); continue; }
+      setExportMsg('info', 'Writing ' + (done + 1) + ' of ' + docs.filter(x => x.parsed).length + ': ' + d.name + '…');
+      try {
+        const {blob, sheets} = await buildXlsx(st, [d]);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const gen = await verifyXlsx(bytes, sheets);
+        const base = d.name.split('/').pop().replace(/\.xml$/i, '') + '.xlsx';
+        let res;
+        if (dir) res = await writeToDir(dir, base, bytes, b => verifyXlsx(b, sheets), token);
+        else { downloadBytes(bytes, base, XLSX_MIME); res = {name: base, sha: await sha256(bytes), savedVerified: false}; }
+        lines.push(d.name + '  →  ' + res.name + '   (' + bytes.length.toLocaleString('en-US') + ' bytes, ' + gen.cells.toLocaleString('en-US') + ' text cells, SHA-256 ' + res.sha + ', ' + (res.savedVerified ? 'saved-file verification PASS' : 'generated validation PASS; download not read back') + ')');
+        done++;
+      } catch (e) { fails.push(d.name + ' — ' + (e.message || e)); }
+    }
+    const head = done + ' of ' + docs.length + ' XML file(s) converted to individual XLSX' + (dir ? ' in folder "' + dir.name + '"' : ' (browser downloads)') + '. Existing files were not replaced.';
+    setExportMsg(fails.length ? 'rev' : 'ok', [head, ...lines, ...(fails.length ? ['Not converted:', ...fails] : []), sourcesLine()].join('\n'));
+  } catch (e) {
+    setExportMsg('err', (e.message || String(e)) + '\n' + done + ' file(s) were written and verified before the stop.' + (lines.length ? '\n' + lines.join('\n') : ''));
+  } finally {
+    state.busy = false; updateButtons();
+  }
+}
+async function doExport(kind) {
+  if (state.busy) return;
+  state.busy = true; for (const id of EXPORT_BUTTONS) $(id).disabled = true;
+  setExportMsg('info', 'Building and validating ' + kind.toUpperCase() + '…');
+  try {
+    const st = stamp();
+    if (kind === 'xlsx') {
+      const blk = xlsxBlocker(); if (blk) throw new Error(blk);
+      const {blob, sheets} = await buildXlsx(st);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const gen = await verifyXlsx(bytes, sheets);
+      const res = await saveBytes(bytes, 'CFDI_extract_' + st.file + '.xlsx', XLSX_MIME, 'xlsx', b => verifyXlsx(b, sheets));
+      showExportResult(kind, 'Combined XLSX workbook', res, 'Generated workbook re-read: ' + gen.sheets + ' sheets, ' + gen.cells.toLocaleString('en-US') + ' non-empty text cells equal to the source values.');
+    } else {
+      const t = allTables().find(x => x.id === $('expTableSel').value);
+      if (!t) throw new Error('Choose a table.');
+      const {header, rows} = tableMatrix(t);
+      const bytes = kind === 'dat' ? datBytes(header, rows) : csvBytes(header, rows);
+      const reader = kind === 'dat' ? readDat : readCsv;
+      const verify = b => compareMatrix(reader(b), header, rows, kind.toUpperCase());
+      verify(bytes);
+      const safe = t.title.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const res = await saveBytes(bytes, 'CFDI_' + safe + '_' + st.file + '.' + kind, kind === 'dat' ? 'application/octet-stream' : 'text/csv', kind, verify);
+      showExportResult(kind, kind.toUpperCase() + ' · ' + t.title, res, 'Generated file re-read: ' + (rows.length + 1).toLocaleString('en-US') + ' lines (header + ' + rows.length.toLocaleString('en-US') + ' rows) × ' + header.length + ' fields equal to the source values.');
+    }
+  } catch (e) {
+    setExportMsg('err', (e.message || String(e)) + '\nNo verified output was produced.');
+  } finally {
+    state.busy = false; updateButtons();
+  }
+}
+function renderOutDir() {
+  $('outDirInfo').textContent = state.outDir ? 'Results are saved in folder "' + state.outDir.name + '" (new files only; nothing is replaced).' : '';
+}
+async function openFolder() {
+  if (state.busy) return;
+  let dir;
+  try { dir = await window.showDirectoryPicker({id: 'cfdi-in', mode: 'readwrite'}); }
+  catch (e) { if (e && e.name === 'AbortError') return; setLoadMsg('err', 'Could not open the folder: ' + (e.message || e)); return; }
+  if (state.docs.length && !confirm('Replace the ' + state.docs.length + ' loaded file(s) on this page with the XML files of folder "' + dir.name + '"? Source files are not touched.')) return;
+  const files = []; let subdirs = 0;
+  for await (const [, handle] of dir.entries()) { if (handle.kind === 'file') files.push(await handle.getFile()); else subdirs++; }
+  files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+  state.docs = []; state.skipped = []; state.seenNames = new Set(); state.selected = -1;
+  state.outDir = dir; renderOutDir();
+  await addFiles(files);
+  const xmlCount = state.docs.length;
+  setLoadMsg('info', 'Folder "' + dir.name + '": ' + xmlCount + ' XML file(s) read' + (state.skipped.length ? ', ' + state.skipped.length + ' other file(s) skipped' : '') + (subdirs ? ', ' + subdirs + ' subfolder(s) not read' : '') + '.');
+  if (!xmlCount) return;
+  if ($('autoPerFile').checked) await exportPerFile();
+  if ($('autoCombined').checked) {
+    const first = $('topExportMsg').textContent;
+    await doExport('xlsx');
+    if ($('autoPerFile').checked && first) { const second = $('topExportMsg').textContent; const cls = /Not converted|No verified/.test(first + second) ? 'rev' : 'ok'; setExportMsg(cls, first + '\n\n' + second); }
+  }
+}
+
+/* ---------------- input wiring ---------------- */
+async function collectDropped(items) {
+  const out = [];
+  async function walkEntry(entry, path) {
+    if (entry.isFile) { const f = await new Promise((res, rej) => entry.file(res, rej)); try { Object.defineProperty(f, 'relPath', {value: path + f.name}); } catch (e) { /* keep name */ } out.push(f); }
+    else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      for (;;) { const batch = await new Promise((res, rej) => reader.readEntries(res, rej)); if (!batch.length) break; for (const e of batch) await walkEntry(e, path + entry.name + '/'); }
+    }
+  }
+  const entries = Array.from(items).map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  for (const e of entries) await walkEntry(e, '');
+  return out;
+}
+function init() {
+  $('ver').textContent = 'v' + TOOL.version;
+  $('btnFiles').onclick = () => $('inFiles').click();
+  $('btnFolder').onclick = () => $('inFolder').click();
+  $('inFiles').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+  $('inFolder').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+  $('btnClear').onclick = () => { if (!confirm('Remove all ' + state.docs.length + ' loaded file(s) from this page? Source files are not touched.')) return; state.docs = []; state.skipped = []; state.seenNames = new Set(); state.selected = -1; state.outDir = null; renderOutDir(); rebuild(); renderDoc(); setLoadMsg('', ''); };
+  if (window.showDirectoryPicker) $('btnOpenDir').onclick = () => openFolder();
+  else { $('btnOpenDir').disabled = true; $('btnOpenDir').title = 'This browser cannot save into a chosen folder. Use Chrome or Edge.'; $('outDirInfo').textContent = 'Open XML folder needs Chrome or Edge (folder access). In this browser, results are downloaded.'; }
+  $('btnPerFile').onclick = () => exportPerFile();
+  const drop = $('drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', async e => { e.preventDefault(); drop.classList.remove('over'); const files = e.dataTransfer.items && e.dataTransfer.items.length && e.dataTransfer.items[0].webkitGetAsEntry ? await collectDropped(e.dataTransfer.items) : e.dataTransfer.files; addFiles(files); });
+  document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => e.preventDefault());
+  for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => {
+    for (const x of document.querySelectorAll('.tabs button')) x.setAttribute('aria-selected', String(x === b));
+    for (const p of document.querySelectorAll('.tabpane')) p.classList.toggle('on', p.id === b.dataset.tab);
+  };
+  $('btnFmt').onclick = () => { state.showRaw = !state.showRaw; $('btnFmt').textContent = state.showRaw ? 'Show parsed fields' : 'Show original XML text'; $('btnFmt').setAttribute('aria-pressed', String(state.showRaw)); renderDoc(); };
+  $('tableSel').onchange = () => { state.page = 0; renderTable(); };
+  $('pgPrev').onclick = () => { state.page--; renderTable(); };
+  $('pgNext').onclick = () => { state.page++; renderTable(); };
+  $('fileList').addEventListener('keydown', e => {
+    if (!state.docs.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); selectDoc(Math.min(state.docs.length - 1, state.selected + 1)); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); selectDoc(Math.max(0, state.selected - 1)); }
+  });
+  $('btnXlsx').onclick = () => doExport('xlsx');
+  $('btnDat').onclick = () => doExport('dat');
+  $('btnCsv').onclick = () => doExport('csv');
+  rebuild();
+}
+window.CFDI = {TOOL, state, addFiles, exportPerFile, doExport, writeToDir, decodeXmlBytes, parseCfdi, tableMatrix, allTables, buildXlsx, verifyXlsx, unzip, datBytes, csvBytes, readDat, readCsv, compareMatrix, sha256, sha256Js, stamp};
+init();
+</script>
+</body>
+</html>
