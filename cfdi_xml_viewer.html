@@ -133,7 +133,7 @@ details summary{cursor:pointer;color:var(--accent-dark);font-weight:600}
 
 <script>
 'use strict';
-const TOOL = {name: 'CFDI XML Viewer', version: '1.0.2'};
+const TOOL = {name: 'CFDI XML Viewer', version: '1.0.3'};
 const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 const CFDI_NS = new Set(['http://www.sat.gob.mx/cfd/3', 'http://www.sat.gob.mx/cfd/4']);
 const TFD_NS = new Set(['http://www.sat.gob.mx/TimbreFiscalDigital']);
@@ -251,6 +251,7 @@ function parseCfdi(text) {
       genericPath: parent ? parent.genericPath + '/' + el.localName : el.localName,
       label: parent ? (parent.label ? parent.label + '.' : '') + el.localName : '',
       instPath: parent ? parent.instPath + '/' + seg : seg,
+      qPath: parent ? parent.qPath + '/' + el.nodeName : el.nodeName, // tag names exactly as written, no added numbering
       attrs: [], text: null, children: [], comments: []
     };
     if (!parent) node.label = '';
@@ -437,6 +438,11 @@ function buildTables(docs = state.docs, exceptions = state.exceptions) {
   docTable.title = 'Documents';
   // all-fields long table
   const fieldsTable = {id: 'FIELDS', title: 'All fields', fixed: true, columns: ['Doc #', 'File', 'Element path', 'Element', 'Kind', 'Field', 'Value'], rows: []};
+  fieldsTable.bareRows = [];
+  for (const d of parsed) {
+    for (const m of d.parsed.misc) fieldsTable.bareRows.push(['', m.kind === '#pi' ? '#pi ' + m.name : m.kind, m.value]);
+    for (const f of d.parsed.fields) fieldsTable.bareRows.push([f.el.qPath, f.kind === 'Text' ? '' : f.name, f.value]);
+  }
   for (const d of parsed) {
     for (const m of d.parsed.misc) fieldsTable.rows.push([String(d.n), d.name, '(document)', '', m.kind === '#doctype' ? 'Document type declaration' : m.kind === '#pi' ? 'Processing instruction' : 'Comment', m.kind === '#pi' ? '#pi ' + m.name : m.kind, m.value]);
     for (const f of d.parsed.fields) fieldsTable.rows.push([String(d.n), d.name, f.el.instPath, f.el.qname, f.kind, f.name, f.value]);
@@ -454,7 +460,7 @@ function tableMatrix(t, bare) {
   // returns {header: [...], rows: [[...]]} with all values as strings.
   // bare (single-XML workbook): only XML content - no Doc #, no file name; Item (XML position) only where a row belongs to another repeated element.
   if (t.fixed) {
-    if (bare && t.id === 'FIELDS') return {header: ['Element path', 'Field', 'Value'], rows: t.rows.map(r => [r[2], r[5], r[6]])};
+    if (bare && t.id === 'FIELDS') return {header: ['Element path', 'Field', 'Value'], rows: t.bareRows};
     return {header: t.columns.slice(), rows: t.rows};
   }
   const lead = bare ? (t.nested ? ['Item'] : []) : (t.id === 'DOC' ? ['Doc #', 'File'] : ['Doc #', 'File', 'Item']);
